@@ -1,0 +1,4 @@
+2.1.0
+======
+Use name GUID in all OSs
+Add DEFINE_GUID macro in Linux header
