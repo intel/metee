@@ -45,3 +45,7 @@ target_link_libraries(${PROJECT_NAME}
   metee
   gtest_main
 )
+
+install(TARGETS ${PROJECT_NAME}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)

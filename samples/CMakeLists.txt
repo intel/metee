@@ -11,6 +11,10 @@ target_link_libraries (metee-mkhi
   metee
 )
 
+install(TARGETS metee-mkhi
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
 if(UNIX)
 add_executable (metee-connect
   metee_connect.c
@@ -19,5 +23,9 @@ add_executable (metee-connect
 
 target_link_libraries (metee-connect
   metee
+)
+
+install(TARGETS metee-connect
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 endif(UNIX)
