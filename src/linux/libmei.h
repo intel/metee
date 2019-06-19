@@ -62,7 +62,7 @@ struct mei {
 
 /*! Default path to mei device
  */
-#define MEI_DEFAULT_DEVICE "/dev/mei"
+#define MEI_DEFAULT_DEVICE "/dev/mei0"
 
 /*! Allocate and initialize me handle structure
  *
