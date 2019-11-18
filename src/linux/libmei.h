@@ -27,7 +27,7 @@ extern "C" {
 
 /*! Library API version
  */
-#define LIBMEI_API_VERSION MEI_ENCODE_VERSION(1, 1)
+#define LIBMEI_API_VERSION MEI_ENCODE_VERSION(1, 2)
 
 /*! Get current supported library API version
  *
@@ -58,11 +58,17 @@ struct mei {
 	int last_err;           /**< saved errno */
 	bool notify_en;         /**< notification is enabled */
 	bool verbose;           /**< verbose execution */
+	char *device;           /**< device name */
 };
+
+/*! Default name of mei device
+ */
+#define MEI_DEFAULT_DEVICE_NAME "mei0"
 
 /*! Default path to mei device
  */
-#define MEI_DEFAULT_DEVICE "/dev/mei0"
+#define MEI_DEFAULT_DEVICE_PREFIX "/dev/"
+#define MEI_DEFAULT_DEVICE MEI_DEFAULT_DEVICE_PREFIX MEI_DEFAULT_DEVICE_NAME
 
 /*! Allocate and initialize me handle structure
  *
@@ -163,6 +169,16 @@ int mei_notification_request(struct mei *me, bool enable);
  *  in case the event notification was not enabled
  */
 int mei_notification_get(struct mei *me);
+
+/*! Obtains FW status of device
+ *
+ *  \param me The mei handle
+ *  \param fwsts_num The FW status register number (0-5).
+ *  \param fwsts FW status to fill
+ *  \return 0 if successful, otherwise error code
+ */
+int mei_fwstatus(struct mei *me, uint32_t fwsts_num, uint32_t *fwsts);
+
 
 #ifdef __cplusplus
 }

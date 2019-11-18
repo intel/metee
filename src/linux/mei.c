@@ -85,6 +85,8 @@ void mei_deinit(struct mei *me)
 	me->prot_ver = 0;
 	me->state = MEI_CL_STATE_ZERO;
 	me->last_err = 0;
+	free(me->device);
+	me->device = NULL;
 }
 
 static inline int __mei_errno_to_state(struct mei *me)
@@ -174,6 +176,54 @@ static inline ssize_t __mei_write(struct mei *me, const unsigned char *buf, size
 	return rc <= 0 ? -me->last_err : rc;
 }
 
+static inline int __mei_fwsts(struct mei *me, const char *device,
+			      uint32_t fwsts_num, uint32_t *fwsts)
+{
+#define FWSTS_FILENAME_LEN 33
+#define FWSTS_LEN 9
+	char path[FWSTS_FILENAME_LEN];
+	int fd;
+	char line[FWSTS_LEN];
+	unsigned long int cnv;
+	ssize_t len;
+
+	if(snprintf(path, FWSTS_FILENAME_LEN,
+		    "/sys/class/mei/%s/fw_status", device) < 0)
+		return -EINVAL;
+	path[FWSTS_FILENAME_LEN - 1] = '\0';
+
+	errno = 0;
+	fd = open(path, O_CLOEXEC, O_RDONLY);
+	if (fd == -1) {
+		me->last_err = errno;
+		return -me->last_err;
+	}
+
+	errno = 0;
+	len = pread(fd, line, FWSTS_LEN, fwsts_num * FWSTS_LEN);
+	if (len == -1) {
+		me->last_err = errno;
+		close(fd);
+		return -me->last_err;
+	}
+
+	close(fd);
+	if (len < FWSTS_LEN) {
+		me->last_err = EPROTO;
+		return -me->last_err;
+	}
+
+	errno = 0;
+	cnv = strtoul(line, NULL, 16);
+	if (errno) {
+		me->last_err = errno;
+		return -me->last_err;
+	}
+	*fwsts = cnv;
+
+	return 0;
+}
+
 int mei_init(struct mei *me, const char *device, const uuid_le *guid,
 		unsigned char req_protocol_version, bool verbose)
 {
@@ -184,6 +234,7 @@ int mei_init(struct mei *me, const char *device, const uuid_le *guid,
 
 	/* if me is uninitialized it will close wrong file descriptor */
 	me->fd = -1;
+	me->device = NULL;
 	mei_deinit(me);
 
 	me->verbose = verbose;
@@ -203,6 +254,7 @@ int mei_init(struct mei *me, const char *device, const uuid_le *guid,
 
 	memcpy(&me->guid, guid, sizeof(*guid));
 	me->prot_ver = req_protocol_version;
+	me->device = strdup(device);
 
 	me->state = MEI_CL_STATE_INTIALIZED;
 
@@ -372,6 +424,40 @@ int mei_notification_get(struct mei *me)
 	if (rc < 0) {
 		me->state = __mei_errno_to_state(me);
 		mei_err(me, "Cannot get notification for client [%d]:%s\n",
+			rc, strerror(-rc));
+		return rc;
+	}
+
+	return 0;
+}
+
+int mei_fwstatus(struct mei *me, uint32_t fwsts_num, uint32_t *fwsts)
+{
+	char *device;
+	int rc;
+
+	if (!me || !fwsts)
+		return -EINVAL;
+
+	if (fwsts_num > 5) {
+		mei_err(me, "FW status number should be 0..5\n");
+		return -EINVAL;
+	}
+
+	if (me->device) {
+		device = strstr(me->device, MEI_DEFAULT_DEVICE_PREFIX);
+		if (!device) {
+			mei_err(me, "Device does not start with '%s'\n",
+				MEI_DEFAULT_DEVICE_PREFIX);
+			return -EINVAL;
+		}
+		device += strlen(MEI_DEFAULT_DEVICE_PREFIX);
+	} else {
+		device = MEI_DEFAULT_DEVICE_NAME;
+	}
+	rc = __mei_fwsts(me, device, fwsts_num, fwsts);
+	if (rc < 0) {
+		mei_err(me, "Cannot get FW status [%d]:%s\n",
 			rc, strerror(-rc));
 		return rc;
 	}
