@@ -208,6 +208,42 @@ End:
 	return status;
 }
 
+TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
+			     IN uint32_t fwStatusNum, OUT uint32_t *fwStatus)
+{
+	struct mei *me = to_mei(handle);
+	TEESTATUS status;
+        uint32_t fwsts;
+	int rc;
+
+	FUNC_ENTRY();
+
+	if (!me || !fwStatus) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT("One of the parameters was illegal");
+		goto End;
+	}
+	if (fwStatusNum > 5) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT("fwStatusNum should be 0..5");
+		goto End;
+	}
+
+	rc  = mei_fwstatus(me, fwStatusNum, &fwsts);
+	if (rc < 0) {
+		status = errno2status(rc);
+		ERRPRINT("fw status failed with status %zd %s\n", rc, strerror(rc));
+		goto End;
+	}
+
+	*fwStatus = fwsts;
+	status = TEE_SUCCESS;
+
+End:
+	FUNC_EXIT(status);
+	return status;
+}
+
 void TEEAPI TeeDisconnect(PTEEHANDLE handle)
 {
 	struct mei *me  =  to_mei(handle);

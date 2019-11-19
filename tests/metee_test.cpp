@@ -5,6 +5,7 @@
 #include <vector>
 #include <chrono>
 #include <thread>
+#include <climits>
 #include "metee_test.h"
 
 DEFINE_GUID(GUID_NON_EXISTS_CLIENT,
@@ -110,6 +111,45 @@ TEST_F(MeTeeTEST, PROD_MKHI_TimeoutGetVersion)
 	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
 }
 
+/*
+Obtain FW status
+1) Recevie FW status
+2) Check for Valid Resp
+*/
+TEST_F(MeTeeTEST, PROD_MKHI_GetFWStatus)
+{
+	TEEHANDLE Handle;
+	uint32_t fwStatusNum;
+	uint32_t fwStatus;
+
+	Handle.handle = NULL;
+
+	ASSERT_EQ(SUCCESS, TeeInit(&Handle, &GUID_DEVINTERFACE_MKHI, NULL));
+	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+
+	//FWSTS1
+	fwStatusNum = 0;
+	ASSERT_EQ(SUCCESS, TeeFWStatus(&Handle, fwStatusNum, &fwStatus));
+	EXPECT_NE(0, fwStatus);
+
+	//FWSTS2
+	fwStatusNum = 1;
+	ASSERT_EQ(SUCCESS, TeeFWStatus(&Handle, fwStatusNum, &fwStatus));
+	EXPECT_NE(0, fwStatus);
+
+	//Invalid input
+	fwStatusNum = 6;
+	ASSERT_EQ(TEE_INVALID_PARAMETER, TeeFWStatus(&Handle, fwStatusNum, &fwStatus));
+	fwStatusNum = UINT_MAX;
+	ASSERT_EQ(TEE_INVALID_PARAMETER, TeeFWStatus(&Handle, fwStatusNum, &fwStatus));
+	fwStatusNum = 1;
+	ASSERT_EQ(TEE_INVALID_PARAMETER, TeeFWStatus(NULL, fwStatusNum, &fwStatus));
+	ASSERT_EQ(TEE_INVALID_PARAMETER, TeeFWStatus(&Handle, fwStatusNum, NULL));
+	ASSERT_EQ(TEE_INVALID_PARAMETER, TeeFWStatus(NULL, fwStatusNum, NULL));
+
+	TeeDisconnect(&Handle);
+	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+}
 
 #if 0
 /*

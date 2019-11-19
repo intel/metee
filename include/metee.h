@@ -112,6 +112,15 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t bufferSize,
 			  OUT OPTIONAL size_t *numberOfBytesWritten, IN OPTIONAL uint32_t timeout);
 
+/*! Retrives specified FW status register.
+ *  \param handle The handle of the session.
+ *  \param fwStatusNum The FW status register number (0-5).
+ *  \param fwStatus The memory to store obtained FW status.
+ *  \return 0 if successful, otherwise error code.
+ */
+TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
+			     IN uint32_t fwStatusNum, OUT uint32_t *fwStatus);
+
 /*! Closes the session to TEE driver
  *  Make sure that you call this function as soon as you are done with the device,
  *  as other clients might be blocked until the session is closed.

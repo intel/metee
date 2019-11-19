@@ -225,6 +225,47 @@ Cleanup:
 	return status;
 }
 
+TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
+			     IN uint32_t fwStatusNum, OUT uint32_t *fwStatus)
+{
+	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
+	TEESTATUS status = INIT_STATUS;
+	DWORD bytesReturned = 0;
+	DWORD fwSts = 0;
+	DWORD fwStsNum = fwStatusNum;
+
+	FUNC_ENTRY();
+
+	if (NULL == impl_handle || NULL == fwStatus) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT("One of the parameters was illegal");
+		goto Cleanup;
+	}
+	if (fwStatusNum > 5) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT("fwStatusNum should be 0..5");
+		goto Cleanup;
+	}
+
+	status = SendIOCTL(impl_handle->handle, (DWORD)IOCTL_TEEDRIVER_GET_FW_STS,
+		&fwStsNum, sizeof(DWORD),
+		&fwSts, sizeof(DWORD),
+		&bytesReturned);
+	if (status) {
+		DWORD err = GetLastError();
+		status = Win32ErrorToTee(err);
+		ERRPRINT("Error in SendIOCTL, error: %lu\n", err);
+		goto Cleanup;
+	}
+
+	*fwStatus = fwSts;
+	status = TEE_SUCCESS;
+
+Cleanup:
+	FUNC_EXIT(status);
+	return status;
+}
+
 VOID TEEAPI TeeDisconnect(IN PTEEHANDLE handle)
 {
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
