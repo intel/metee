@@ -28,13 +28,12 @@ static int work(struct params *p)
 	TEEHANDLE cl;
 	const unsigned char cmd[] = "AB";
 	const ssize_t sz = sizeof(cmd);
-	unsigned char *buf;
+	unsigned char *buf = NULL;
 	size_t rsz, wsz;
 	int i;
 	TEESTATUS status;
 
 	status = TeeInit(&cl, &p->uuid, NULL);
-	//rc = mei_init(&cl, "/dev/mei", &p->uuid, 0, p->verbose);
 	if (status != TEE_SUCCESS)
 		goto out;
 
@@ -44,9 +43,9 @@ static int work(struct params *p)
 
 	rsz = cl.maxMsgLen;
 	buf = (unsigned char *)malloc(rsz);
-	memset(buf, 0, rsz);
 	if (buf == NULL)
 		goto out;
+	memset(buf, 0, rsz);
 
 	for (i = 0; i < p->iterations; i++) {
 
@@ -65,6 +64,7 @@ static int work(struct params *p)
 	}
 out:
 	TeeDisconnect(&cl);
+	free(buf);
 	return status;
 }
 
@@ -75,7 +75,7 @@ static void usage(const char *p)
 	fprintf(stdout, "%s: -u <uuid> [-i <iterations>] [-h]\n", p);
 }
 
-#define BIT(_x) (1<<(_x))
+#define BIT(_x) (1L<<(_x))
 #define UUID_BIT  BIT(1)
 #define ITER_BIT  BIT(2)
 
@@ -86,7 +86,6 @@ static int mei_getopt(int argc, char *argv[], struct params *p)
 	unsigned long present  = 0;
 
 	extern char *optarg;
-	extern int optind, opterr, optopt;
 	int opt;
 
 	while ((opt = getopt(argc, argv, "hvu:i:")) != -1) {

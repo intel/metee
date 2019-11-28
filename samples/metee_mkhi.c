@@ -408,7 +408,7 @@ static void usage(const char *p)
 	fprintf(stderr, "        -v                verbose\n");
 	fprintf(stderr, "        -b [M.m.f.b]      expect fw version M.m.f.b\n");
 	fprintf(stderr, "        -t                check for test fw\n");
-	fprintf(stderr, "        -e <l>            run echo command of l bytes (only with test fw)\n");
+	fprintf(stderr, "        -e <l>            run echo command of l (less then 1024) bytes (only with test fw)\n");
 	fprintf(stderr, "        -i <n>            iterate n times\n");
 	fprintf(stderr, "        -r                reconnect if failed to write\n");
 	fprintf(stderr, "        -k <n>            timeout between iterations in microseconds (default: 0)\n");
@@ -440,7 +440,6 @@ int main(int argc, char *argv[])
 	struct mei_firmware_version expected;
 	size_t echo_size;
 	extern char *optarg;
-	extern int optind, opterr, optopt;
 	int opt;
 
 	while ((opt = getopt(argc, argv, "hvb:e::i:ts:rk:")) != -1) {
@@ -470,8 +469,6 @@ int main(int argc, char *argv[])
 			break;
 		case 'b':
 			_expected = &expected;
-			if (!optarg)
-				break;
 			ret = sscanf(optarg, "%hd.%hd.%hd.%hd",
 				&expected.code.major, &expected.code.minor,
 				&expected.code.hotFix, &expected.code.buildNo);
@@ -490,7 +487,11 @@ int main(int argc, char *argv[])
 				usage(argv[0]);
 				exit(1);
 			}
-			/* FIXME: limit echo_size to 1024 to client size */
+			if (echo_size > 1024) {
+				fprintf(stderr, "echo size is limited to 1024\n");
+				usage(argv[0]);
+				exit(1);
+			}
 			echo_msg = mkhi_test_msg_alloc(echo_size);
 			if (!echo_msg) {
 				fprintf(stderr, "cannot allocate memory\n");
@@ -577,6 +578,7 @@ int main(int argc, char *argv[])
 	}
 
 out:
+	free(echo_msg);
 	printf("STATUS %s\n", mkhi_status(ret));
 	return ret;
 }
