@@ -232,7 +232,7 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 	rc  = mei_fwstatus(me, fwStatusNum, &fwsts);
 	if (rc < 0) {
 		status = errno2status(rc);
-		ERRPRINT("fw status failed with status %zd %s\n", rc, strerror(rc));
+		ERRPRINT("fw status failed with status %d %s\n", rc, strerror(rc));
 		goto End;
 	}
 
