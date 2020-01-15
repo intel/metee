@@ -17,3 +17,5 @@ target_compile_options(${PROJECT_NAME}
 if(NOT DEFINED CONSOLE_OUTPUT)
     target_compile_definitions(${PROJECT_NAME} PRIVATE -DSYSLOG)
 endif()
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE -D_GNU_SOURCE)
