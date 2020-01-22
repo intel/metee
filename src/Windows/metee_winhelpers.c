@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2019 Intel Corporation
+ * Copyright (C) 2014-2020 Intel Corporation
  */
 #include <assert.h>
 #include <windows.h>
@@ -378,7 +378,7 @@ TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid, _Out_writes_(pathSize) PTCHA
 
 	cr = CM_Get_Device_Interface_List_Size(
 		&deviceInterfaceListLength,
-		(LPGUID)&GUID_DEVINTERFACE_HECI,
+		(LPGUID)InterfaceGuid,
 		NULL,
 		CM_GET_DEVICE_INTERFACE_LIST_PRESENT);
 	if (cr != CR_SUCCESS) {
@@ -402,7 +402,7 @@ TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid, _Out_writes_(pathSize) PTCHA
 	ZeroMemory(deviceInterfaceList, deviceInterfaceListLength * sizeof(WCHAR));
 
 	cr = CM_Get_Device_Interface_List(
-		(LPGUID)&GUID_DEVINTERFACE_HECI,
+		(LPGUID)InterfaceGuid,
 		NULL,
 		deviceInterfaceList,
 		deviceInterfaceListLength,
