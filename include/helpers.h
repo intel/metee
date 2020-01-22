@@ -22,7 +22,7 @@
 
 	static void DebugPrint(const char* args, ...)
 	{
-		char msg[DEBUG_MSG_LEN];
+		char msg[DEBUG_MSG_LEN + 1];
 		va_list varl;
 		va_start(varl, args);
 		vsprintf_s(msg, DEBUG_MSG_LEN, args, varl);
