@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2019 Intel Corporation
+ * Copyright (C) 2014-2020 Intel Corporation
  */
 #include <assert.h>
 #include <windows.h>
@@ -146,6 +146,7 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void* buffer, IN size_t bu
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
 	TEESTATUS       status = INIT_STATUS;
 	EVENTHANDLE     evt    = NULL;
+	DWORD           bytesRead = 0;
 
 	FUNC_ENTRY();
 
@@ -166,11 +167,12 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void* buffer, IN size_t bu
 	if (timeout == 0)
 		timeout = INFINITE;
 
-	status = EndReadInternal(impl_handle->handle, evt, timeout, (LPDWORD)pNumOfBytesRead);
+	status = EndReadInternal(impl_handle->handle, evt, timeout, &bytesRead);
 	if (status) {
 		ERRPRINT("Error in EndReadInternal, error: %d\n", status);
 		goto Cleanup;
 	}
+	*pNumOfBytesRead = bytesRead;
 
 	status = TEE_SUCCESS;
 
@@ -189,6 +191,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
 	TEESTATUS       status = INIT_STATUS;
 	EVENTHANDLE     evt    = NULL;
+	DWORD           bytesWritten = 0;
 
 	FUNC_ENTRY();
 
@@ -209,11 +212,12 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 	if (timeout == 0)
 		timeout = INFINITE;
 
-	status = EndWriteInternal(impl_handle->handle, evt, timeout, (LPDWORD)numberOfBytesWritten);
+	status = EndWriteInternal(impl_handle->handle, evt, timeout, &bytesWritten);
 	if (status) {
 		ERRPRINT("Error in EndWrite, error: %d\n", status);
 		goto Cleanup;
 	}
+	*numberOfBytesWritten = bytesWritten;
 
 	status = TEE_SUCCESS;
 
