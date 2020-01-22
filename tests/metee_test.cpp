@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2019 Intel Corporation
+ * Copyright (C) 2014-2020 Intel Corporation
  */
 #include <vector>
 #include <chrono>
@@ -17,10 +17,6 @@ void TEEAPI CompletionRoutine(TEESTATUS status, size_t numberOfBytesTransfered)
 	std::cout << "operation ended with status " << status << ". Num bytes transferred " << numberOfBytesTransfered << std::endl;
 }
 #define SUCCESS TEE_SUCCESS
-
-std::string GetErrorString(unsigned long LastError);
-
-//Print Expected and Ectual in Hex. 
 
 // Retrieve the system error message for the last-error code
 #ifdef WIN32
@@ -58,15 +54,20 @@ Send GetVersion Command to HCI / MKHI
 4) Check for Valid Resp
 5) Close Connection
 */
-TEST_F(MeTeeTEST, PROD_MKHI_SimpleGetVersion)
+TEST_P(MeTeeTEST, PROD_MKHI_SimpleGetVersion)
 {
 	TEEHANDLE Handle;
 	size_t NumberOfBytes = 0;
+	struct MeTeeTESTParams intf = GetParam();
 	Handle.handle = NULL;
 	std::vector <char> MaxResponse;
 	GEN_GET_FW_VERSION_ACK* pResponseMessage; //max length for this client is 2048
+	TEESTATUS status;
 
-	ASSERT_EQ(SUCCESS, TeeInit(&Handle, &GUID_DEVINTERFACE_MKHI, NULL));
+	status = TeeInit(&Handle, intf.client, (const char*)intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(SUCCESS, status);
 	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
 	ASSERT_EQ(SUCCESS, TeeConnect(&Handle));
 
@@ -92,14 +93,19 @@ Wait for timeout on recv data without send
 2) Recevie timeout on GetVersion Resp Command
 3) Close Connection
 */
-TEST_F(MeTeeTEST, PROD_MKHI_TimeoutGetVersion)
+TEST_P(MeTeeTEST, PROD_MKHI_TimeoutGetVersion)
 {
 	TEEHANDLE Handle;
 	size_t NumberOfBytes = 0;
+	struct MeTeeTESTParams intf = GetParam();
 	Handle.handle = NULL;
 	std::vector <char> MaxResponse;
+	TEESTATUS status;
 
-	ASSERT_EQ(SUCCESS, TeeInit(&Handle, &GUID_DEVINTERFACE_MKHI, NULL));
+	status = TeeInit(&Handle, intf.client, (const char*)intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(SUCCESS, status);
 	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
 	ASSERT_EQ(SUCCESS, TeeConnect(&Handle));
 
@@ -116,15 +122,20 @@ Obtain FW status
 1) Recevie FW status
 2) Check for Valid Resp
 */
-TEST_F(MeTeeTEST, PROD_MKHI_GetFWStatus)
+TEST_P(MeTeeTEST, PROD_MKHI_GetFWStatus)
 {
 	TEEHANDLE Handle;
 	uint32_t fwStatusNum;
 	uint32_t fwStatus;
+	struct MeTeeTESTParams intf = GetParam();
+	TEESTATUS status;
 
 	Handle.handle = NULL;
 
-	ASSERT_EQ(SUCCESS, TeeInit(&Handle, &GUID_DEVINTERFACE_MKHI, NULL));
+	status = TeeInit(&Handle, intf.client, (const char*)intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(TEE_SUCCESS, status);
 	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
 
 	//FWSTS1
@@ -151,132 +162,39 @@ TEST_F(MeTeeTEST, PROD_MKHI_GetFWStatus)
 	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
 }
 
-#if 0
-/*
-We need to add the follow flow :
-1)      Connect to a client(MKHI)
-2)      Send Valid Write Command(async using TeeWrite2)
-3)      Send Valid Write Command(async using TeeWrite2)
-4)      Send Valid Write Command(async using TeeWrite2)
-5)      Call IOCancel() to cancel the pending Writes
-6)      Call Disconnect()
-
-All should pass.
-*/
-TEST_F(MeTeeTEST, PROD_MKHI_3WritesAndCancle)
+TEST_P(MeTeeNTEST, PROD_N_TestConnectToNullUuid)
 {
-	TEEHANDLE Handle;
-	size_t NumberOfBytes = 0;
-	Handle.handle = NULL;
-	
-	GTEST_ASSERT_EQ(SUCCESS, TeeInit(&Handle, &GUID_DEVINTERFACE_MKHI, NULL));
-	EXPECT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
-	ASSERT_EQ(SUCCESS, TeeConnect(&Handle));
+	TEEHANDLE handle = TEEHANDLE_ZERO;
+	struct MeTeeTESTParams intf = GetParam();
 
-	ASSERT_EQ(SUCCESS, TeeWrite(&Handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), &NumberOfBytes, 0));
-	ASSERT_EQ(SUCCESS, TeeWrite(&Handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), &NumberOfBytes, 0));
-	ASSERT_EQ(SUCCESS, TeeWrite(&Handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), &NumberOfBytes, 0));
-
-	GTEST_ASSERT_EQ(SUCCESS, TeeCancel(&Handle));
-	TeeDisconnect(&Handle);
-	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
-
+	ASSERT_EQ(TEE_INVALID_PARAMETER, TeeInit(&handle, NULL, (const char*)intf.device));
 }
 
-/*
-Send GetVersion Command to HCI/MKHI
-1) Open Connection to MKHI
-2) Send 2 read requests asyncronicly
-4) Send 1 write requests
-5) Expect return of read
-6) Send second write request
-5) Expect return of second read
-5) Close Connection
-*/
-TEST_F(MeTeeTEST, MKHI_TwoReadsThenTwoWrites)
+TEST_P(MeTeeNTEST, PROD_N_TestConnectToNonExistsUuid)
 {
-	vector<char> response1;
-	vector<char> response2;
-	size_t ReadNumberOfBytes1 = 0;
-	size_t ReadNumberOfBytes2 = 0;
-	size_t WriteNumberOfBytes = 0;
-	DWORD err;
+	TEEHANDLE handle = TEEHANDLE_ZERO;
+	struct MeTeeTESTParams intf = GetParam();
+	TEESTATUS status;
 
-	GEN_GET_FW_VERSION_ACK* pResponseMessage = NULL; //max length for this client is 2048
-	TEEHANDLE Handle;
-	Handle.handle = NULL;
-
-	ASSERT_EQ(SUCCESS, TeeInit(&Handle, &GUID_DEVINTERFACE_MKHI, NULL)); ///as default
-	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
-
-	ASSERT_EQ(SUCCESS, TeeConnect(&Handle));
-
-	response1.resize(Handle.maxMsgLen*sizeof(char));
-	response2.resize(Handle.maxMsgLen*sizeof(char));
-
-	ASSERT_EQ(SUCCESS, TeeRead(&Handle, &response1[0], (ULONG)Handle.maxMsgLen, &ReadNumberOfBytes1, 0));
-	ASSERT_EQ(SUCCESS, TeeRead(&Handle, &response2[0], (ULONG)Handle.maxMsgLen, &ReadNumberOfBytes2, 0));
-
-	
-
-	ASSERT_EQ(SUCCESS, TeeWrite(&Handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), &WriteNumberOfBytes, 0));
-	EXPECT_EQ(sizeof(GEN_GET_FW_VERSION), WriteNumberOfBytes);
-		
-	pResponseMessage = (GEN_GET_FW_VERSION_ACK*)(&response1[0]);
-
-	EXPECT_EQ(SUCCESS, pResponseMessage->Header.Fields.Result);
-	EXPECT_NE(0, pResponseMessage->Data.FWVersion.CodeMajor);
-	EXPECT_NE(0, pResponseMessage->Data.FWVersion.CodeBuildNo);
-
-#if _DEBUG
-	printf("FWVersion.CodeMajor is %d \n", pResponseMessage->Data.FWVersion.CodeMajor);
-	printf("FWVersion.CodeMinor is %d \n", pResponseMessage->Data.FWVersion.CodeMinor);
-	printf("FWVersion.CodeHotFix is %d \n", pResponseMessage->Data.FWVersion.CodeHotFix);
-	printf("FWVersion.CodeBuildNo is %d \n", pResponseMessage->Data.FWVersion.CodeBuildNo);
-#endif
-
-	ASSERT_EQ(SUCCESS, TeeWrite(&Handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), &WriteNumberOfBytes, 0));
-	ASSERT_EQ(sizeof(GEN_GET_FW_VERSION), WriteNumberOfBytes);
-
-	ASSERT_EQ(err, (WAIT_OBJECT_0));
-
-	pResponseMessage = (GEN_GET_FW_VERSION_ACK*)(&response2[0]);
-
-	EXPECT_EQ(SUCCESS, pResponseMessage->Header.Fields.Result);
-	EXPECT_NE(0, pResponseMessage->Data.FWVersion.CodeMajor);
-	EXPECT_NE(0, pResponseMessage->Data.FWVersion.CodeBuildNo);
-
-#if _DEBUG
-	printf("FWVersion.CodeMajor is %d \n", pResponseMessage->Data.FWVersion.CodeMajor);
-	printf("FWVersion.CodeMinor is %d \n", pResponseMessage->Data.FWVersion.CodeMinor);
-	printf("FWVersion.CodeHotFix is %d \n", pResponseMessage->Data.FWVersion.CodeHotFix);
-	printf("FWVersion.CodeBuildNo is %d \n", pResponseMessage->Data.FWVersion.CodeBuildNo);
-#endif
-
-}
-#endif
-TEST_F(MeTeeNTEST, PROD_N_TestConnectToNullUuid)
-{
-	TEEHANDLE						handle = TEEHANDLE_ZERO;
-		
-	ASSERT_EQ(TEE_INVALID_PARAMETER, TeeInit(&handle, NULL, NULL));
-}
-
-TEST_F(MeTeeNTEST, PROD_N_TestConnectToNonExistsUuid)
-{
-	TEEHANDLE						handle = TEEHANDLE_ZERO;
-		
-	ASSERT_EQ(TEE_SUCCESS, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, NULL));
+	status = TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, (const char*)intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(TEE_SUCCESS, status);
 
 	ASSERT_EQ(TEE_CLIENT_NOT_FOUND, TeeConnect(&handle));
 }
 
-TEST_F(MeTeeNTEST, PROD_N_TestGetDriverVersion)
+TEST_P(MeTeeNTEST, PROD_N_TestGetDriverVersion)
 {
 	TEEHANDLE handle = TEEHANDLE_ZERO;
+	struct MeTeeTESTParams intf = GetParam();
 	teeDriverVersion_t ver = {0, 0, 0, 0};
+	TEESTATUS status;
 
-	ASSERT_EQ(TEE_SUCCESS, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, NULL));
+	status = TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, (const char*)intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(TEE_SUCCESS, status);
 
 #ifdef WIN32
 	ASSERT_EQ(TEE_SUCCESS, GetDriverVersion(&handle, &ver));
@@ -290,63 +208,27 @@ TEST_F(MeTeeNTEST, PROD_N_TestGetDriverVersion)
 #endif // WIN32
 }
 
-TEST_F(MeTeeNTEST, PROD_N_TestGetDriverVersion_NullParam)
+TEST_P(MeTeeNTEST, PROD_N_TestGetDriverVersion_NullParam)
 {
 	TEEHANDLE handle = TEEHANDLE_ZERO;
+	struct MeTeeTESTParams intf = GetParam();
+	TEESTATUS status;
 
-	ASSERT_EQ(TEE_SUCCESS, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, NULL));
+	status = TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, (const char*)intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(TEE_SUCCESS, status);
 
 	ASSERT_EQ(TEE_INVALID_PARAMETER, GetDriverVersion(&handle, NULL));
 }
 
-class MeTeeDataNTEST : public ::testing::Test {
-public:
-	MeTeeDataNTEST() {
-		// initialization code here
-	}
-
-	void SetUp() {
-#ifdef _DEBUG
-		printf("Enter ProdTests SetUp\n");
-#endif
-		_handle.handle = NULL;
-		ASSERT_EQ(SUCCESS, TeeInit(&_handle, &GUID_DEVINTERFACE_MKHI, NULL));
-		ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&_handle));
-		ASSERT_EQ(SUCCESS, TeeConnect(&_handle));
-		MkhiRequest.Header.Fields.Command = GEN_GET_FW_VERSION_CMD;
-		MkhiRequest.Header.Fields.GroupId = MKHI_GEN_GROUP_ID;
-		MkhiRequest.Header.Fields.IsResponse = 0;
-#ifdef _DEBUG
-		printf("Exit ProdTests SetUp\n");
-#endif
-	}
-
-	void TearDown() {
-#ifdef _DEBUG
-		printf("Enter ProdTests TearDown\n");
-#endif
-		TeeDisconnect(&_handle);
-		//Is this helping?
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-#ifdef _DEBUG
-		printf("Exit ProdTests TearDown\n");
-#endif
-	}
-
-	~MeTeeDataNTEST() {
-		// cleanup any pending stuff, but no exceptions allowed
-	}
-	TEEHANDLE						_handle;
-	GEN_GET_FW_VERSION MkhiRequest;
-};
-
-TEST_F(MeTeeDataNTEST, PROD_N_TestFWUNullBufferWrite)
+TEST_P(MeTeeDataNTEST, PROD_N_TestFWUNullBufferWrite)
 {
 	size_t numOfBytes = 0;
 	ASSERT_EQ(TEE_INVALID_PARAMETER, TeeWrite(&_handle, NULL, 1024, &numOfBytes, 0));
 }
 
-TEST_F(MeTeeDataNTEST, PROD_N_TestFWUZeroBufferSizeWrite)
+TEST_P(MeTeeDataNTEST, PROD_N_TestFWUZeroBufferSizeWrite)
 {
 	size_t numOfBytes = 0;
 	std::vector<unsigned char> buf(1024);
@@ -354,9 +236,9 @@ TEST_F(MeTeeDataNTEST, PROD_N_TestFWUZeroBufferSizeWrite)
 	ASSERT_EQ(TEE_INVALID_PARAMETER, TeeWrite(&_handle, &buf[0], 0, &numOfBytes, 0));
 }
 
-TEST_F(MeTeeDataNTEST, PROD_N_TestFWUBiggerThenMtuWrite)
+TEST_P(MeTeeDataNTEST, PROD_N_TestFWUBiggerThenMtuWrite)
 {
-	size_t				numOfBytes = 0;
+	size_t numOfBytes = 0;
 
 	std::vector<unsigned char> buf(_handle.maxMsgLen + 10);
 
@@ -364,7 +246,7 @@ TEST_F(MeTeeDataNTEST, PROD_N_TestFWUBiggerThenMtuWrite)
 }
 
 #ifdef WIN32
-TEST_F(MeTeeDataNTEST, PROD_N_TestSmallBufferRead)
+TEST_P(MeTeeDataNTEST, PROD_N_TestSmallBufferRead)
 {
 	size_t WriteNumberOfBytes = 0;
 	size_t NumberOfBytes = 0;
@@ -379,3 +261,24 @@ TEST_F(MeTeeDataNTEST, PROD_N_TestSmallBufferRead)
 	ASSERT_EQ(TEE_INSUFFICIENT_BUFFER, TeeRead(&_handle, &MaxResponse[0], Len, &NumberOfBytes, 0));
 }
 #endif // WIN32
+
+struct MeTeeTESTParams interfaces[1] = {
+	{"PCH", NULL, &GUID_DEVINTERFACE_MKHI}};
+
+INSTANTIATE_TEST_SUITE_P(MeTeeTESTInstance, MeTeeTEST,
+		testing::ValuesIn(interfaces),
+		[](const testing::TestParamInfo<MeTeeTEST::ParamType>& info) {
+			return info.param.name;
+		});
+
+INSTANTIATE_TEST_SUITE_P(MeTeeNTESTInstance, MeTeeNTEST,
+		testing::ValuesIn(interfaces),
+		[](const testing::TestParamInfo<MeTeeNTEST::ParamType>& info) {
+			return info.param.name;
+		});
+
+INSTANTIATE_TEST_SUITE_P(MeTeeDataNTESTInstance, MeTeeDataNTEST,
+		testing::ValuesIn(interfaces),
+		[](const testing::TestParamInfo<MeTeeDataNTEST::ParamType>& info) {
+			return info.param.name;
+		});
