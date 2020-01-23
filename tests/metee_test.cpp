@@ -7,6 +7,12 @@
 #include <thread>
 #include <climits>
 #include "metee_test.h"
+#ifdef WIN32
+extern "C" {
+#include "public.h"
+#include "metee_win.h"
+}
+#endif // WIN32
 
 DEFINE_GUID(GUID_NON_EXISTS_CLIENT,
 	0x85eb8fa6, 0xbdd, 0x4d01, 0xbe, 0xc4, 0xa5, 0x97, 0x43, 0x4e, 0xd7, 0x62);
@@ -244,6 +250,35 @@ TEST_P(MeTeeNTEST, PROD_N_TestGetDriverVersion_NullParam)
 
 	ASSERT_EQ(TEE_INVALID_PARAMETER, GetDriverVersion(&handle, NULL));
 }
+
+#ifdef WIN32
+TEST_P(MeTeeNTEST, PROD_N_TestConnectByPath)
+{
+	TEEHANDLE handle = TEEHANDLE_ZERO;
+	TEESTATUS status;
+	TCHAR     devicePath[MAX_PATH] = {0};
+
+	status = GetDevicePath(&GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
+	if (status)
+		GTEST_SKIP();
+	ASSERT_EQ(TEE_SUCCESS, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, devicePath));
+}
+
+TEST_P(MeTeeNTEST, PROD_N_TestConnectByWrongPath)
+{
+	TEEHANDLE handle = TEEHANDLE_ZERO;
+
+	ASSERT_EQ(TEE_DEVICE_NOT_FOUND, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, "\\NO_SUCH_DEVICE"));
+}
+
+TEST_P(MeTeeNTEST, PROD_N_TestConnectByLongPath)
+{
+	TEEHANDLE handle = TEEHANDLE_ZERO;
+	const char *longPath = "\\Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+
+	ASSERT_EQ(TEE_DEVICE_NOT_FOUND, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, longPath));
+}
+#endif // WIN32
 
 TEST_P(MeTeeDataNTEST, PROD_N_TestFWUNullBufferWrite)
 {

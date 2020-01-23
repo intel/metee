@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2014-2019 Intel Corporation
+# Copyright (C) 2014-2020 Intel Corporation
 cmake_minimum_required(VERSION 3.1)
 project(metee_test)
 
@@ -47,8 +47,11 @@ add_executable(${PROJECT_NAME} Main.cpp metee_test.cpp)
 
 target_link_libraries(${PROJECT_NAME} metee gtest_main)
 
-target_include_directories(
-  ${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/Windows
+target_include_directories(${PROJECT_NAME}
+  PRIVATE ${CMAKE_SOURCE_DIR}/src/Windows
 )
 
-install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS ${PROJECT_NAME}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
