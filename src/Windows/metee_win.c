@@ -22,6 +22,7 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIO
 {
 	TEESTATUS       status               = INIT_STATUS;
 	TCHAR           devicePath[MAX_PATH] = {0};
+	const TCHAR     *devicePathP         = NULL;
 	HANDLE          deviceHandle         = INVALID_HANDLE_VALUE;
 	LPCGUID         currentUUID          = NULL;
 	struct METEE_WIN_IMPL *impl_handle   = NULL;
@@ -45,21 +46,27 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIO
 	handle->handle = impl_handle;
 
 	if (device != NULL) {
-		currentUUID = (LPCGUID)device;
+		if (device[0] == '\\')
+			devicePathP = (const TCHAR*)device;
+		else
+			currentUUID = (LPCGUID)device;
 	}
 	else {
 		currentUUID = &GUID_DEVINTERFACE_HECI;
 	}
 
-	// get device path
-	status = GetDevicePath(currentUUID, devicePath, MAX_PATH);
-	if (status) {
-		ERRPRINT("Error in GetDevicePath, error: %d\n", status);
-		goto Cleanup;
+	if (!devicePathP) {
+		// get device path
+		status = GetDevicePath(currentUUID, devicePath, MAX_PATH);
+		if (status) {
+			ERRPRINT("Error in GetDevicePath, error: %d\n", status);
+			goto Cleanup;
+		}
+		devicePathP = devicePath;
 	}
 
 	// create file
-	deviceHandle = CreateFile(devicePath,
+	deviceHandle = CreateFile(devicePathP,
 					GENERIC_READ | GENERIC_WRITE,
 					FILE_SHARE_READ | FILE_SHARE_WRITE,
 					NULL,
@@ -68,8 +75,12 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIO
 					NULL);
 
 	if (deviceHandle == INVALID_HANDLE_VALUE) {
-		status = TEE_DEVICE_NOT_READY;
-		ERRPRINT("Error in CreateFile, error: %lu\n", GetLastError());
+		DWORD err = GetLastError();
+		ERRPRINT("Error in CreateFile, error: %lu\n", err);
+		if (err == ERROR_FILE_NOT_FOUND)
+			status = TEE_DEVICE_NOT_FOUND;
+		else
+			status = TEE_DEVICE_NOT_READY;
 		goto Cleanup;
 	}
 
