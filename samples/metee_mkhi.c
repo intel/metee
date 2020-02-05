@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2012-2019 Intel Corporation
+ * Copyright (C) 2012-2020 Intel Corporation
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -165,6 +165,11 @@ static bool mk_host_if_init(struct mk_host_if *acmd, const GUID *guid,
 	acmd->verbose = verbose;
 	TeeInit(&acmd->mei_cl, guid, NULL);
 	return mk_host_if_connect(acmd);
+}
+
+static void mk_host_if_deinit(struct mk_host_if *acmd)
+{
+	TeeDisconnect(&acmd->mei_cl);
 }
 
 static uint32_t mkhi_verify_response_header(struct mkhi_msg_hdr *msg, struct mkhi_msg_hdr *resp)
@@ -579,6 +584,7 @@ int main(int argc, char *argv[])
 
 out:
 	free(echo_msg);
+	mk_host_if_deinit(&acmd);
 	printf("STATUS %s\n", mkhi_status(ret));
 	return ret;
 }
