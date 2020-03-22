@@ -5,7 +5,8 @@ project(metee)
 
 option (BUILD_TEST "Build self-test" NO)
 option (BUILD_SAMPLES "Build samples" NO)
-option (BUILD_MSVC_RUNTIME_STATIC "Build with static runtime libraries on MSVC" NO)
+option (BUILD_MSVC_RUNTIME_STATIC
+    "Build with static runtime libraries on MSVC" NO)
 
 include (GNUInstallDirs)
 
@@ -18,10 +19,14 @@ endif(WIN32)
 set(LICENSE Apache)
 include (version.cmake)
 
-set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER include/metee.h)
-set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${TEE_VERSION_STRING})
-set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION ${TEE_VERSION_STRING})
-set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(
+	${PROJECT_NAME} PROPERTIES PUBLIC_HEADER include/metee.h)
+set_target_properties(
+	${PROJECT_NAME} PROPERTIES VERSION ${TEE_VERSION_STRING})
+set_target_properties(
+	${PROJECT_NAME} PROPERTIES SOVERSION ${TEE_VERSION_STRING})
+set_target_properties(
+	${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(${PROJECT_NAME}
   PUBLIC include

@@ -11,7 +11,8 @@ target_include_directories(${PROJECT_NAME}
 #More warnings and warning-as-error
 target_compile_options(${PROJECT_NAME}
     PRIVATE -Wall -Werror
-    PRIVATE -fstack-protector-strong -D_FORTIFY_SOURCE=2 -O2 -Wformat -Wformat-security
+    PRIVATE -fstack-protector-strong
+    -D_FORTIFY_SOURCE=2 -O2 -Wformat -Wformat-security
 )
 
 if(NOT DEFINED CONSOLE_OUTPUT)

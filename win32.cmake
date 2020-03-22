@@ -41,6 +41,8 @@ get_target_property(t_pdb_name_debug ${PROJECT_NAME} COMPILE_PDB_NAME_DEBUG)
 get_target_property(t_pdb_output_directory ${PROJECT_NAME} PDB_OUTPUT_DIRECTORY)
 
 install(FILES
-  "${t_pdb_output_directory}/\${CMAKE_INSTALL_CONFIG_NAME}/$<$<CONFIG:Debug>:${t_pdb_name_debug}>$<$<NOT:$<CONFIG:Debug>>:${t_pdb_name}>.pdb"
+  "${t_pdb_output_directory}/\${CMAKE_INSTALL_CONFIG_NAME}
+  /$<$<CONFIG:Debug>:${t_pdb_name_debug}
+  >$<$<NOT:$<CONFIG:Debug>>:${t_pdb_name}>.pdb"
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )

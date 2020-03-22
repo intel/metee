@@ -6,7 +6,7 @@ project(metee_test)
 set(CMAKE_CXX_STANDARD 11)
 
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/googletest-src)
-  file (COPY ${CMAKE_CURRENT_SOURCE_DIR}/googletest-src 
+  file (COPY ${CMAKE_CURRENT_SOURCE_DIR}/googletest-src
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
   )
 else(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/googletest-src)
