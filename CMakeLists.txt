@@ -43,33 +43,32 @@ install(TARGETS ${PROJECT_NAME}
 # Documentation
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-set(DOXYGEN_INPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-set(DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/Doxyfile.in
-        ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+  set(DOXYGEN_INPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  set(DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/Doxyfile.in
+          ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
 
-add_custom_target(doc
-        ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating documentation with Doxygen" VERBATIM)
+  add_custom_target(doc
+          ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+          COMMENT "Generating documentation with Doxygen" VERBATIM)
 
-if(UNIX)
-install(DIRECTORY
-  ${CMAKE_CURRENT_BINARY_DIR}/man/man3
-  DESTINATION ${CMAKE_INSTALL_MANDIR}
-)
-install(DIRECTORY
-  ${CMAKE_CURRENT_BINARY_DIR}/html
-  DESTINATION ${CMAKE_INSTALL_DOCDIR}
-)
-else(UNIX)
-install(DIRECTORY
-  ${CMAKE_CURRENT_BINARY_DIR}/html
-  DESTINATION doc
-)
-endif(UNIX)
-
-endif(DOXYGEN_FOUND)
+  if(UNIX)
+    install(DIRECTORY
+      ${CMAKE_CURRENT_BINARY_DIR}/man/man3
+      DESTINATION ${CMAKE_INSTALL_MANDIR}
+    )
+    install(DIRECTORY
+      ${CMAKE_CURRENT_BINARY_DIR}/html
+      DESTINATION ${CMAKE_INSTALL_DOCDIR}
+    )
+  else()
+    install(DIRECTORY
+      ${CMAKE_CURRENT_BINARY_DIR}/html
+      DESTINATION doc
+    )
+  endif()
+endif()
 
 # CPack
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
