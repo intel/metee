@@ -53,8 +53,6 @@ add_custom_target(doc
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating documentation with Doxygen" VERBATIM)
 
-add_dependencies(${PROJECT_NAME} doc)
-
 if(UNIX)
 install(DIRECTORY
   ${CMAKE_CURRENT_BINARY_DIR}/man/man3
