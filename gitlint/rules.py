@@ -12,7 +12,7 @@ class BodyMinLineCount(CommitRule):
     # A rule MUST have a *unique* id, we recommend starting with UC (for User-defined Commit-rule).
     id = "UC1"
 
-    options_spec = [IntOption('min-line-count', 2, "Minimum body line count excluding Signed-off-by")]
+    options_spec = [IntOption('min-line-count', 1, "Minimum body line count excluding Signed-off-by")]
 
     def validate(self, commit):
         filtered = [x for x in commit.message.body if not x.lower().startswith("signed-off-by") and x != '']
