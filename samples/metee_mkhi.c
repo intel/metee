@@ -98,7 +98,7 @@ const char *mkhi_status(uint32_t status)
 	MKH_STATUS(MKHI_STATUS_HOST_IF_EMPTY_RESPONSE);
 	MKH_STATUS(MKHI_STATUS_SDK_RESOURCES);
 	default:
-		fprintf(stderr, "uknown 0x%08X\n", status);
+		fprintf(stderr, "unknown 0x%08X\n", status);
 		return "unknown";
 	}
 #undef MKH_STATUS

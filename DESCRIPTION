@@ -1,4 +1,4 @@
 # MeTee library
 
-MeTee library provides a cross-platform simple programing interface for accessing
+MeTee library provides a cross-platform simple programming interface for accessing
 Intel HECI interfaces on devices found in BigCore and Atom based products.

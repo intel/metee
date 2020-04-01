@@ -36,7 +36,7 @@ std::string GetErrorString(unsigned long LastError)
 		0, NULL);
 
 	std::string ErrorMessage((LPCSTR)lpMsgBuf);
-	ErrorMessage.erase(ErrorMessage.find('\n')); //error string from system comes with a new line charcter. 
+	ErrorMessage.erase(ErrorMessage.find('\n')); //error string from system comes with a new line character. 
 	return ErrorMessage;
 }
 #else
@@ -50,7 +50,7 @@ std::string GetErrorString(unsigned long LastError)
 Send GetVersion Command to HCI / MKHI
 1) Open Connection to MKHI
 2) Send GetVersion Req Command
-3) Recevie GetVersion Resp Command
+3) Receive GetVersion Resp Command
 4) Check for Valid Resp
 5) Close Connection
 */
@@ -90,7 +90,7 @@ TEST_P(MeTeeTEST, PROD_MKHI_SimpleGetVersion)
 /*
 Wait for timeout on recv data without send
 1) Open Connection to MKHI
-2) Recevie timeout on GetVersion Resp Command
+2) Receive timeout on GetVersion Resp Command
 3) Close Connection
 */
 TEST_P(MeTeeTEST, PROD_MKHI_TimeoutGetVersion)
@@ -119,7 +119,7 @@ TEST_P(MeTeeTEST, PROD_MKHI_TimeoutGetVersion)
 
 /*
 Obtain FW status
-1) Recevie FW status
+1) Receive FW status
 2) Check for Valid Resp
 */
 TEST_P(MeTeeTEST, PROD_MKHI_GetFWStatus)

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2019 Intel Corporation
+ * Copyright (C) 2014-2020 Intel Corporation
  */
 /*! \file metee.h
 	\brief metee library API
@@ -70,7 +70,7 @@ typedef uint16_t TEESTATUS; /**< return status for API functions */
 #define TEE_DISCONNECTED                        (TEE_ERROR_BASE + 10)
 #define TEE_INSUFFICIENT_BUFFER                 (TEE_ERROR_BASE + 11)
 
-/*! Macro for successfull operation result check
+/*! Macro for successful operation result check
  */
 #define TEE_IS_SUCCESS(Status) (((TEESTATUS)(Status)) == TEE_SUCCESS)
 
@@ -112,7 +112,7 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t bufferSize,
 			  OUT OPTIONAL size_t *numberOfBytesWritten, IN OPTIONAL uint32_t timeout);
 
-/*! Retrives specified FW status register.
+/*! Retrieves specified FW status register.
  *  \param handle The handle of the session.
  *  \param fwStatusNum The FW status register number (0-5).
  *  \param fwStatus The memory to store obtained FW status.

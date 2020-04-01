@@ -104,7 +104,7 @@ Cleanup:
 
 }
 
-TEESTATUS TEEAPI EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD miliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesTransferred)
+TEESTATUS TEEAPI EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesTransferred)
 {
 	TEESTATUS       status                  = INIT_STATUS;
 	DWORD           err                     = ERROR_INTERNAL_ERROR;
@@ -123,7 +123,7 @@ TEESTATUS TEEAPI EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD mi
 	pBytesTransferred = pNumberOfBytesTransferred ? pNumberOfBytesTransferred : &bytesTransferred;
 
 	// wait for the answer
-	err = WaitForSingleObject(evt->hEvent, miliseconds);
+	err = WaitForSingleObject(evt->hEvent, milliseconds);
 	if (err == WAIT_TIMEOUT) {
 		status = TEE_TIMEOUT;
 		ERRPRINT("WaitForSingleObject timed out!\n");
@@ -184,14 +184,14 @@ exit:
 	return status;
 }
 
-TEESTATUS TEEAPI EndReadInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD miliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesRead)
+TEESTATUS TEEAPI EndReadInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesRead)
 
 {
 	TEESTATUS status = INIT_STATUS;
 
 	FUNC_ENTRY();
 
-	status = EndOverlapped(handle, evt, miliseconds, pNumberOfBytesRead);
+	status = EndOverlapped(handle, evt, milliseconds, pNumberOfBytesRead);
 
 	FUNC_EXIT(status);
 
@@ -225,13 +225,13 @@ TEESTATUS TEEAPI BeginWriteInternal(IN HANDLE handle, IN const PVOID buffer, IN 
 	return status;
 }
 
-TEESTATUS TEEAPI EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD miliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesWritten)
+TEESTATUS TEEAPI EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesWritten)
 {
 	TEESTATUS status = INIT_STATUS;
 
 	FUNC_ENTRY();
 
-	status = EndOverlapped(handle, evt, miliseconds, pNumberOfBytesWritten);
+	status = EndOverlapped(handle, evt, milliseconds, pNumberOfBytesWritten);
 
 	FUNC_EXIT(status);
 

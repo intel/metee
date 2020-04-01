@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2019 Intel Corporation
+ * Copyright (C) 2014-2020 Intel Corporation
  */
 #ifndef __TEELIBWIN_H
 #define __TEELIBWIN_H
@@ -62,12 +62,12 @@ typedef struct _OPERATION_CONTEXT
 **					Windows Helper Functions 						**
 **********************************************************************/
 TEESTATUS TEEAPI BeginOverlappedInternal(IN TEE_OPERATION operation, IN HANDLE handle, IN PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt);
-TEESTATUS TEEAPI EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD miliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesTransferred);
+TEESTATUS TEEAPI EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesTransferred);
 DWORD WINAPI WaitForOperationEnd(LPVOID lpThreadParameter);
-TEESTATUS TEEAPI EndReadInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD miliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesRead);
+TEESTATUS TEEAPI EndReadInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesRead);
 TEESTATUS TEEAPI BeginReadInternal(IN HANDLE handle, IN PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt);
 TEESTATUS TEEAPI BeginWriteInternal(IN HANDLE handle, IN const PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt);
-TEESTATUS TEEAPI EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD miliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesWritten);
+TEESTATUS TEEAPI EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesWritten);
 TEESTATUS TEEAPI BeginOverlapped(IN TEE_OPERATION operation, IN PTEEHANDLE handle, IN PVOID buffer, IN ULONG bufferSize, IN LPTEE_COMPLETION_ROUTINE completionRoutine);
 TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid, _Out_writes_(pathSize) PTCHAR path, _In_ SIZE_T pathSize);
 TEESTATUS SendIOCTL(IN HANDLE handle, IN DWORD ioControlCode, IN LPVOID pInBuffer, IN DWORD inBufferSize, IN LPVOID pOutBuffer, IN DWORD outBufferSize, OUT LPDWORD pBytesRetuned);
