@@ -1,10 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2014-2020 Intel Corporation
 
-if(BUILD_MSVC_RUNTIME_STATIC)
-  add_compile_options(/MT$<$<CONFIG:Debug>:d>)
-endif(BUILD_MSVC_RUNTIME_STATIC)
-
 set(TEE_SOURCES
     src/Windows/metee_win.c
     src/Windows/metee_winhelpers.c
@@ -12,23 +8,32 @@ set(TEE_SOURCES
 
 add_library(${PROJECT_NAME} STATIC ${TEE_SOURCES})
 
-target_link_libraries(${PROJECT_NAME} CfgMgr32.lib)
-target_compile_definitions(${PROJECT_NAME} PRIVATE UNICODE)
-target_compile_definitions(${PROJECT_NAME} PRIVATE _UNICODE)
+if(BUILD_MSVC_RUNTIME_STATIC)
+  target_compile_options(${PROJECT_NAME} PRIVATE /MT$<$<CONFIG:Debug>:d>)
+endif()
 
+target_link_libraries(${PROJECT_NAME} CfgMgr32.lib)
+target_compile_definitions(${PROJECT_NAME}
+                           PRIVATE UNICODE _UNICODE
+)
 # Secure compile flags
-add_definitions("/GS /sdl")
+target_compile_definitions(${PROJECT_NAME}
+                           PRIVATE /GS /sdl)
 
 # More warnings and warning-as-error
-target_compile_options(${PROJECT_NAME} PRIVATE /W4)
-target_compile_options(${PROJECT_NAME} PRIVATE /WX)
+target_compile_options(${PROJECT_NAME}
+                       PRIVATE /W4 /WX
+)
 
-set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/Zi")
-set_target_properties(
-  ${PROJECT_NAME}
-  PROPERTIES PDB_NAME "${PROJECT_NAME}" PDB_NAME_DEBUG "${PROJECT_NAME}"
-             COMPILE_PDB_NAME "${PROJECT_NAME}" COMPILE_PDB_NAME_DEBUG
-                                                "${PROJECT_NAME}"
+set_target_properties(${PROJECT_NAME}
+   PROPERTIES COMPILE_FLAGS "/Zi"
+)
+
+set_target_properties(${PROJECT_NAME}
+  PROPERTIES PDB_NAME "${PROJECT_NAME}"
+             PDB_NAME_DEBUG "${PROJECT_NAME}"
+             COMPILE_PDB_NAME "${PROJECT_NAME}"
+             COMPILE_PDB_NAME_DEBUG "${PROJECT_NAME}"
 )
 
 set_target_properties(
