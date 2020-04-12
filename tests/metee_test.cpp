@@ -70,7 +70,7 @@ TEST_P(MeTeeTEST, PROD_MKHI_SimpleGetVersion)
 	GEN_GET_FW_VERSION_ACK* pResponseMessage; //max length for this client is 2048
 	TEESTATUS status;
 
-	status = TeeInit(&Handle, intf.client, (const char*)intf.device);
+	status = TestTeeInitGUID(&Handle, intf.client, intf.device);
 	if (status == TEE_DEVICE_NOT_FOUND)
 		GTEST_SKIP();
 	ASSERT_EQ(SUCCESS, status);
@@ -108,7 +108,7 @@ TEST_P(MeTeeTEST, PROD_MKHI_TimeoutGetVersion)
 	std::vector <char> MaxResponse;
 	TEESTATUS status;
 
-	status = TeeInit(&Handle, intf.client, (const char*)intf.device);
+	status = TestTeeInitGUID(&Handle, intf.client, intf.device);
 	if (status == TEE_DEVICE_NOT_FOUND)
 		GTEST_SKIP();
 	ASSERT_EQ(SUCCESS, status);
@@ -138,7 +138,7 @@ TEST_P(MeTeeTEST, PROD_MKHI_GetFWStatus)
 
 	Handle.handle = NULL;
 
-	status = TeeInit(&Handle, intf.client, (const char*)intf.device);
+	status = TestTeeInitGUID(&Handle, intf.client, intf.device);
 	if (status == TEE_DEVICE_NOT_FOUND)
 		GTEST_SKIP();
 	ASSERT_EQ(TEE_SUCCESS, status);
@@ -173,7 +173,7 @@ TEST_P(MeTeeNTEST, PROD_N_TestConnectToNullUuid)
 	TEEHANDLE handle = TEEHANDLE_ZERO;
 	struct MeTeeTESTParams intf = GetParam();
 
-	ASSERT_EQ(TEE_INVALID_PARAMETER, TeeInit(&handle, NULL, (const char*)intf.device));
+	ASSERT_EQ(TEE_INVALID_PARAMETER, TestTeeInitGUID(&handle, NULL, intf.device));
 }
 
 TEST_P(MeTeeNTEST, PROD_N_TestConnectToNonExistsUuid)
@@ -182,7 +182,7 @@ TEST_P(MeTeeNTEST, PROD_N_TestConnectToNonExistsUuid)
 	struct MeTeeTESTParams intf = GetParam();
 	TEESTATUS status;
 
-	status = TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, (const char*)intf.device);
+	status = TestTeeInitGUID(&handle, &GUID_NON_EXISTS_CLIENT, intf.device);
 	if (status == TEE_DEVICE_NOT_FOUND)
 		GTEST_SKIP();
 	ASSERT_EQ(TEE_SUCCESS, status);
@@ -193,9 +193,14 @@ TEST_P(MeTeeNTEST, PROD_N_TestConnectToNonExistsUuid)
 TEST_P(MeTeeNTEST, PROD_N_TestLongDevicePath)
 {
 	TEEHANDLE handle = TEEHANDLE_ZERO;
-	const char *longPath = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+	const TEE_PATH_CHAR *longPath = TEE_PATH_TEXT("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.");
 
+#ifdef _WIN32
 	ASSERT_EQ(TEE_DEVICE_NOT_FOUND, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, longPath));
+#else /* _WIN32 */
+	/* TODO: Linux code lose error code in this path */
+	ASSERT_EQ(TEE_INTERNAL_ERROR, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, longPath));
+#endif /* _WIN32 */
 }
 
 TEST_P(MeTeeNTEST, PROD_N_TestLongClientPath)
@@ -205,7 +210,7 @@ TEST_P(MeTeeNTEST, PROD_N_TestLongClientPath)
 	TEESTATUS status;
 	const char *longPath = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
 
-	status = TeeInit(&handle, (const GUID*)longPath, (const char*)intf.device);
+	status = TestTeeInitGUID(&handle, (const GUID*)longPath, intf.device);
 	if (status == TEE_DEVICE_NOT_FOUND)
 		GTEST_SKIP();
 	ASSERT_EQ(TEE_SUCCESS, status);
@@ -220,7 +225,7 @@ TEST_P(MeTeeNTEST, PROD_N_TestGetDriverVersion)
 	teeDriverVersion_t ver = {0, 0, 0, 0};
 	TEESTATUS status;
 
-	status = TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, (const char*)intf.device);
+	status = TestTeeInitGUID(&handle, &GUID_NON_EXISTS_CLIENT, intf.device);
 	if (status == TEE_DEVICE_NOT_FOUND)
 		GTEST_SKIP();
 	ASSERT_EQ(TEE_SUCCESS, status);
@@ -243,7 +248,7 @@ TEST_P(MeTeeNTEST, PROD_N_TestGetDriverVersion_NullParam)
 	struct MeTeeTESTParams intf = GetParam();
 	TEESTATUS status;
 
-	status = TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, (const char*)intf.device);
+	status = TestTeeInitGUID(&handle, &GUID_NON_EXISTS_CLIENT, intf.device);
 	if (status == TEE_DEVICE_NOT_FOUND)
 		GTEST_SKIP();
 	ASSERT_EQ(TEE_SUCCESS, status);
@@ -255,26 +260,27 @@ TEST_P(MeTeeNTEST, PROD_N_TestGetDriverVersion_NullParam)
 TEST_P(MeTeeNTEST, PROD_N_TestConnectByPath)
 {
 	TEEHANDLE handle = TEEHANDLE_ZERO;
+	struct MeTeeTESTParams intf = GetParam();
 	TEESTATUS status;
-	TCHAR     devicePath[MAX_PATH] = {0};
+	wchar_t devicePath[MAX_PATH] = {0};
 
-	status = GetDevicePath(&GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
+	status = GetDevicePath((intf.device) ? intf.device : &GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
 	if (status)
 		GTEST_SKIP();
-	ASSERT_EQ(TEE_SUCCESS, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, devicePath));
+	ASSERT_EQ(TEE_SUCCESS, TeeInit(&handle, intf.client, devicePath));
 }
 
 TEST_P(MeTeeNTEST, PROD_N_TestConnectByWrongPath)
 {
 	TEEHANDLE handle = TEEHANDLE_ZERO;
 
-	ASSERT_EQ(TEE_DEVICE_NOT_FOUND, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, "\\NO_SUCH_DEVICE"));
+	ASSERT_EQ(TEE_DEVICE_NOT_FOUND, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, L"\\NO_SUCH_DEVICE"));
 }
 
 TEST_P(MeTeeNTEST, PROD_N_TestConnectByLongPath)
 {
 	TEEHANDLE handle = TEEHANDLE_ZERO;
-	const char *longPath = "\\Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+	const wchar_t *longPath = L"\\Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
 
 	ASSERT_EQ(TEE_DEVICE_NOT_FOUND, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, longPath));
 }

@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <windows.h>
 #include <initguid.h>
-#include <tchar.h>
+#include <wchar.h>
 #include "helpers.h"
 #include "Public.h"
 #include "metee.h"
@@ -358,10 +358,10 @@ Cleanup:
 **		TEE_INVALID_PARAMETER
 **		TEE_INTERNAL_ERROR
 */
-TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid, _Out_writes_(pathSize) PTCHAR path, _In_ SIZE_T pathSize)
+TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid, _Out_writes_(pathSize) wchar_t *path, _In_ SIZE_T pathSize)
 {
-	CONFIGRET      cr						  = CR_SUCCESS;
-	PWSTR		  deviceInterfaceList         = NULL;
+	CONFIGRET     cr                          = CR_SUCCESS;
+	wchar_t      *deviceInterfaceList         = NULL;
 	ULONG         deviceInterfaceListLength   = 0;
 	HRESULT       hr                          = E_FAIL;
 	TEESTATUS     status                      = TEE_INTERNAL_ERROR;
@@ -376,7 +376,7 @@ TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid, _Out_writes_(pathSize) PTCHA
 
 	path[0] = 0x00;
 
-	cr = CM_Get_Device_Interface_List_Size(
+	cr = CM_Get_Device_Interface_List_SizeW(
 		&deviceInterfaceListLength,
 		(LPGUID)InterfaceGuid,
 		NULL,
@@ -393,15 +393,15 @@ TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid, _Out_writes_(pathSize) PTCHA
 		goto Cleanup;
 	}
 
-	deviceInterfaceList = (PWSTR)malloc(deviceInterfaceListLength * sizeof(WCHAR));
+	deviceInterfaceList = (PWSTR)malloc(deviceInterfaceListLength * sizeof(wchar_t));
 	if (deviceInterfaceList == NULL) {
 		ERRPRINT("Error allocating memory for device interface list.\n");
 		status = TEE_INTERNAL_ERROR;
 		goto Cleanup;
 	}
-	ZeroMemory(deviceInterfaceList, deviceInterfaceListLength * sizeof(WCHAR));
+	ZeroMemory(deviceInterfaceList, deviceInterfaceListLength * sizeof(wchar_t));
 
-	cr = CM_Get_Device_Interface_List(
+	cr = CM_Get_Device_Interface_ListW(
 		(LPGUID)InterfaceGuid,
 		NULL,
 		deviceInterfaceList,

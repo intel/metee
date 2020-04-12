@@ -74,6 +74,13 @@ typedef uint16_t TEESTATUS; /**< return status for API functions */
  */
 #define TEE_IS_SUCCESS(Status) (((TEESTATUS)(Status)) == TEE_SUCCESS)
 
+#ifdef _WIN32
+#define TEE_PATH_CHAR wchar_t
+#define TEE_PATH_TEXT(q) L##q
+#else /* _WIN32 */
+#define TEE_PATH_CHAR char
+#define TEE_PATH_TEXT(q) q
+#endif /* _WIN32 */
 
 /*! Initializes a TEE connection
  *  \param handle A handle to the TEE device. All subsequent calls to the lib's functions
@@ -82,7 +89,18 @@ typedef uint16_t TEESTATUS; /**< return status for API functions */
  *  \param device optional device path, set NULL to use default
  *  \return 0 if successful, otherwise error code
  */
-TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const char *device);
+TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const TEE_PATH_CHAR *device);
+
+#ifdef _WIN32
+/*! Initializes a TEE connection
+ *  \param handle A handle to the TEE device. All subsequent calls to the lib's functions
+ *         must be with this handle
+ *  \param guid GUID of the FW client that want to start a session
+ *  \param device optional device class GUID, set NULL to use default - use the first device from that class
+ *  \return 0 if successful, otherwise error code
+ */
+TEESTATUS TEEAPI TeeInitGUID(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const GUID *device);
+#endif /* _WIN32 */
 
 /*! Connects to the TEE driver and starts a session
  *  \param handle A handle to the TEE device

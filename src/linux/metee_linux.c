@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2019 Intel Corporation
+ * Copyright (C) 2014-2020 Intel Corporation
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,7 +61,7 @@ static inline TEESTATUS errno2status(int err)
 	}
 }
 
-TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const char *device)
+TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const TEE_PATH_CHAR *device)
 {
 	struct mei *me;
 	TEESTATUS  status;

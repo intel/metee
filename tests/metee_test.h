@@ -29,6 +29,21 @@ namespace testing {
 	}
 }
 
+#ifdef _WIN32
+inline TEESTATUS TestTeeInitGUID(PTEEHANDLE handle, const GUID *guid, const GUID *device)
+{
+	if (device != NULL)
+		return TeeInitGUID(handle, guid, device);
+	else
+		return TeeInit(handle, guid, NULL);
+}
+#else /* _WIN32 */
+inline TEESTATUS TestTeeInitGUID(PTEEHANDLE handle, const GUID *guid, const GUID *device)
+{
+	return TeeInit(handle, guid, NULL);
+}
+#endif /* _WIN32 */
+
 struct MeTeeTESTParams {
 	const char *name;
 	const GUID *device;
@@ -120,7 +135,7 @@ public:
 #endif
 		_handle.handle = NULL;
 
-		status = TeeInit(&_handle, intf.client, (const char*)intf.device);
+		status = TestTeeInitGUID(&_handle, intf.client, intf.device);
 		if (status == TEE_DEVICE_NOT_FOUND)
 			GTEST_SKIP();
 		ASSERT_EQ(TEE_SUCCESS, status);

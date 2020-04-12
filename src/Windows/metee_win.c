@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <windows.h>
 #include <initguid.h>
-#include <tchar.h>
+#include <wchar.h>
 #include "helpers.h"
 #include "Public.h"
 #include "metee.h"
@@ -15,25 +15,13 @@ static inline struct METEE_WIN_IMPL *to_int(PTEEHANDLE _h)
 	return _h ? (struct METEE_WIN_IMPL *)_h->handle : NULL;
 }
 
-/**********************************************************************
- **                          TEE Lib Function                         *
- **********************************************************************/
-TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const char *device)
+TEESTATUS TEEAPI __TeeInit(PTEEHANDLE handle, const GUID *guid, const TEE_PATH_CHAR *devicePath)
 {
 	TEESTATUS       status               = INIT_STATUS;
-	TCHAR           devicePath[MAX_PATH] = {0};
-	const TCHAR     *devicePathP         = NULL;
 	HANDLE          deviceHandle         = INVALID_HANDLE_VALUE;
-	LPCGUID         currentUUID          = NULL;
 	struct METEE_WIN_IMPL *impl_handle   = NULL;
 
 	FUNC_ENTRY();
-
-	if (NULL == guid || NULL == handle) {
-		status = TEE_INVALID_PARAMETER;
-		ERRPRINT("One of the parameters was illegal");
-		goto Cleanup;
-	}
 
 	impl_handle = (struct METEE_WIN_IMPL *)malloc(sizeof(*impl_handle));
 	if (NULL == impl_handle) {
@@ -45,28 +33,8 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIO
 	__tee_init_handle(handle);
 	handle->handle = impl_handle;
 
-	if (device != NULL) {
-		if (device[0] == '\\')
-			devicePathP = (const TCHAR*)device;
-		else
-			currentUUID = (LPCGUID)device;
-	}
-	else {
-		currentUUID = &GUID_DEVINTERFACE_HECI;
-	}
-
-	if (!devicePathP) {
-		// get device path
-		status = GetDevicePath(currentUUID, devicePath, MAX_PATH);
-		if (status) {
-			ERRPRINT("Error in GetDevicePath, error: %d\n", status);
-			goto Cleanup;
-		}
-		devicePathP = devicePath;
-	}
-
 	// create file
-	deviceHandle = CreateFile(devicePathP,
+	deviceHandle = CreateFile(devicePath,
 					GENERIC_READ | GENERIC_WRITE,
 					FILE_SHARE_READ | FILE_SHARE_WRITE,
 					NULL,
@@ -77,7 +45,7 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIO
 	if (deviceHandle == INVALID_HANDLE_VALUE) {
 		DWORD err = GetLastError();
 		ERRPRINT("Error in CreateFile, error: %lu\n", err);
-		if (err == ERROR_FILE_NOT_FOUND)
+		if (err == ERROR_FILE_NOT_FOUND || err == ERROR_PATH_NOT_FOUND)
 			status = TEE_DEVICE_NOT_FOUND;
 		else
 			status = TEE_DEVICE_NOT_READY;
@@ -108,6 +76,73 @@ Cleanup:
 
 	return status;
 }
+
+/**********************************************************************
+ **                          TEE Lib Function                         *
+ **********************************************************************/
+TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const TEE_PATH_CHAR *device)
+{
+	TEESTATUS       status               = INIT_STATUS;
+	wchar_t         devicePath[MAX_PATH] = {0};
+	const wchar_t  *devicePathP          = NULL;
+
+	FUNC_ENTRY();
+
+	if (NULL == guid || NULL == handle) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT("One of the parameters was illegal");
+		return status;
+	}
+
+	if (device != NULL) {
+		devicePathP = device;
+	}
+	else {
+		status = GetDevicePath(&GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
+		if (status) {
+			ERRPRINT("Error in GetDevicePath, error: %d\n", status);
+			return status;
+		}
+		devicePathP = devicePath;
+	}
+
+	status = __TeeInit(handle, guid, devicePathP);
+
+	FUNC_EXIT(status);
+
+	return status;
+}
+
+TEESTATUS TEEAPI TeeInitGUID(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const GUID *device)
+{
+	TEESTATUS       status               = INIT_STATUS;
+	wchar_t         devicePath[MAX_PATH] = {0};
+	LPCGUID         currentUUID          = NULL;
+
+	FUNC_ENTRY();
+
+	if (NULL == guid || NULL == handle) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT("One of the parameters was illegal");
+		return status;
+	}
+
+	currentUUID = (device != NULL) ? device : &GUID_DEVINTERFACE_HECI;
+
+	// get device path
+	status = GetDevicePath(currentUUID, devicePath, MAX_PATH);
+	if (status) {
+		ERRPRINT("Error in GetDevicePath, error: %d\n", status);
+		return status;
+	}
+
+	status = __TeeInit(handle, guid, devicePath);
+
+	FUNC_EXIT(status);
+
+	return status;
+}
+
 
 TEESTATUS TEEAPI TeeConnect(OUT PTEEHANDLE handle)
 {
