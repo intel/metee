@@ -6,6 +6,7 @@
 #define __TEELIBWIN_H
 
 #include <Windows.h>
+#include <stdbool.h>
 #include "metee.h"
 #if (_MSC_PLATFORM_TOOLSET < 140)
 #ifndef _Out_writes_
@@ -20,7 +21,8 @@ struct METEE_WIN_IMPL
 {
 	HANDLE handle;            /**< file descriptor - Handle to the Device File */
 	GUID   guid;              /**< fw client guid */
-	LPOVERLAPPED evt;         /**< event for executing async*/
+	LPOVERLAPPED evt;         /**< event for executing async */
+	bool close_on_exit;       /**< close handle on exit */
 };
 
 /*********************************************************************

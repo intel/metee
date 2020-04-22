@@ -29,6 +29,7 @@ TEESTATUS TEEAPI __TeeInit(PTEEHANDLE handle, const GUID *guid, const char *devi
 		ERRPRINT("Can't allocate memory for internal struct");
 		goto Cleanup;
 	}
+	impl_handle->close_on_exit = true;
 
 	__tee_init_handle(handle);
 	handle->handle = impl_handle;
@@ -137,6 +138,46 @@ TEESTATUS TEEAPI TeeInitGUID(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN O
 	}
 
 	status = __TeeInit(handle, guid, devicePath);
+
+	FUNC_EXIT(status);
+
+	return status;
+}
+
+TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
+			       IN const TEE_DEVICE_HANDLE device_handle)
+{
+	TEESTATUS              status        = INIT_STATUS;
+	struct METEE_WIN_IMPL *impl_handle   = NULL;
+	error_status_t         result;
+
+	FUNC_ENTRY();
+
+	impl_handle = (struct METEE_WIN_IMPL *)malloc(sizeof(*impl_handle));
+	if (NULL == impl_handle) {
+		status = TEE_INTERNAL_ERROR;
+		ERRPRINT("Can't allocate memory for internal struct");
+		goto Cleanup;
+	}
+	impl_handle->close_on_exit = false;
+	impl_handle->handle = device_handle;
+	result = memcpy_s(&impl_handle->guid, sizeof(impl_handle->guid), guid, sizeof(GUID));
+	if (result != 0) {
+		ERRPRINT("Error in in guid copy: result %u\n", result);
+		status = TEE_UNABLE_TO_COMPLETE_OPERATION;
+	}
+
+	__tee_init_handle(handle);
+	handle->handle = impl_handle;
+
+	status = TEE_SUCCESS;
+
+Cleanup:
+
+	if (TEE_SUCCESS != status) {
+		if (impl_handle)
+			free(impl_handle);
+	}
 
 	FUNC_EXIT(status);
 
@@ -333,7 +374,8 @@ VOID TEEAPI TeeDisconnect(IN PTEEHANDLE handle)
 		}
 	}
 
-	CloseHandle(impl_handle->handle);
+	if (impl_handle->close_on_exit)
+		CloseHandle(impl_handle->handle);
 	free(impl_handle);
 	handle->handle = NULL;
 

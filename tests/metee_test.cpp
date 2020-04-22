@@ -52,6 +52,40 @@ std::string GetErrorString(unsigned long LastError)
 }
 #endif // WIN32
 
+// Open MEI with default path
+#ifdef WIN32
+void MeTeeFDTEST::OpenMEI()
+{
+	DWORD status;
+	char devicePath[MAX_PATH] = {0};
+
+	deviceHandle = TEE_INVALID_DEVICE_HANDLE;
+	status = GetDevicePath(&GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
+	if (status)
+		return;
+	deviceHandle = CreateFileA(devicePath,
+					GENERIC_READ | GENERIC_WRITE,
+					FILE_SHARE_READ | FILE_SHARE_WRITE,
+					NULL,
+					OPEN_EXISTING,
+					FILE_FLAG_OVERLAPPED,
+					NULL);
+}
+void MeTeeFDTEST::CloseMEI()
+{
+	CloseHandle(deviceHandle);
+}
+#else
+void MeTeeFDTEST::OpenMEI()
+{
+	deviceHandle = open(MEI_DEFAULT_DEVICE, O_RDWR);
+}
+void MeTeeFDTEST::CloseMEI()
+{
+	close(deviceHandle);
+}
+#endif // WIN32
+
 /*
 Send GetVersion Command to HCI / MKHI
 1) Open Connection to MKHI
@@ -322,6 +356,58 @@ TEST_P(MeTeeDataNTEST, PROD_N_TestSmallBufferRead)
 }
 #endif // WIN32
 
+TEST_P(MeTeeFDTEST, PROD_MKHI_SimpleGetVersion)
+{
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
+	size_t NumberOfBytes = 0;
+	struct MeTeeTESTParams intf = GetParam();
+	std::vector <char> MaxResponse;
+	GEN_GET_FW_VERSION_ACK* pResponseMessage; //max length for this client is 2048
+	TEESTATUS status;
+
+	status = TeeInitHandle(&Handle, intf.client, deviceHandle);
+	ASSERT_EQ(SUCCESS, status);
+	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+	ASSERT_EQ(SUCCESS, TeeConnect(&Handle));
+
+
+	MaxResponse.resize(Handle.maxMsgLen*sizeof(char));
+	ASSERT_EQ(SUCCESS, TeeWrite(&Handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), &NumberOfBytes, 0));
+	ASSERT_EQ(sizeof(GEN_GET_FW_VERSION), NumberOfBytes);
+
+	ASSERT_EQ(SUCCESS, TeeRead(&Handle, &MaxResponse[0], Handle.maxMsgLen, &NumberOfBytes, 0));
+	pResponseMessage = (GEN_GET_FW_VERSION_ACK*)(&MaxResponse[0]);
+
+	ASSERT_EQ(SUCCESS, pResponseMessage->Header.Fields.Result);
+	EXPECT_NE(0, pResponseMessage->Data.FWVersion.CodeMajor);
+	EXPECT_NE(0, pResponseMessage->Data.FWVersion.CodeBuildNo);
+
+	TeeDisconnect(&Handle);
+	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+}
+
+TEST_P(MeTeeFDTEST, PROD_MKHI_GetFWStatus)
+{
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
+	uint32_t fwStatusNum;
+	uint32_t fwStatus;
+	struct MeTeeTESTParams intf = GetParam();
+	TEESTATUS status;
+
+	status = TeeInitHandle(&Handle, intf.client, deviceHandle);
+	ASSERT_EQ(TEE_SUCCESS, status);
+	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+
+	//FWSTS1
+	fwStatusNum = 0;
+	ASSERT_EQ(SUCCESS, TeeFWStatus(&Handle, fwStatusNum, &fwStatus));
+	EXPECT_NE(0, fwStatus);
+
+	TeeDisconnect(&Handle);
+	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+}
+
+
 struct MeTeeTESTParams interfaces[1] = {
 	{"PCH", NULL, &GUID_DEVINTERFACE_MKHI}};
 
@@ -340,5 +426,11 @@ INSTANTIATE_TEST_SUITE_P(MeTeeNTESTInstance, MeTeeNTEST,
 INSTANTIATE_TEST_SUITE_P(MeTeeDataNTESTInstance, MeTeeDataNTEST,
 		testing::ValuesIn(interfaces),
 		[](const testing::TestParamInfo<MeTeeDataNTEST::ParamType>& info) {
+			return info.param.name;
+		});
+
+INSTANTIATE_TEST_SUITE_P(MeTeeFDTESTInstance, MeTeeFDTEST,
+		testing::ValuesIn(interfaces),
+		[](const testing::TestParamInfo<MeTeeFDTEST::ParamType>& info) {
 			return info.param.name;
 		});

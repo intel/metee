@@ -94,6 +94,16 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIO
 TEESTATUS TEEAPI TeeInitGUID(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const GUID *device);
 #endif /* _WIN32 */
 
+/*! Initializes a TEE connection
+ *  \param handle A handle to the TEE device. All subsequent calls to the lib's functions
+ *         must be with this handle
+ *  \param guid GUID of the FW client that want to start a session
+ *  \param device_handle open file handle
+ *  \return 0 if successful, otherwise error code
+ */
+TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
+			       IN const TEE_DEVICE_HANDLE device_handle);
+
 /*! Connects to the TEE driver and starts a session
  *  \param handle A handle to the TEE device
  *  \return 0 if successful, otherwise error code

@@ -94,6 +94,40 @@ End:
 	return status;
 }
 
+TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
+			       IN const TEE_DEVICE_HANDLE device_handle)
+{
+	struct mei *me;
+	TEESTATUS  status;
+#if defined(DEBUG) && !defined(SYSLOG)
+	bool verbose = true;
+#else
+	bool verbose = false;
+#endif // DEBUG and !SYSLOG
+
+	FUNC_ENTRY();
+
+	if (guid == NULL || handle == NULL) {
+		ERRPRINT("One of the parameters was illegal");
+		status = TEE_INVALID_PARAMETER;
+		goto End;
+	}
+
+	__tee_init_handle(handle);
+	me = mei_alloc_fd(device_handle, guid, 0, verbose);
+	if (!me) {
+		ERRPRINT("Cannot init mei structure\n");
+		status = TEE_INTERNAL_ERROR;
+		goto End;
+	}
+	handle->handle = me;
+	status = TEE_SUCCESS;
+
+End:
+	FUNC_EXIT(status);
+	return status;
+}
+
 TEESTATUS TEEAPI TeeConnect(IN OUT PTEEHANDLE handle)
 {
 	struct mei *me = to_mei(handle);

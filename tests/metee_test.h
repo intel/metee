@@ -121,6 +121,37 @@ public:
 	GEN_GET_FW_VERSION MkhiRequest;
 };
 
+class MeTeeFDTEST : public ::testing::TestWithParam<struct MeTeeTESTParams> {
+public:
+	MeTeeFDTEST() {
+		// initialization code here
+	}
+
+	void SetUp() {
+		OpenMEI();
+		if (deviceHandle == TEE_INVALID_DEVICE_HANDLE)
+			GTEST_SKIP();
+		MkhiRequest.Header.Fields.Command = GEN_GET_FW_VERSION_CMD;
+		MkhiRequest.Header.Fields.GroupId = MKHI_GEN_GROUP_ID;
+		MkhiRequest.Header.Fields.IsResponse = 0;
+	}
+
+	void TearDown() {
+		CloseMEI();
+		std::this_thread::sleep_for(std::chrono::milliseconds(100)); //Is it helping?
+	}
+
+	~MeTeeFDTEST() {
+		// cleanup any pending stuff, but no exceptions allowed
+	}
+	GEN_GET_FW_VERSION MkhiRequest;
+private:
+	void OpenMEI();
+	void CloseMEI();
+public:
+	TEE_DEVICE_HANDLE deviceHandle;
+};
+
 class MeTeeDataNTEST : public ::testing::TestWithParam<struct MeTeeTESTParams> {
 public:
 	MeTeeDataNTEST() {
