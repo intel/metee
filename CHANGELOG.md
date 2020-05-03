@@ -1,3 +1,24 @@
+## [2.2.1]
+
+### Added
+ - Enable gitlint, cmake-format, codespell checking
+ - Added .gitattributes
+
+### Changed
+ - Reformat cmake files
+ - Update .gitignore
+ - convert CHANGELOG to Markdown format
+
+### Fixed
+ - Add -D_GNU_SOURCE for strdup and other functions.
+ - Fix spelling errors in the library.
+ - Windows: enlarge debug output buffer.
+ - Windows: return right size of processed data.
+ - Windows: fix connect to the externally provided guid.
+ - Fix debug print.
+ - Fix miscellaneous code issues.
+
+
 ## [2.2.0]
 
 ### Added
