@@ -1,8 +1,17 @@
+## [2.2.2]
+
+### Added
+
+### Changed
+
+### Fixed
+ - Windows: fix package target in cmake.
+
 ## [2.2.1]
 
 ### Added
- - Enable gitlint, cmake-format, codespell checking
- - Added .gitattributes
+ - Enable gitlint, cmake-format, codespell checking.
+ - Added .gitattributes.
 
 ### Changed
  - Reformat cmake files
