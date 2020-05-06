@@ -62,10 +62,9 @@ Send GetVersion Command to HCI / MKHI
 */
 TEST_P(MeTeeTEST, PROD_MKHI_SimpleGetVersion)
 {
-	TEEHANDLE Handle;
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
 	size_t NumberOfBytes = 0;
 	struct MeTeeTESTParams intf = GetParam();
-	Handle.handle = NULL;
 	std::vector <char> MaxResponse;
 	GEN_GET_FW_VERSION_ACK* pResponseMessage; //max length for this client is 2048
 	TEESTATUS status;
@@ -101,10 +100,9 @@ Wait for timeout on recv data without send
 */
 TEST_P(MeTeeTEST, PROD_MKHI_TimeoutGetVersion)
 {
-	TEEHANDLE Handle;
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
 	size_t NumberOfBytes = 0;
 	struct MeTeeTESTParams intf = GetParam();
-	Handle.handle = NULL;
 	std::vector <char> MaxResponse;
 	TEESTATUS status;
 
@@ -130,13 +128,11 @@ Obtain FW status
 */
 TEST_P(MeTeeTEST, PROD_MKHI_GetFWStatus)
 {
-	TEEHANDLE Handle;
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
 	uint32_t fwStatusNum;
 	uint32_t fwStatus;
 	struct MeTeeTESTParams intf = GetParam();
 	TEESTATUS status;
-
-	Handle.handle = NULL;
 
 	status = TestTeeInitGUID(&Handle, intf.client, intf.device);
 	if (status == TEE_DEVICE_NOT_FOUND)

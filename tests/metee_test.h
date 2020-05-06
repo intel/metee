@@ -9,6 +9,7 @@
 #include "gtest/gtest.h"
 
 #include "metee.h"
+#include "helpers.h"
 #ifdef WIN32
 #include <windows.h>
 #else
@@ -124,6 +125,7 @@ class MeTeeDataNTEST : public ::testing::TestWithParam<struct MeTeeTESTParams> {
 public:
 	MeTeeDataNTEST() {
 		// initialization code here
+		__tee_init_handle(&_handle);
 	}
 
 	void SetUp() {
