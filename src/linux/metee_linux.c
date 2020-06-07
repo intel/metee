@@ -61,7 +61,7 @@ static inline TEESTATUS errno2status(int err)
 	}
 }
 
-TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const TEE_PATH_CHAR *device)
+TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const char *device)
 {
 	struct mei *me;
 	TEESTATUS  status;

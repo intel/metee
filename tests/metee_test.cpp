@@ -189,7 +189,7 @@ TEST_P(MeTeeNTEST, PROD_N_TestConnectToNonExistsUuid)
 TEST_P(MeTeeNTEST, PROD_N_TestLongDevicePath)
 {
 	TEEHANDLE handle = TEEHANDLE_ZERO;
-	const TEE_PATH_CHAR *longPath = TEE_PATH_TEXT("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.");
+	const char *longPath = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
 
 #ifdef _WIN32
 	ASSERT_EQ(TEE_DEVICE_NOT_FOUND, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, longPath));
@@ -258,7 +258,7 @@ TEST_P(MeTeeNTEST, PROD_N_TestConnectByPath)
 	TEEHANDLE handle = TEEHANDLE_ZERO;
 	struct MeTeeTESTParams intf = GetParam();
 	TEESTATUS status;
-	wchar_t devicePath[MAX_PATH] = {0};
+	char devicePath[MAX_PATH] = {0};
 
 	status = GetDevicePath((intf.device) ? intf.device : &GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
 	if (status)
@@ -270,13 +270,13 @@ TEST_P(MeTeeNTEST, PROD_N_TestConnectByWrongPath)
 {
 	TEEHANDLE handle = TEEHANDLE_ZERO;
 
-	ASSERT_EQ(TEE_DEVICE_NOT_FOUND, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, L"\\NO_SUCH_DEVICE"));
+	ASSERT_EQ(TEE_DEVICE_NOT_FOUND, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, "\\NO_SUCH_DEVICE"));
 }
 
 TEST_P(MeTeeNTEST, PROD_N_TestConnectByLongPath)
 {
 	TEEHANDLE handle = TEEHANDLE_ZERO;
-	const wchar_t *longPath = L"\\Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+	const char *longPath = "\\Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
 
 	ASSERT_EQ(TEE_DEVICE_NOT_FOUND, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, longPath));
 }

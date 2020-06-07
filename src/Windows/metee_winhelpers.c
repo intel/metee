@@ -5,7 +5,6 @@
 #include <assert.h>
 #include <windows.h>
 #include <initguid.h>
-#include <wchar.h>
 #include "helpers.h"
 #include "Public.h"
 #include "metee.h"
@@ -359,10 +358,10 @@ Cleanup:
 **		TEE_INVALID_PARAMETER
 **		TEE_INTERNAL_ERROR
 */
-TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid, _Out_writes_(pathSize) wchar_t *path, _In_ SIZE_T pathSize)
+TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid, _Out_writes_(pathSize) char *path, _In_ SIZE_T pathSize)
 {
 	CONFIGRET     cr                          = CR_SUCCESS;
-	wchar_t      *deviceInterfaceList         = NULL;
+	char         *deviceInterfaceList         = NULL;
 	ULONG         deviceInterfaceListLength   = 0;
 	HRESULT       hr                          = E_FAIL;
 	TEESTATUS     status                      = TEE_INTERNAL_ERROR;
@@ -377,7 +376,7 @@ TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid, _Out_writes_(pathSize) wchar
 
 	path[0] = 0x00;
 
-	cr = CM_Get_Device_Interface_List_SizeW(
+	cr = CM_Get_Device_Interface_List_SizeA(
 		&deviceInterfaceListLength,
 		(LPGUID)InterfaceGuid,
 		NULL,
@@ -394,15 +393,15 @@ TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid, _Out_writes_(pathSize) wchar
 		goto Cleanup;
 	}
 
-	deviceInterfaceList = (PWSTR)malloc(deviceInterfaceListLength * sizeof(wchar_t));
+	deviceInterfaceList = (char*)malloc(deviceInterfaceListLength * sizeof(char));
 	if (deviceInterfaceList == NULL) {
 		ERRPRINT("Error allocating memory for device interface list.\n");
 		status = TEE_INTERNAL_ERROR;
 		goto Cleanup;
 	}
-	ZeroMemory(deviceInterfaceList, deviceInterfaceListLength * sizeof(wchar_t));
+	ZeroMemory(deviceInterfaceList, deviceInterfaceListLength * sizeof(char));
 
-	cr = CM_Get_Device_Interface_ListW(
+	cr = CM_Get_Device_Interface_ListA(
 		(LPGUID)InterfaceGuid,
 		NULL,
 		deviceInterfaceList,
@@ -414,7 +413,7 @@ TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid, _Out_writes_(pathSize) wchar
 		goto Cleanup;
 	}
 
-	hr = StringCchCopy(path, pathSize, deviceInterfaceList);
+	hr = StringCchCopyA(path, pathSize, deviceInterfaceList);
 	if (FAILED(hr)) {
 		status = TEE_INTERNAL_ERROR;
 		ERRPRINT("Error: StringCchCopy failed with HRESULT 0x%x", hr);

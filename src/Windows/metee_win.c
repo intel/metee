@@ -5,7 +5,6 @@
 #include <assert.h>
 #include <windows.h>
 #include <initguid.h>
-#include <wchar.h>
 #include "helpers.h"
 #include "Public.h"
 #include "metee.h"
@@ -16,7 +15,7 @@ static inline struct METEE_WIN_IMPL *to_int(PTEEHANDLE _h)
 	return _h ? (struct METEE_WIN_IMPL *)_h->handle : NULL;
 }
 
-TEESTATUS TEEAPI __TeeInit(PTEEHANDLE handle, const GUID *guid, const TEE_PATH_CHAR *devicePath)
+TEESTATUS TEEAPI __TeeInit(PTEEHANDLE handle, const GUID *guid, const char *devicePath)
 {
 	TEESTATUS       status               = INIT_STATUS;
 	HANDLE          deviceHandle         = INVALID_HANDLE_VALUE;
@@ -35,7 +34,7 @@ TEESTATUS TEEAPI __TeeInit(PTEEHANDLE handle, const GUID *guid, const TEE_PATH_C
 	handle->handle = impl_handle;
 
 	// create file
-	deviceHandle = CreateFile(devicePath,
+	deviceHandle = CreateFileA(devicePath,
 					GENERIC_READ | GENERIC_WRITE,
 					FILE_SHARE_READ | FILE_SHARE_WRITE,
 					NULL,
@@ -81,11 +80,11 @@ Cleanup:
 /**********************************************************************
  **                          TEE Lib Function                         *
  **********************************************************************/
-TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const TEE_PATH_CHAR *device)
+TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const char *device)
 {
-	TEESTATUS       status               = INIT_STATUS;
-	wchar_t         devicePath[MAX_PATH] = {0};
-	const wchar_t  *devicePathP          = NULL;
+	TEESTATUS   status               = INIT_STATUS;
+	char        devicePath[MAX_PATH] = {0};
+	const char *devicePathP          = NULL;
 
 	FUNC_ENTRY();
 
@@ -116,9 +115,9 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIO
 
 TEESTATUS TEEAPI TeeInitGUID(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const GUID *device)
 {
-	TEESTATUS       status               = INIT_STATUS;
-	wchar_t         devicePath[MAX_PATH] = {0};
-	LPCGUID         currentUUID          = NULL;
+	TEESTATUS status               = INIT_STATUS;
+	char      devicePath[MAX_PATH] = {0};
+	LPCGUID   currentUUID          = NULL;
 
 	FUNC_ENTRY();
 
