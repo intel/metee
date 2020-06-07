@@ -9,6 +9,7 @@
 #include "helpers.h"
 #include "Public.h"
 #include "metee.h"
+#include "metee_win.h"
 #include <cfgmgr32.h>
 #include <Objbase.h>
 #include <Devpkey.h>

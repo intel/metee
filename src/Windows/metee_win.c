@@ -9,6 +9,7 @@
 #include "helpers.h"
 #include "Public.h"
 #include "metee.h"
+#include "metee_win.h"
 
 static inline struct METEE_WIN_IMPL *to_int(PTEEHANDLE _h)
 {

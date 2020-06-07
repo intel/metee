@@ -9,7 +9,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include "metee_win.h"
+#include "metee.h"
 
 	#if _DEBUG
 		#define PRINTS_ENABLE
