@@ -2,20 +2,21 @@
 /*
  * Copyright (C) 2014-2020 Intel Corporation
  */
+#include <errno.h>
+#include <fcntl.h>
+#include <libmei.h>
+#include <linux/mei.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
 #include <unistd.h>
-#include <errno.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <linux/mei.h>
+
 #include "metee.h"
 #include "helpers.h"
-#include <libmei.h>
 
 /* use inline function instead of macro to avoid -Waddress warning in GCC */
 static inline struct mei *to_mei(PTEEHANDLE _h) __attribute__((always_inline));
