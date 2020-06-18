@@ -19,13 +19,31 @@ extern "C" {
 	#include <Windows.h>
 	#include <initguid.h>
 
-	#define TEEAPI __stdcall
+	#ifndef METEE_DLL
+		#define METEE_DLL_API
+	#else /* METEE_DLL */
+		#ifdef METEE_DLL_EXPORT
+			#define METEE_DLL_API __declspec(dllexport)
+		#else
+			#define METEE_DLL_API __declspec(dllimport)
+		#endif /* METEE_DLL_EXPORT */
+	#endif /* METEE_DLL */
+	#define TEEAPI METEE_DLL_API __stdcall
 	#define TEE_DEVICE_HANDLE HANDLE
 	#define TEE_INVALID_DEVICE_HANDLE ((void*)0)
 #else /* _WIN32 */
 	#include <linux/uuid.h>
 
-	#define TEEAPI
+	#ifndef METEE_DLL
+		#define METEE_DLL_API
+	#else /* METEE_DLL */
+		#ifdef METEE_DLL_EXPORT
+			#define METEE_DLL_API __attribute__((__visibility__("default")))
+		#else
+			#define METEE_DLL_API
+		#endif /* METEE_DLL_EXPORT */
+	#endif /* METEE_DLL */
+	#define TEEAPI METEE_DLL_API
 	#define GUID uuid_le
 	#define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
 		const uuid_le name = UUID_LE(l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8)

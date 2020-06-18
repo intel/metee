@@ -15,7 +15,7 @@ static inline struct METEE_WIN_IMPL *to_int(PTEEHANDLE _h)
 	return _h ? (struct METEE_WIN_IMPL *)_h->handle : NULL;
 }
 
-TEESTATUS TEEAPI __TeeInit(PTEEHANDLE handle, const GUID *guid, const char *devicePath)
+TEESTATUS __TeeInit(PTEEHANDLE handle, const GUID *guid, const char *devicePath)
 {
 	TEESTATUS       status               = INIT_STATUS;
 	HANDLE          deviceHandle         = INVALID_HANDLE_VALUE;

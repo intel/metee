@@ -43,7 +43,11 @@ add_subdirectory(
   ${CMAKE_CURRENT_BINARY_DIR}/googletest-build EXCLUDE_FROM_ALL
 )
 
-add_executable(${PROJECT_NAME} Main.cpp metee_test.cpp)
+add_executable(${PROJECT_NAME}
+  Main.cpp
+  metee_test.cpp
+  $<$<BOOL:${WIN32}>:${CMAKE_SOURCE_DIR}/src/Windows/metee_winhelpers.c>
+)
 
 target_link_libraries(${PROJECT_NAME} metee gtest_main)
 

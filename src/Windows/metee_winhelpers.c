@@ -28,7 +28,7 @@
 **		TEE_INVALID_PARAMETER
 **		TEE_INTERNAL_ERROR
 */
-TEESTATUS TEEAPI BeginOverlappedInternal(IN TEE_OPERATION operation, IN HANDLE handle, IN PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt)
+TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation, IN HANDLE handle, IN PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt)
 {
 	TEESTATUS       status          = INIT_STATUS;
 	EVENTHANDLE     pOverlapped     = NULL;
@@ -104,7 +104,7 @@ Cleanup:
 
 }
 
-TEESTATUS TEEAPI EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesTransferred)
+TEESTATUS EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesTransferred)
 {
 	TEESTATUS       status                  = INIT_STATUS;
 	DWORD           err                     = ERROR_INTERNAL_ERROR;
@@ -184,7 +184,7 @@ exit:
 	return status;
 }
 
-TEESTATUS TEEAPI EndReadInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesRead)
+TEESTATUS EndReadInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesRead)
 
 {
 	TEESTATUS status = INIT_STATUS;
@@ -198,7 +198,7 @@ TEESTATUS TEEAPI EndReadInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD mil
 	return status;
 }
 
-TEESTATUS TEEAPI BeginReadInternal(IN HANDLE handle, IN PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt)
+TEESTATUS BeginReadInternal(IN HANDLE handle, IN PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt)
 
 {
 	TEESTATUS status = INIT_STATUS;
@@ -212,7 +212,7 @@ TEESTATUS TEEAPI BeginReadInternal(IN HANDLE handle, IN PVOID buffer, IN ULONG b
 	return status;
 }
 
-TEESTATUS TEEAPI BeginWriteInternal(IN HANDLE handle, IN const PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt)
+TEESTATUS BeginWriteInternal(IN HANDLE handle, IN const PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt)
 {
 	TEESTATUS status = INIT_STATUS;
 
@@ -225,7 +225,7 @@ TEESTATUS TEEAPI BeginWriteInternal(IN HANDLE handle, IN const PVOID buffer, IN 
 	return status;
 }
 
-TEESTATUS TEEAPI EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesWritten)
+TEESTATUS EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesWritten)
 {
 	TEESTATUS status = INIT_STATUS;
 
@@ -238,7 +238,7 @@ TEESTATUS TEEAPI EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD mi
 	return status;
 }
 
-TEESTATUS TEEAPI BeginOverlapped(IN TEE_OPERATION operation, IN PTEEHANDLE handle, IN PVOID buffer, IN ULONG bufferSize, IN LPTEE_COMPLETION_ROUTINE completionRoutine)
+TEESTATUS BeginOverlapped(IN TEE_OPERATION operation, IN PTEEHANDLE handle, IN PVOID buffer, IN ULONG bufferSize, IN LPTEE_COMPLETION_ROUTINE completionRoutine)
 {
 	TEESTATUS               status                  = INIT_STATUS;
 	TEESTATUS               tempStatus              = INIT_STATUS;

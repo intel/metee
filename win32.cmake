@@ -6,15 +6,17 @@ set(TEE_SOURCES
     src/Windows/metee_winhelpers.c
 )
 
-add_library(${PROJECT_NAME} STATIC ${TEE_SOURCES})
+add_library(${PROJECT_NAME} ${TEE_SOURCES})
 
 if(BUILD_MSVC_RUNTIME_STATIC)
   target_compile_options(${PROJECT_NAME} PRIVATE /MT$<$<CONFIG:Debug>:d>)
 endif()
 
 target_link_libraries(${PROJECT_NAME} CfgMgr32.lib)
-target_compile_definitions(${PROJECT_NAME}
-                           PRIVATE UNICODE _UNICODE
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+                           UNICODE _UNICODE
+                           $<$<BOOL:BUILD_SHARED_LIBS>:METEE_DLL>
+                           $<$<BOOL:BUILD_SHARED_LIBS>:METEE_DLL_EXPORT>
 )
 # Secure compile flags
 target_compile_definitions(${PROJECT_NAME}

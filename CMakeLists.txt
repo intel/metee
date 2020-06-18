@@ -8,6 +8,7 @@ option(BUILD_SAMPLES "Build samples" NO)
 option(BUILD_MSVC_RUNTIME_STATIC "Build with static runtime libraries on MSVC"
        NO
 )
+option(BUILD_SHARED_LIBS "Build shared library" NO)
 
 include(GNUInstallDirs)
 
@@ -35,6 +36,8 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG")
 install(
   TARGETS ${PROJECT_NAME}
   ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+  RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}"
   PUBLIC_HEADER DESTINATION include
 )
 
