@@ -18,6 +18,11 @@
 #include "metee.h"
 #include "helpers.h"
 
+#define MAX_FW_STATUS_NUM 5
+
+#define MILISEC_IN_SEC 1000
+#define MICROSEC_IN_SEC 1000000
+
 /* use inline function instead of macro to avoid -Waddress warning in GCC */
 static inline struct mei *to_mei(PTEEHANDLE _h) __attribute__((always_inline));
 static inline struct mei *to_mei(PTEEHANDLE _h)
@@ -31,8 +36,8 @@ static inline int __mei_select(struct mei *me, bool on_read, unsigned long timeo
 	fd_set rset, wset;
 	struct timeval tv;
 
-	tv.tv_sec =  timeout / 1000;
-	tv.tv_usec = (timeout % 1000) * 1000000;
+	tv.tv_sec =  timeout / MILISEC_IN_SEC;
+	tv.tv_usec = (timeout % MILISEC_IN_SEC) * MICROSEC_IN_SEC;
 
 	FD_ZERO(&rset);
 	FD_ZERO(&wset);
@@ -258,7 +263,7 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 		ERRPRINT("One of the parameters was illegal");
 		goto End;
 	}
-	if (fwStatusNum > 5) {
+	if (fwStatusNum > MAX_FW_STATUS_NUM) {
 		status = TEE_INVALID_PARAMETER;
 		ERRPRINT("fwStatusNum should be 0..5");
 		goto End;
