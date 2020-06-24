@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2024 Intel Corporation
+ * Copyright (C) 2014-2025 Intel Corporation
  */
 #include <memory.h>
 #include <string>
@@ -13,6 +13,7 @@
 #include <gmock/gmock.h>
 
 #include "metee.h"
+#include "meteepp.h"
 #include "helpers.h"
 #ifdef WIN32
 #include <windows.h>
@@ -91,6 +92,43 @@ public:
 		// cleanup any pending stuff, but no exceptions allowed
 	}
 	GEN_GET_FW_VERSION MkhiRequest;
+};
+
+class MeTeePPTEST : public ::testing::TestWithParam<struct MeTeeTESTParams> {
+public:
+	MeTeePPTEST() {
+		// initialization code here
+	}
+
+	void SetUp() {
+		GEN_GET_FW_VERSION req;
+#ifdef _DEBUG
+		printf("Enter ProdTests SetUp\n");
+#endif
+		req.Header.Fields.Command = GEN_GET_FW_VERSION_CMD;
+		req.Header.Fields.GroupId = MKHI_GEN_GROUP_ID;
+		req.Header.Fields.IsResponse = 0;
+		auto ptr = reinterpret_cast<uint8_t*>(&req);
+		MkhiRequest = std::vector<uint8_t>(ptr, ptr + sizeof(GEN_GET_FW_VERSION));
+#ifdef _DEBUG
+		printf("Exit ProdTests SetUp\n");
+#endif
+	}
+
+	void TearDown() {
+#ifdef _DEBUG
+		printf("Enter ProdTests TearDown\n");
+#endif
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+#ifdef _DEBUG
+		printf("Exit ProdTests TearDown\n");
+#endif
+	}
+
+	~MeTeePPTEST() {
+		// cleanup any pending stuff, but no exceptions allowed
+	}
+	std::vector<uint8_t> MkhiRequest;
 };
 
 class MeTeeFDTEST : public ::testing::TestWithParam<struct MeTeeTESTParams> {

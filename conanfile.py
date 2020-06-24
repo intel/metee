@@ -46,4 +46,4 @@ class MeteeConan(ConanFile):
         cmake.install()
 
     def package_info(self):
-        self.cpp_info.libs = ["metee"]
+        self.cpp_info.components["libmetee"].libs = ["metee"]
