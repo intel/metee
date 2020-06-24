@@ -126,6 +126,36 @@ TEST_P(MeTeeTEST, PROD_MKHI_SimpleGetVersion)
 	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
 }
 
+TEST_P(MeTeeTEST, PROD_MKHI_SimpleGetVersionNULLReturn)
+{
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
+	struct MeTeeTESTParams intf = GetParam();
+	std::vector <char> MaxResponse;
+	GEN_GET_FW_VERSION_ACK* pResponseMessage; //max length for this client is 2048
+	TEESTATUS status;
+
+	status = TestTeeInitGUID(&Handle, intf.client, intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(SUCCESS, status);
+	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+	ASSERT_EQ(SUCCESS, TeeConnect(&Handle));
+
+
+	MaxResponse.resize(Handle.maxMsgLen*sizeof(char));
+	ASSERT_EQ(SUCCESS, TeeWrite(&Handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), NULL, 0));
+
+	ASSERT_EQ(SUCCESS, TeeRead(&Handle, &MaxResponse[0], Handle.maxMsgLen, NULL, 0));
+	pResponseMessage = (GEN_GET_FW_VERSION_ACK*)(&MaxResponse[0]);
+
+	ASSERT_EQ(SUCCESS, pResponseMessage->Header.Fields.Result);
+	EXPECT_NE(0, pResponseMessage->Data.FWVersion.CodeMajor);
+	EXPECT_NE(0, pResponseMessage->Data.FWVersion.CodeBuildNo);
+		
+	TeeDisconnect(&Handle);
+	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+}
+
 /*
 Wait for timeout on recv data without send
 1) Open Connection to MKHI
