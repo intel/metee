@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2014-2024 Intel Corporation
+# Copyright (C) 2014-2025 Intel Corporation
 cmake_minimum_required(VERSION 3.15)
 project(metee_test)
 
@@ -46,6 +46,7 @@ add_subdirectory(
 add_executable(${PROJECT_NAME}
   Main.cpp
   metee_test.cpp
+  meteepp_test.cpp
   $<$<BOOL:${WIN32}>:${CMAKE_SOURCE_DIR}/src/Windows/metee_winhelpers.c>
 )
 if(NOT CONSOLE_OUTPUT)
