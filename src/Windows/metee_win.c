@@ -259,7 +259,10 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void* buffer, IN size_t bu
 		ERRPRINT("Error in EndReadInternal, error: %d\n", status);
 		goto Cleanup;
 	}
-	*pNumOfBytesRead = bytesRead;
+	if (pNumOfBytesRead != NULL)
+	{
+		*pNumOfBytesRead = bytesRead;
+	}
 
 	status = TEE_SUCCESS;
 
@@ -304,7 +307,10 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 		ERRPRINT("Error in EndWrite, error: %d\n", status);
 		goto Cleanup;
 	}
-	*numberOfBytesWritten = bytesWritten;
+	if (numberOfBytesWritten != NULL)
+	{
+		*numberOfBytesWritten = bytesWritten;
+	}
 
 	status = TEE_SUCCESS;
 
