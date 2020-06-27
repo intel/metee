@@ -59,7 +59,8 @@ Cleanup:
 
 	if (TEE_SUCCESS == status) {
 		impl_handle->handle = deviceHandle;
-		error_status_t result  = memcpy_s(&impl_handle->guid, sizeof(impl_handle->guid), guid, sizeof(GUID));
+		error_status_t result  = memcpy_s(&impl_handle->guid, sizeof(impl_handle->guid),
+						  guid, sizeof(GUID));
 		if (result != 0) {
 			ERRPRINT("Error in in guid copy: result %u\n", result);
 			status = TEE_UNABLE_TO_COMPLETE_OPERATION;
@@ -81,7 +82,8 @@ Cleanup:
 /**********************************************************************
  **                          TEE Lib Function                         *
  **********************************************************************/
-TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const char *device)
+TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid,
+			 IN OPTIONAL const char *device)
 {
 	TEESTATUS   status               = INIT_STATUS;
 	char        devicePath[MAX_PATH] = {0};
@@ -114,7 +116,8 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIO
 	return status;
 }
 
-TEESTATUS TEEAPI TeeInitGUID(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const GUID *device)
+TEESTATUS TEEAPI TeeInitGUID(IN OUT PTEEHANDLE handle, IN const GUID *guid,
+			     IN OPTIONAL const GUID *device)
 {
 	TEESTATUS status               = INIT_STATUS;
 	char      devicePath[MAX_PATH] = {0};
@@ -376,7 +379,8 @@ VOID TEEAPI TeeDisconnect(IN PTEEHANDLE handle)
 	if (CancelIo(impl_handle->handle)) {
 		ret = WaitForSingleObject(impl_handle->evt, CANCEL_TIMEOUT);
 		if (ret != WAIT_OBJECT_0) {
-			ERRPRINT("Error in WaitForSingleObject, return: %lu, error: %lu\n", ret, GetLastError());
+			ERRPRINT("Error in WaitForSingleObject, return: %lu, error: %lu\n",
+				 ret, GetLastError());
 		}
 	}
 

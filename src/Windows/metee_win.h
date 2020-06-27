@@ -37,13 +37,12 @@ typedef enum _TEE_OPERATION
 } TEE_OPERATION, *PTEE_OPERATION;
 
 /*
-	This callback function is called when an asynchronous TEE operation is completed.
+ * This callback function is called when an asynchronous TEE operation is completed.
 
-	Parameters:
-		status	- The operation status. This parameter is 0 is the operation was successful.
-				Otherwise it returns a Win32 error value.
-		numberOfBytesTransfered - The number of bytes transferred.
-				If an error occurs, this parameter is zero.
+ * @param  status - The operation status. This parameter is 0 is the operation was successful.
+ *                  Otherwise it returns a Win32 error value.
+ * @param  numberOfBytesTransfered - The number of bytes transferred.
+ *                                   If an error occurs, this parameter is zero.
 */
 typedef
 void
@@ -61,18 +60,30 @@ typedef struct _OPERATION_CONTEXT
 
 
 /*********************************************************************
-**					Windows Helper Functions 						**
+**                Windows Helper Functions                          **
 **********************************************************************/
-TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation, IN HANDLE handle, IN PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt);
-TEESTATUS EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesTransferred);
+TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation,
+				 IN HANDLE handle, IN PVOID buffer,
+				 IN ULONG bufferSize, OUT PEVENTHANDLE evt);
+TEESTATUS EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseconds,
+			OUT OPTIONAL LPDWORD pNumberOfBytesTransferred);
 DWORD WINAPI WaitForOperationEnd(LPVOID lpThreadParameter);
-TEESTATUS EndReadInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesRead);
-TEESTATUS BeginReadInternal(IN HANDLE handle, IN PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt);
-TEESTATUS BeginWriteInternal(IN HANDLE handle, IN const PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt);
-TEESTATUS EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds, OUT OPTIONAL LPDWORD pNumberOfBytesWritten);
-TEESTATUS BeginOverlapped(IN TEE_OPERATION operation, IN PTEEHANDLE handle, IN PVOID buffer, IN ULONG bufferSize, IN LPTEE_COMPLETION_ROUTINE completionRoutine);
-TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid, _Out_writes_(pathSize) char *path, _In_ SIZE_T pathSize);
-TEESTATUS SendIOCTL(IN HANDLE handle, IN DWORD ioControlCode, IN LPVOID pInBuffer, IN DWORD inBufferSize, IN LPVOID pOutBuffer, IN DWORD outBufferSize, OUT LPDWORD pBytesRetuned);
+TEESTATUS EndReadInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
+			  OUT OPTIONAL LPDWORD pNumberOfBytesRead);
+TEESTATUS BeginReadInternal(IN HANDLE handle, IN PVOID buffer, IN ULONG bufferSize,
+			    OUT PEVENTHANDLE evt);
+TEESTATUS BeginWriteInternal(IN HANDLE handle,
+			     IN const PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt);
+TEESTATUS EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
+			   OUT OPTIONAL LPDWORD pNumberOfBytesWritten);
+TEESTATUS BeginOverlapped(IN TEE_OPERATION operation, IN PTEEHANDLE handle,
+			  IN PVOID buffer, IN ULONG bufferSize,
+			  IN LPTEE_COMPLETION_ROUTINE completionRoutine);
+TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid,
+			_Out_writes_(pathSize) char *path, _In_ SIZE_T pathSize);
+TEESTATUS SendIOCTL(IN HANDLE handle, IN DWORD ioControlCode, IN LPVOID pInBuffer,
+		    IN DWORD inBufferSize, IN LPVOID pOutBuffer, IN DWORD outBufferSize,
+		    OUT LPDWORD pBytesRetuned);
 TEESTATUS Win32ErrorToTee(_In_ DWORD win32Error);
 
-#endif
+#endif /* __TEELIBWIN_H */

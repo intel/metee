@@ -3,7 +3,7 @@
  * Copyright (C) 2014-2020 Intel Corporation
  */
 /*! \file metee.h
-	\brief metee library API
+ *  \brief metee library API
  */
 #ifndef __METEE_H
 #define __METEE_H
@@ -99,17 +99,20 @@ typedef uint16_t TEESTATUS; /**< return status for API functions */
  *  \param device optional device path, set NULL to use default
  *  \return 0 if successful, otherwise error code
  */
-TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const char *device);
+TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid,
+			 IN OPTIONAL const char *device);
 
 #ifdef _WIN32
 /*! Initializes a TEE connection
  *  \param handle A handle to the TEE device. All subsequent calls to the lib's functions
  *         must be with this handle
  *  \param guid GUID of the FW client that want to start a session
- *  \param device optional device class GUID, set NULL to use default - use the first device from that class
+ *  \param device optional device class GUID, set NULL to use default
+ *         - use the first device from that class
  *  \return 0 if successful, otherwise error code
  */
-TEESTATUS TEEAPI TeeInitGUID(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const GUID *device);
+TEESTATUS TEEAPI TeeInitGUID(IN OUT PTEEHANDLE handle, IN const GUID *guid,
+			     IN OPTIONAL const GUID *device);
 #endif /* _WIN32 */
 
 /*! Initializes a TEE connection
@@ -128,11 +131,12 @@ TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
  */
 TEESTATUS TEEAPI TeeConnect(OUT PTEEHANDLE handle);
 
-/*!	Read data from the TEE device synchronously.
+/*! Read data from the TEE device synchronously.
  *  \param handle The handle of the session to read from.
  *  \param buffer A pointer to a buffer that receives the data read from the TEE device.
  *  \param bufferSize The number of bytes to be read.
- *  \param pNumOfBytesRead A pointer to the variable that receives the number of bytes read, ignored if set to NULL.
+ *  \param pNumOfBytesRead A pointer to the variable that receives the number of bytes read,
+ *         ignored if set to NULL.
  *  \param timeout The timeout to complete read in milliseconds, zero for infinite
  *  \return 0 if successful, otherwise error code
  */
@@ -143,7 +147,8 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
  *  \param handle The handle of the session to write to.
  *  \param buffer A pointer to the buffer containing the data to be written to the TEE device.
  *  \param bufferSize The number of bytes to be written.
- *  \param numberOfBytesWritten A pointer to the variable that receives the number of bytes written, ignored if set to NULL.
+ *  \param numberOfBytesWritten A pointer to the variable that receives the number of bytes written,
+ *         ignored if set to NULL.
  *  \param timeout The timeout to complete write in milliseconds, zero for infinite
  *  \return 0 if successful, otherwise error code
  */
