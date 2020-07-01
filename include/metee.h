@@ -14,7 +14,7 @@ extern "C" {
 
 #include <stddef.h>
 #include <stdint.h>
-
+//! @cond suppress_warnings
 #ifdef _WIN32
 	#include <Windows.h>
 	#include <initguid.h>
@@ -36,7 +36,7 @@ extern "C" {
 
 	#ifndef METEE_DLL
 		#define METEE_DLL_API
-	#else /* METEE_DLL */
+	#else /*! METEE_DLL */
 		#ifdef METEE_DLL_EXPORT
 			#define METEE_DLL_API __attribute__((__visibility__("default")))
 		#else
@@ -59,34 +59,56 @@ extern "C" {
 		#define OPTIONAL
 	#endif
 #endif /* _WIN32 */
+//! @endcond
 
-/*! Structure to store connection data
+/*!
+ * Structure to store connection data
  */
 typedef struct _TEEHANDLE {
 
 	void    *handle;          /**< Handle to the internal structure */
 	size_t  maxMsgLen;        /**< FW Client Max Message Length */
 	uint8_t protcolVer;       /**< FW Client Protocol FW */
-} TEEHANDLE, *PTEEHANDLE;
+} TEEHANDLE;
 
+/*!
+ * \var typedestruct _TEEHANDLE *PTEEHANDLE
+ * \brief A type definition for pointer to TEEHANDLE
+ */
+typedef TEEHANDLE *PTEEHANDLE;
+
+
+
+/** ZERO/NULL device handle */
 #define TEEHANDLE_ZERO {0}
 
-/*** STATUS ***/
-//TODO: Add Error defines
 typedef uint16_t TEESTATUS; /**< return status for API functions */
-#define TEE_ERROR_BASE                           0x0000U
-#define TEE_SUCCESS                             (TEE_ERROR_BASE + 0)
-#define TEE_INTERNAL_ERROR                      (TEE_ERROR_BASE + 1)
-#define TEE_DEVICE_NOT_FOUND                    (TEE_ERROR_BASE + 2)
-#define TEE_DEVICE_NOT_READY                    (TEE_ERROR_BASE + 3)
-#define TEE_INVALID_PARAMETER                   (TEE_ERROR_BASE + 4)
-#define TEE_UNABLE_TO_COMPLETE_OPERATION        (TEE_ERROR_BASE + 5)
-#define TEE_TIMEOUT                             (TEE_ERROR_BASE + 6)
-#define TEE_NOTSUPPORTED                        (TEE_ERROR_BASE + 7)
-#define TEE_CLIENT_NOT_FOUND                    (TEE_ERROR_BASE + 8)
-#define TEE_BUSY                                (TEE_ERROR_BASE + 9)
-#define TEE_DISCONNECTED                        (TEE_ERROR_BASE + 10)
-#define TEE_INSUFFICIENT_BUFFER                 (TEE_ERROR_BASE + 11)
+/** METEE ERROR BASE */
+#define TEE_ERROR_BASE                    0x0000U
+/** METEE SUCCESS */
+#define TEE_SUCCESS                       (TEE_ERROR_BASE + 0)
+/** An internal error occurred in the library */
+#define TEE_INTERNAL_ERROR                (TEE_ERROR_BASE + 1)
+/** The device is not in the system or is not working */
+#define TEE_DEVICE_NOT_FOUND              (TEE_ERROR_BASE + 2)
+/** The device is not ready for the  operation */
+#define TEE_DEVICE_NOT_READY              (TEE_ERROR_BASE + 3)
+/** An invalid parameter was used in the call */
+#define TEE_INVALID_PARAMETER             (TEE_ERROR_BASE + 4)
+/** It is not possible to complete the operation */
+#define TEE_UNABLE_TO_COMPLETE_OPERATION  (TEE_ERROR_BASE + 5)
+/** The operation has timed out */
+#define TEE_TIMEOUT                       (TEE_ERROR_BASE + 6)
+/** The operation is not supported */
+#define TEE_NOTSUPPORTED                  (TEE_ERROR_BASE + 7)
+/** The ME client is not present in the firmware */
+#define TEE_CLIENT_NOT_FOUND              (TEE_ERROR_BASE + 8)
+/** The device is busy */
+#define TEE_BUSY                          (TEE_ERROR_BASE + 9)
+/** The ME client is not connected */
+#define TEE_DISCONNECTED                  (TEE_ERROR_BASE + 10)
+/** The buffer for read not big enough  */
+#define TEE_INSUFFICIENT_BUFFER           (TEE_ERROR_BASE + 11)
 
 /*! Macro for successful operation result check
  */
