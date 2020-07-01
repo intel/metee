@@ -33,17 +33,27 @@ static inline void __dump_buffer(const char *buf)
 }
 
 #else /* ! ANDROID */
-#define mei_msg(_me, fmt, ARGS...) do {              \
-	if (_me->verbose)                            \
-		fprintf(stderr, "me: " fmt, ##ARGS);  \
+#ifdef SYSLOG
+	#include <syslog.h>
+	#define __mei_msg(fmt, ...) syslog(LOG_DEBUG, fmt, ##__VA_ARGS__)
+	#define __mei_err(fmt, ...) syslog(LOG_ERR, fmt, ##__VA_ARGS__)
+#else
+	#include <stdlib.h>
+	#define __mei_msg(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
+	#define __mei_err(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
+#endif /* SYSLOG */
+
+#define mei_msg(_me, fmt, ARGS...) do {   \
+	if ((_me)->verbose)               \
+		__mei_msg(fmt, ##ARGS);   \
 } while (0)
 
 #define mei_err(_me, fmt, ARGS...) \
-	fprintf(stderr, "me: error: " fmt, ##ARGS)
+	__mei_err("me: error: " fmt, ##ARGS)
 
 static inline void __dump_buffer(const char *buf)
 {
-	fprintf(stderr, "%s\n", buf);
+	__mei_msg("%s\n", buf);
 }
 #endif /* ANDROID */
 
