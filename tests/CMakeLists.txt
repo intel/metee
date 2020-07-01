@@ -48,6 +48,9 @@ add_executable(${PROJECT_NAME}
   metee_test.cpp
   $<$<BOOL:${WIN32}>:${CMAKE_SOURCE_DIR}/src/Windows/metee_winhelpers.c>
 )
+if(NOT CONSOLE_OUTPUT)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE -DSYSLOG)
+endif()
 
 target_link_libraries(${PROJECT_NAME} metee gtest_main)
 

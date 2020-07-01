@@ -19,7 +19,7 @@ target_compile_options(
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES C_VISIBILITY_PRESET hidden)
 
-if(NOT DEFINED CONSOLE_OUTPUT)
+if(NOT CONSOLE_OUTPUT)
   target_compile_definitions(${PROJECT_NAME} PRIVATE -DSYSLOG)
 endif()
 

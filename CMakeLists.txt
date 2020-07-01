@@ -9,6 +9,7 @@ option(BUILD_MSVC_RUNTIME_STATIC "Build with static runtime libraries on MSVC"
        NO
 )
 option(BUILD_SHARED_LIBS "Build shared library" NO)
+option(CONSOLE_OUTPUT "Push debug and error output to console (instead of syslog)" NO)
 
 include(GNUInstallDirs)
 

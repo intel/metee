@@ -18,6 +18,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
                            $<$<BOOL:BUILD_SHARED_LIBS>:METEE_DLL>
                            $<$<BOOL:BUILD_SHARED_LIBS>:METEE_DLL_EXPORT>
 )
+if(NOT CONSOLE_OUTPUT)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE -DSYSLOG)
+endif()
+
 # Secure compile flags
 target_compile_definitions(${PROJECT_NAME}
                            PRIVATE /GS /sdl)
