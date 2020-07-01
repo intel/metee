@@ -28,7 +28,11 @@
 		vsprintf_s(msg, DEBUG_MSG_LEN, args, varl);
 		va_end(varl);
 
+	#ifdef SYSLOG
 		OutputDebugStringA(msg);
+	#else
+		fprintf(stderr, "%s", msg);
+	#endif /* SYSLOG */
 	}
 
 	#define ErrorPrint(fmt, ...) DebugPrint(fmt, __VA_ARGS__)
