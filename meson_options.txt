@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2020 Intel Corporation
+
+option('mvsc_runtime_static',
+    type : 'boolean',
+    value : 'true',
+    description : 'Build with static runtime libraries on MSVC'
+)

@@ -61,6 +61,13 @@ cc = meson.get_compiler('c')
 if cc.get_id() == 'msvc'
   add_project_arguments('-DUNICODE', '-D_UNICODE',
                         language : 'c')
+  if get_option('mvsc_runtime_static')
+    if get_option('buildtype') == 'debug'
+      add_project_arguments('/MT', language : 'c')
+    else
+      add_project_arguments('/MTd', language : 'c')
+    endif
+  endif
 endif
 
 add_project_arguments(cc.get_supported_arguments(warning_flags),
