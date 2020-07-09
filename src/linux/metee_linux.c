@@ -181,6 +181,12 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 		goto End;
 	}
 
+	if (me->state != MEI_CL_STATE_CONNECTED) {
+		ERRPRINT("The client is not connected\n");
+		status = TEE_DISCONNECTED;
+		goto End;
+	}
+
 	DBGPRINT("call read length = %zd\n", bufferSize);
 
 	if (timeout && (rc = __mei_select(me, true, timeout))) {
@@ -220,6 +226,12 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 	if (!me || !buffer || !bufferSize) {
 		ERRPRINT("One of the parameters was illegal");
 		status = TEE_INVALID_PARAMETER;
+		goto End;
+	}
+
+	if (me->state != MEI_CL_STATE_CONNECTED) {
+		ERRPRINT("The client is not connected\n");
+		status = TEE_DISCONNECTED;
 		goto End;
 	}
 
