@@ -232,6 +232,47 @@ TEST_P(MeTeeTEST, PROD_MKHI_GetFWStatus)
 	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
 }
 
+TEST_P(MeTeeTEST, PROD_MKHI_DoubleConnect)
+{
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
+	struct MeTeeTESTParams intf = GetParam();
+	TEESTATUS status;
+
+	status = TestTeeInitGUID(&Handle, intf.client, intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(SUCCESS, status);
+	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+	ASSERT_EQ(SUCCESS, TeeConnect(&Handle));
+	ASSERT_EQ(TEE_INTERNAL_ERROR, TeeConnect(&Handle));
+
+	TeeDisconnect(&Handle);
+	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+}
+
+TEST_P(MeTeeTEST, PROD_MKHI_WriteReadNoConnect)
+{
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
+	size_t NumberOfBytes = 0;
+	struct MeTeeTESTParams intf = GetParam();
+	std::vector <char> MaxResponse;
+	TEESTATUS status;
+
+	status = TestTeeInitGUID(&Handle, intf.client, intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(SUCCESS, status);
+	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+
+	ASSERT_EQ(TEE_DISCONNECTED, TeeWrite(&Handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), &NumberOfBytes, 0));
+
+	MaxResponse.resize(1);
+	ASSERT_EQ(TEE_DISCONNECTED, TeeRead(&Handle, &MaxResponse[0], 1, &NumberOfBytes, 0));
+
+	TeeDisconnect(&Handle);
+	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+}
+
 TEST_P(MeTeeNTEST, PROD_N_TestConnectToNullUuid)
 {
 	TEEHANDLE handle = TEEHANDLE_ZERO;
