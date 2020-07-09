@@ -76,9 +76,13 @@ void MeTeeFDTEST::CloseMEI()
 	CloseHandle(deviceHandle);
 }
 #else
+#define MEI_DEFAULT_DEVICE "/dev/mei0"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 void MeTeeFDTEST::OpenMEI()
 {
-	deviceHandle = open(MEI_DEFAULT_DEVICE, O_RDWR);
+	deviceHandle = open(MEI_DEFAULT_DEVICE, O_RDWR | O_CLOEXEC);
 }
 void MeTeeFDTEST::CloseMEI()
 {
