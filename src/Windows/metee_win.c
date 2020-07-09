@@ -31,6 +31,7 @@ static TEESTATUS __TeeInit(PTEEHANDLE handle, const GUID *guid, const char *devi
 		goto Cleanup;
 	}
 	impl_handle->close_on_exit = true;
+	impl_handle->state = METEE_CLIENT_STATE_NONE;
 
 	__tee_init_handle(handle);
 	handle->handle = impl_handle;
@@ -163,6 +164,7 @@ TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 	}
 	impl_handle->close_on_exit = false;
 	impl_handle->handle = device_handle;
+	impl_handle->state = METEE_CLIENT_STATE_NONE;
 	result = memcpy_s(&impl_handle->guid, sizeof(impl_handle->guid), guid, sizeof(GUID));
 	if (result != 0) {
 		ERRPRINT("Error in in guid copy: result %u\n", result);
@@ -199,7 +201,13 @@ TEESTATUS TEEAPI TeeConnect(OUT PTEEHANDLE handle)
 
 	if (NULL == impl_handle) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT("One of the parameters was illegal");
+		ERRPRINT("One of the parameters was illegal\n");
+		goto Cleanup;
+	}
+
+	if (impl_handle->state == METEE_CLIENT_STATE_CONNECTED) {
+		status = TEE_INTERNAL_ERROR;
+		ERRPRINT("The client is already connected\n");
 		goto Cleanup;
 	}
 
@@ -216,6 +224,7 @@ TEESTATUS TEEAPI TeeConnect(OUT PTEEHANDLE handle)
 		ERRPRINT("Error in SendIOCTL, error: %lu\n", err);
 		goto Cleanup;
 	}
+	impl_handle->state = METEE_CLIENT_STATE_CONNECTED;
 
 	handle->maxMsgLen  = fwClient.MaxMessageLength;
 	handle->protcolVer = fwClient.ProtocolVersion;
@@ -241,13 +250,20 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void* buffer, IN size_t bu
 
 	if (NULL == impl_handle || NULL == buffer || 0 == bufferSize) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT("One of the parameters was illegal");
+		ERRPRINT("One of the parameters was illegal\n");
+		goto Cleanup;
+	}
+
+	if (impl_handle->state != METEE_CLIENT_STATE_CONNECTED) {
+		status = TEE_DISCONNECTED;
+		ERRPRINT("The client is not connected\n");
 		goto Cleanup;
 	}
 
 	status = BeginReadInternal(impl_handle->handle, buffer, (ULONG)bufferSize, &evt);
 	if (status) {
 		ERRPRINT("Error in BeginReadInternal, error: %d\n", status);
+		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
 
@@ -259,10 +275,10 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void* buffer, IN size_t bu
 	status = EndReadInternal(impl_handle->handle, evt, timeout, &bytesRead);
 	if (status) {
 		ERRPRINT("Error in EndReadInternal, error: %d\n", status);
+		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
-	if (pNumOfBytesRead != NULL)
-	{
+	if (pNumOfBytesRead != NULL) {
 		*pNumOfBytesRead = bytesRead;
 	}
 
@@ -293,9 +309,16 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 		goto Cleanup;
 	}
 
+	if (impl_handle->state != METEE_CLIENT_STATE_CONNECTED) {
+		status = TEE_DISCONNECTED;
+		ERRPRINT("The client is not connected");
+		goto Cleanup;
+	}
+
 	status = BeginWriteInternal(impl_handle->handle, (PVOID)buffer, (ULONG)bufferSize, &evt);
 	if (status) {
 		ERRPRINT("Error in BeginWrite, error: %d\n", status);
+		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
 
@@ -307,6 +330,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 	status = EndWriteInternal(impl_handle->handle, evt, timeout, &bytesWritten);
 	if (status) {
 		ERRPRINT("Error in EndWrite, error: %d\n", status);
+		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
 	if (numberOfBytesWritten != NULL)
@@ -354,6 +378,7 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 		DWORD err = GetLastError();
 		status = Win32ErrorToTee(err);
 		ERRPRINT("Error in SendIOCTL, error: %lu\n", err);
+		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
 
@@ -439,6 +464,7 @@ TEESTATUS TEEAPI GetDriverVersion(IN PTEEHANDLE handle, IN OUT teeDriverVersion_
 		DWORD err = GetLastError();
 		status = Win32ErrorToTee(err);
 		ERRPRINT("Error in SendIOCTL, error: %lu\n", err);
+		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
 

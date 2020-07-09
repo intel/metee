@@ -17,12 +17,20 @@
 #endif
 #define CANCEL_TIMEOUT 5000
 
+enum METEE_CLIENT_STATE
+{
+	METEE_CLIENT_STATE_NONE,
+	METEE_CLIENT_STATE_CONNECTED,
+	METEE_CLIENT_STATE_FAILED
+};
+
 struct METEE_WIN_IMPL
 {
 	HANDLE handle;            /**< file descriptor - Handle to the Device File */
 	GUID   guid;              /**< fw client guid */
 	LPOVERLAPPED evt;         /**< event for executing async */
 	bool close_on_exit;       /**< close handle on exit */
+	enum METEE_CLIENT_STATE state; /**< the client state */
 };
 
 /*********************************************************************
