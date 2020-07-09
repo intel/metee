@@ -15,6 +15,30 @@ static inline struct METEE_WIN_IMPL *to_int(PTEEHANDLE _h)
 	return _h ? (struct METEE_WIN_IMPL *)_h->handle : NULL;
 }
 
+static TEESTATUS __CreateFile(const char *devicePath, PHANDLE deviceHandle)
+{
+	TEESTATUS status = TEE_SUCCESS;
+
+	*deviceHandle = CreateFileA(devicePath,
+					GENERIC_READ | GENERIC_WRITE,
+					FILE_SHARE_READ | FILE_SHARE_WRITE,
+					NULL,
+					OPEN_EXISTING,
+					FILE_FLAG_OVERLAPPED,
+					NULL);
+
+	if (*deviceHandle == INVALID_HANDLE_VALUE) {
+		DWORD err = GetLastError();
+		ERRPRINT("Error in CreateFile, error: %lu\n", err);
+		if (err == ERROR_FILE_NOT_FOUND || err == ERROR_PATH_NOT_FOUND)
+			status = TEE_DEVICE_NOT_FOUND;
+		else
+			status = TEE_DEVICE_NOT_READY;
+	}
+
+	return status;
+}
+
 static TEESTATUS __TeeInit(PTEEHANDLE handle, const GUID *guid, const char *devicePath)
 {
 	TEESTATUS       status               = INIT_STATUS;
@@ -32,26 +56,13 @@ static TEESTATUS __TeeInit(PTEEHANDLE handle, const GUID *guid, const char *devi
 	}
 	impl_handle->close_on_exit = true;
 	impl_handle->state = METEE_CLIENT_STATE_NONE;
+	impl_handle->device_path = NULL;
 
 	__tee_init_handle(handle);
 	handle->handle = impl_handle;
 
-	// create file
-	deviceHandle = CreateFileA(devicePath,
-					GENERIC_READ | GENERIC_WRITE,
-					FILE_SHARE_READ | FILE_SHARE_WRITE,
-					NULL,
-					OPEN_EXISTING,
-					FILE_FLAG_OVERLAPPED,
-					NULL);
-
-	if (deviceHandle == INVALID_HANDLE_VALUE) {
-		DWORD err = GetLastError();
-		ERRPRINT("Error in CreateFile, error: %lu\n", err);
-		if (err == ERROR_FILE_NOT_FOUND || err == ERROR_PATH_NOT_FOUND)
-			status = TEE_DEVICE_NOT_FOUND;
-		else
-			status = TEE_DEVICE_NOT_READY;
+	status = __CreateFile(devicePath, &deviceHandle);
+	if (status != TEE_SUCCESS) {
 		goto Cleanup;
 	}
 
@@ -62,6 +73,14 @@ static TEESTATUS __TeeInit(PTEEHANDLE handle, const GUID *guid, const char *devi
 		status = TEE_UNABLE_TO_COMPLETE_OPERATION;
 		goto Cleanup;
 	}
+
+	impl_handle->device_path = _strdup(devicePath);
+	if (impl_handle->device_path == NULL) {
+		ERRPRINT("Error in in device path copy\n");
+		status = TEE_UNABLE_TO_COMPLETE_OPERATION;
+		goto Cleanup;
+	}
+
 	impl_handle->handle = deviceHandle;
 
 	status = TEE_SUCCESS;
@@ -70,6 +89,8 @@ Cleanup:
 
 	if (TEE_SUCCESS != status) {
 		CloseHandle(deviceHandle);
+		if (impl_handle)
+			free(impl_handle->device_path);
 		free(impl_handle);
 		if (handle)
 			handle->handle = NULL;
@@ -163,6 +184,7 @@ TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 		goto Cleanup;
 	}
 	impl_handle->close_on_exit = false;
+	impl_handle->device_path = NULL;
 	impl_handle->handle = device_handle;
 	impl_handle->state = METEE_CLIENT_STATE_NONE;
 	result = memcpy_s(&impl_handle->guid, sizeof(impl_handle->guid), guid, sizeof(GUID));
@@ -209,6 +231,17 @@ TEESTATUS TEEAPI TeeConnect(OUT PTEEHANDLE handle)
 		status = TEE_INTERNAL_ERROR;
 		ERRPRINT("The client is already connected\n");
 		goto Cleanup;
+	}
+
+	if (impl_handle->state == METEE_CLIENT_STATE_FAILED && impl_handle->close_on_exit) {
+
+		/* the handle have to be reopened in this case to reconnect to work */
+		CloseHandle(impl_handle->handle);
+		impl_handle->handle = NULL;
+		status = __CreateFile(impl_handle->device_path, &impl_handle->handle);
+		if (status != TEE_SUCCESS) {
+			goto Cleanup;
+		}
 	}
 
 	status = SendIOCTL(impl_handle->handle, (DWORD)IOCTL_TEEDRIVER_CONNECT_CLIENT,
@@ -333,8 +366,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
-	if (numberOfBytesWritten != NULL)
-	{
+	if (numberOfBytesWritten != NULL) {
 		*numberOfBytesWritten = bytesWritten;
 	}
 
@@ -410,6 +442,7 @@ VOID TEEAPI TeeDisconnect(IN PTEEHANDLE handle)
 
 	if (impl_handle->close_on_exit)
 		CloseHandle(impl_handle->handle);
+	free(impl_handle->device_path);
 	free(impl_handle);
 	handle->handle = NULL;
 

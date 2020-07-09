@@ -31,6 +31,7 @@ struct METEE_WIN_IMPL
 	LPOVERLAPPED evt;         /**< event for executing async */
 	bool close_on_exit;       /**< close handle on exit */
 	enum METEE_CLIENT_STATE state; /**< the client state */
+	char *device_path;        /**< device path */
 };
 
 /*********************************************************************
