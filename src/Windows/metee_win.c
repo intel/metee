@@ -15,10 +15,11 @@ static inline struct METEE_WIN_IMPL *to_int(PTEEHANDLE _h)
 	return _h ? (struct METEE_WIN_IMPL *)_h->handle : NULL;
 }
 
-TEESTATUS __TeeInit(PTEEHANDLE handle, const GUID *guid, const char *devicePath)
+static TEESTATUS __TeeInit(PTEEHANDLE handle, const GUID *guid, const char *devicePath)
 {
 	TEESTATUS       status               = INIT_STATUS;
 	HANDLE          deviceHandle         = INVALID_HANDLE_VALUE;
+	error_status_t  result;
 	struct METEE_WIN_IMPL *impl_handle   = NULL;
 
 	FUNC_ENTRY();
@@ -53,23 +54,22 @@ TEESTATUS __TeeInit(PTEEHANDLE handle, const GUID *guid, const char *devicePath)
 		goto Cleanup;
 	}
 
+	result  = memcpy_s(&impl_handle->guid, sizeof(impl_handle->guid),
+			   guid, sizeof(GUID));
+	if (result != 0) {
+		ERRPRINT("Error in in guid copy: result %u\n", result);
+		status = TEE_UNABLE_TO_COMPLETE_OPERATION;
+		goto Cleanup;
+	}
+	impl_handle->handle = deviceHandle;
+
 	status = TEE_SUCCESS;
 
 Cleanup:
 
-	if (TEE_SUCCESS == status) {
-		impl_handle->handle = deviceHandle;
-		error_status_t result  = memcpy_s(&impl_handle->guid, sizeof(impl_handle->guid),
-						  guid, sizeof(GUID));
-		if (result != 0) {
-			ERRPRINT("Error in in guid copy: result %u\n", result);
-			status = TEE_UNABLE_TO_COMPLETE_OPERATION;
-		}
-	}
-	else {
+	if (TEE_SUCCESS != status) {
 		CloseHandle(deviceHandle);
-		if (impl_handle)
-			free(impl_handle);
+		free(impl_handle);
 		if (handle)
 			handle->handle = NULL;
 	}
@@ -99,8 +99,7 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 
 	if (device != NULL) {
 		devicePathP = device;
-	}
-	else {
+	} else {
 		status = GetDevicePath(&GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
 		if (status) {
 			ERRPRINT("Error in GetDevicePath, error: %d\n", status);
