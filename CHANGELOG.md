@@ -1,3 +1,30 @@
+## [3.0.0]
+
+**Note:** below changes break API and ABI compatibility with older library versions.
+
+### Changed
+ - Windows: Add separate TeeInitGUID API to init library by using device class GUID.
+
+### Fixed
+ - Fix miscellaneous code issues in samples.
+ - Windows: return right size of processed data.
+ - Windows: fix connect to the externally provided guid.
+ - Windows: enlarge debug output buffer.
+ - Modernize CMake configuration.
+ - Fix spelling mistakes all over the library.
+ - Windows: check return pointers for NULL before write.
+ - Windows: fix reconnect if underlying client was disconnected from FW side.
+ - Doxygen documentation cleaned up and expanded.
+ - Linux: import libmei 1.4 code.
+
+### Added
+ - Windows: ability to connect to device by path.
+ - API to use externally opened file handle.
+ - Tests with long buffers.
+ - Ability to build dynamic library.
+ - Support for meson build system.
+ - Option to write output to console instead of Syslog/DbgView
+
 ## [2.2.2]
 
 ### Added
