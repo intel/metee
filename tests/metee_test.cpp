@@ -130,6 +130,77 @@ TEST_P(MeTeeTEST, PROD_MKHI_SimpleGetVersion)
 	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
 }
 
+/*
+Send stress of GetVersion Command to HCI / MKHI
+1) Open Connection to MKHI
+2) Send GetVersion Req Command
+3) Receive GetVersion Resp Command
+4) Check for Valid Resp
+5) Close Connection
+*/
+TEST_P(MeTeeTEST, PROD_MKHI_SimpleGetVersionStress)
+{
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
+	size_t NumberOfBytes = 0;
+	struct MeTeeTESTParams intf = GetParam();
+	std::vector <char> MaxResponse;
+	GEN_GET_FW_VERSION_ACK* pResponseMessage; //max length for this client is 2048
+	TEESTATUS status;
+
+	status = TestTeeInitGUID(&Handle, intf.client, intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(SUCCESS, status);
+	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+	ASSERT_EQ(SUCCESS, TeeConnect(&Handle));
+
+	MaxResponse.resize(Handle.maxMsgLen * sizeof(char));
+	for (unsigned int i = 0; i < 1000; i++) {
+		ASSERT_EQ(SUCCESS, TeeWrite(&Handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), &NumberOfBytes, 0));
+		ASSERT_EQ(sizeof(GEN_GET_FW_VERSION), NumberOfBytes);
+
+		ASSERT_EQ(SUCCESS, TeeRead(&Handle, &MaxResponse[0], Handle.maxMsgLen, &NumberOfBytes, 0));
+		pResponseMessage = (GEN_GET_FW_VERSION_ACK*)(&MaxResponse[0]);
+
+		ASSERT_EQ(SUCCESS, pResponseMessage->Header.Fields.Result);
+		EXPECT_NE(0, pResponseMessage->Data.FWVersion.CodeMajor);
+		EXPECT_NE(0, pResponseMessage->Data.FWVersion.CodeBuildNo);
+	}
+	TeeDisconnect(&Handle);
+	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+}
+
+/*
+Send pending write stress
+1) Connect to a client(MKHI)
+2) Send stress of valid Write Command (async using TeeWrite)
+3) Call Disconnect()
+*/
+TEST_P(MeTeeTEST, PROD_MKHI_PendingWriteStress)
+{
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
+	size_t NumberOfBytes = 0;
+	struct MeTeeTESTParams intf = GetParam();
+	std::vector <char> MaxResponse;
+	GEN_GET_FW_VERSION_ACK* pResponseMessage; //max length for this client is 2048
+	TEESTATUS status;
+
+	status = TestTeeInitGUID(&Handle, intf.client, intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(SUCCESS, status);
+	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+	ASSERT_EQ(SUCCESS, TeeConnect(&Handle));
+
+	for (unsigned int i = 0; i < 51; i++)
+		EXPECT_EQ(SUCCESS, TeeWrite(&Handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), &NumberOfBytes, 1000));
+	for (unsigned int i = 0; i < 2; i++)
+		EXPECT_EQ(TEE_TIMEOUT, TeeWrite(&Handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), &NumberOfBytes, 1000));
+
+	TeeDisconnect(&Handle);
+	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+}
+
 TEST_P(MeTeeTEST, PROD_MKHI_SimpleGetVersionNULLReturn)
 {
 	TEEHANDLE Handle = TEEHANDLE_ZERO;
