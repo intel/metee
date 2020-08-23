@@ -123,7 +123,7 @@ public:
 
 class MeTeeFDTEST : public ::testing::TestWithParam<struct MeTeeTESTParams> {
 public:
-	MeTeeFDTEST() {
+	MeTeeFDTEST() : deviceHandle(TEE_INVALID_DEVICE_HANDLE) {
 		// initialization code here
 	}
 
