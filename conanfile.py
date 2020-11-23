@@ -7,6 +7,9 @@ import os
 
 class MeteeConan(ConanFile):
     name = "metee"
+    license = "SPDX-License-Identifier: Apache-2.0"
+    url = "https://github.com/intel/metee"
+    description = "Cross-platform access library for Intel(R) CSME HECI interface."
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True, False]}
     default_options = {"shared": False}
