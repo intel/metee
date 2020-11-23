@@ -24,19 +24,20 @@ class MeteeConan(ConanFile):
         content = load(os.path.join(self.recipe_folder, "VERSION"))
         self.version = content
 
-    def build(self):
+    def _configure_cmake(self):
         cmake = CMake(self)
         if self.settings.os == "Windows":
              cmake.definitions["BUILD_MSVC_RUNTIME_STATIC"]="on"
         cmake.configure(source_folder="")
+        return cmake
+
+    def build(self):
+        cmake = self._configure_cmake()
         cmake.build()
 
     def package(self):
-        self.copy("include/metee.h", dst="include", keep_path=False)
-        self.copy("*.lib", dst="lib", keep_path=False)
-        self.copy("*.dll", dst="bin", keep_path=False)
-        self.copy("*.so*", dst="lib", keep_path=False)
-        self.copy("*.a", dst="lib", keep_path=False)
+        cmake = self._configure_cmake()
+        cmake.install()
 
     def package_info(self):
         self.cpp_info.libs = ["metee"]
