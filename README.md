@@ -1,6 +1,9 @@
 # Intel(R) ME TEE Library
 
-Cross-platform access library for Intel(R) CSME HECI interface.
+ME TEE Library is a C library to access CSE/CSME/GSC firmware via a mei interface.
+ME TEE provides a single cross-platform API to access to MEI devices on Linux and Windows.
+MEI TEE API simplify connection and communication with the mei device, and firmware status
+registers retrieval.
 
 ## CMake Build
 
@@ -27,7 +30,7 @@ By default, CMake links with dynamic runtime (/MD), set BUILD_MSVC_RUNTIME_STATI
 
 ## Meson Build
 
-ME TEE library also supports Meson  for both Linux and Windows builds.
+ME TEE library also supports Meson for both Linux and Windows builds.
 
 ### General Setup
 
