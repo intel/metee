@@ -29,8 +29,8 @@ class MeteeConan(ConanFile):
 
     def _configure_cmake(self):
         cmake = CMake(self)
-        if self.settings.os == "Windows":
-             cmake.definitions["BUILD_MSVC_RUNTIME_STATIC"]="on"
+        if self.settings.os == "Windows" and "MT" in self.settings.compiler.runtime:
+            cmake.definitions["BUILD_MSVC_RUNTIME_STATIC"]="on"
         cmake.configure(source_folder="")
         return cmake
 
