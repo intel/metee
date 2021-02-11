@@ -1,3 +1,15 @@
+## [3.0.1]
+
+### Added
+ - add SPDX license also on .cmake-format config file
+ - samples: add GSC sample
+ - Build: add conan packaging.
+
+## Fixed
+ - test: initialize deviceHandle in constructor
+ - README.md and more verbose description
+ - CMake: add secure compile and link flag
+
 ## [3.0.0]
 
 **Note:** below changes break API and ABI compatibility with older library versions.
