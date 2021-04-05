@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2020 Intel Corporation
+ * Copyright (C) 2014-2021 Intel Corporation
  */
 /*! \file metee.h
  *  \brief metee library API
@@ -198,6 +198,7 @@ void TEEAPI TeeDisconnect(IN PTEEHANDLE handle);
 /*! Returns handle of TEE device
  *  Obtains HECI device handle on Windows and mei device file descriptor on Linux
  *  \param handle The handle of the session.
+ *  \return device handle
  */
 TEE_DEVICE_HANDLE TEEAPI TeeGetDeviceHandle(IN PTEEHANDLE handle);
 
@@ -214,6 +215,7 @@ typedef struct {
  *  Not implemented on Linux
  *  \param handle The handle of the session.
  *  \param driverVersion Pointer to driver version struct
+ *  \return 0 if successful, otherwise error code.
  */
 TEESTATUS TEEAPI GetDriverVersion(IN PTEEHANDLE handle, IN OUT teeDriverVersion_t *driverVersion);
 
