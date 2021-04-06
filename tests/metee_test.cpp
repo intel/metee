@@ -170,6 +170,7 @@ TEST_P(MeTeeTEST, PROD_MKHI_SimpleGetVersionStress)
 	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
 }
 
+#ifndef WIN32
 /*
 Send pending write stress
 1) Connect to a client(MKHI)
@@ -200,6 +201,7 @@ TEST_P(MeTeeTEST, PROD_MKHI_PendingWriteStress)
 	TeeDisconnect(&Handle);
 	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
 }
+#endif // not WIN32
 
 TEST_P(MeTeeTEST, PROD_MKHI_SimpleGetVersionNULLReturn)
 {
