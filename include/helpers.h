@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2019 Intel Corporation
+ * Copyright (C) 2014-2021 Intel Corporation
  */
 #ifndef __HELPERS_H
 #define __HELPERS_H
@@ -20,20 +20,7 @@
 
 	#define DEBUG_MSG_LEN 1024
 
-	static void DebugPrint(const char* args, ...)
-	{
-		char msg[DEBUG_MSG_LEN + 1];
-		va_list varl;
-		va_start(varl, args);
-		vsprintf_s(msg, DEBUG_MSG_LEN, args, varl);
-		va_end(varl);
-
-	#ifdef SYSLOG
-		OutputDebugStringA(msg);
-	#else
-		fprintf(stderr, "%s", msg);
-	#endif /* SYSLOG */
-	}
+	void DebugPrint(const char* args, ...);
 
 	#define ErrorPrint(fmt, ...) DebugPrint(fmt, __VA_ARGS__)
 	#define IS_HANDLE_INVALID(h) (NULL == h || 0 == h->handle || INVALID_HANDLE_VALUE == h->handle)

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2020 Intel Corporation
+ * Copyright (C) 2014-2021 Intel Corporation
  */
 #include <assert.h>
 #include <windows.h>
@@ -18,6 +18,20 @@
 /*********************************************************************
 **                       Windows Helper Functions                   **
 **********************************************************************/
+void DebugPrint(const char* args, ...)
+{
+	char msg[DEBUG_MSG_LEN + 1];
+	va_list varl;
+	va_start(varl, args);
+	vsprintf_s(msg, DEBUG_MSG_LEN, args, varl);
+	va_end(varl);
+
+#ifdef SYSLOG
+	OutputDebugStringA(msg);
+#else
+	fprintf(stderr, "%s", msg);
+#endif /* SYSLOG */
+}
 
 /*
 **	Start Overlapped Operation
