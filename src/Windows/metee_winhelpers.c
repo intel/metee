@@ -513,6 +513,8 @@ TEESTATUS Win32ErrorToTee(_In_ DWORD win32Error)
 		return TEE_DEVICE_NOT_READY;
 	case ERROR_NOT_FOUND:
 		return TEE_CLIENT_NOT_FOUND;
+	case ERROR_ACCESS_DENIED:
+		return TEE_PERMISSION_DENIED;
 	default:
 		return TEE_INTERNAL_ERROR;
 	}

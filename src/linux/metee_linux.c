@@ -63,6 +63,7 @@ static inline TEESTATUS errno2status(int err)
 		case -EBUSY : return TEE_BUSY;
 		case -ENODEV: return TEE_DISCONNECTED;
 		case -ETIME : return TEE_TIMEOUT;
+		case -EACCES: return TEE_PERMISSION_DENIED;
 		default     : return TEE_INTERNAL_ERROR;
 	}
 }

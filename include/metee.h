@@ -109,6 +109,8 @@ typedef uint16_t TEESTATUS; /**< return status for API functions */
 #define TEE_DISCONNECTED                  (TEE_ERROR_BASE + 10)
 /** The buffer for read not big enough  */
 #define TEE_INSUFFICIENT_BUFFER           (TEE_ERROR_BASE + 11)
+/** The user don't have permission for this operation  */
+#define TEE_PERMISSION_DENIED             (TEE_ERROR_BASE + 12)
 
 /*! Macro for successful operation result check
  */
