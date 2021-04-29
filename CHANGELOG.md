@@ -1,3 +1,12 @@
+## [3.1.0]
+
+**Note:** Backward compatible API change
+
+### Added
+
+ - Add TEE_PERMISSION_DENIED error code
+ - Add stress tests
+
 ## [3.0.1]
 
 ### Added
