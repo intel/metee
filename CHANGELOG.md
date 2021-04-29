@@ -1,3 +1,16 @@
+[3.1.1]
+
+### Fixed
+
+ - Windows: push DebugPrint down
+ - Windows: tests: disable pending write test on Windows
+ - doc: add missing return values documentation
+
+### Changed
+
+ - CMake: make docs optional
+
+
 ## [3.1.0]
 
 **Note:** Backward compatible API change
