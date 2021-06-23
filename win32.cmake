@@ -6,7 +6,7 @@ set(TEE_SOURCES
     src/Windows/metee_winhelpers.c
 )
 
-add_library(${PROJECT_NAME} ${TEE_SOURCES})
+add_library(${PROJECT_NAME} SHARED ${TEE_SOURCES})
 
 if(BUILD_MSVC_RUNTIME_STATIC)
   target_compile_options(${PROJECT_NAME} PRIVATE /MT$<$<CONFIG:Debug>:d>)
