@@ -5,6 +5,7 @@ Cross-platform access library for Intel(R) CSME HECI interface.
 ## CMake Build
 
 ME TEE library uses CMake for both Linux and Windows builds.
+Adapted to work with managed code: C# and Python
 
 ### Windows
 
