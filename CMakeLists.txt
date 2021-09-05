@@ -3,6 +3,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(metee)
 
+option(BUILD_DOCS "Build docs" YES)
 option(BUILD_TEST "Build self-test" NO)
 option(BUILD_SAMPLES "Build samples" NO)
 option(BUILD_MSVC_RUNTIME_STATIC "Build with static runtime libraries on MSVC"
@@ -43,32 +44,34 @@ install(
 )
 
 # Documentation
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
-  set(DOXYGEN_INPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  set(DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-  configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/Doxyfile.in
-    ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY
-  )
+if(BUILD_DOCS)
+  find_package(Doxygen)
+  if(DOXYGEN_FOUND)
+    set(DOXYGEN_INPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set(DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    configure_file(
+      ${CMAKE_CURRENT_SOURCE_DIR}/include/Doxyfile.in
+      ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY
+    )
 
-  add_custom_target(
-    doc ALL
-    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating documentation with Doxygen"
-    VERBATIM
-  )
+    add_custom_target(
+      doc ALL
+      ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      COMMENT "Generating documentation with Doxygen"
+      VERBATIM
+    )
 
-  if(UNIX)
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/man/man3
+    if(UNIX)
+      install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/man/man3
             DESTINATION ${CMAKE_INSTALL_MANDIR}
-    )
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html
-            DESTINATION ${CMAKE_INSTALL_DOCDIR}
-    )
-  else()
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION doc)
+      )
+      install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html
+              DESTINATION ${CMAKE_INSTALL_DOCDIR}
+      )
+    else()
+      install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION doc)
+    endif()
   endif()
 endif()
 
