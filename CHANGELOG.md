@@ -1,4 +1,11 @@
-[3.1.1]
+## [3.1.2]
+
+### Fixed
+
+ - tests: fix gtest branch name
+ - CHANGELOG: fix the indentation
+
+## [3.1.1]
 
 ### Fixed
 
