@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2020 Intel Corporation
+# Copyright (C) 2020-2022 Intel Corporation
 project('metee', 'c',
   version : run_command('get-version.py').stdout().strip(),
   license : 'Apache 2.0',
@@ -95,9 +95,13 @@ add_project_link_arguments(
 )
 
 if target_machine.system() == 'linux'
+  local_inc = ['include', 'src/linux']
+  if not cc.has_header_symbol('linux/mei.h', 'IOCTL_MEI_CONNECT_CLIENT_VTAG')
+    local_inc = ['src/linux/include'] + local_inc
+  endif
   metee_lib_static = static_library('metee',
      sources : metee_sources_linux,
-     include_directories : ['include', 'src/linux']
+     include_directories : local_inc
 )
 elif target_machine.system() == 'windows'
   metee_lib_static = static_library('metee',

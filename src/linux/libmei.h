@@ -61,6 +61,7 @@ struct mei {
 	bool verbose;           /**< verbose execution */
 	bool close_on_exit;     /**< close handle on deinit */
 	char *device;           /**< device name */
+	uint8_t vtag;           /**< vtag used in communication */
 };
 
 /*! Default name of mei device
@@ -137,9 +138,9 @@ int mei_init_fd(struct mei *me, int fd, const uuid_le *guid,
  */
 void mei_deinit(struct mei *me);
 
-/*! Open mei device and starts a session with an mei client
+/*! Open mei device and starts a session with a mei client
  *  If the application requested specific minimal protocol version
- *  and client doesn't support that version
+ *  and the client does not support that version than
  *  the handle state will be set to MEI_CL_STATE_VERSION_MISMATCH
  *  but connection will be established
  *
@@ -148,6 +149,18 @@ void mei_deinit(struct mei *me);
  */
 int mei_connect(struct mei *me);
 
+/*! Open mei device and starts a session with a mei client
+ *  Provide given vtag as session parameter.
+ *  If the application requested specific minimal protocol version
+ *  and the client does not support that version than
+ *  the handle state will be set to MEI_CL_STATE_VERSION_MISMATCH
+ *  but connection will be established
+ *
+ *  \param me The mei handle
+ *  \param vtag The vtag value
+ *  \return 0 if successful, otherwise error code
+ */
+int mei_connect_vtag(struct mei *me, uint8_t vtag);
 
 /*! Setup mei connection to non block
  *

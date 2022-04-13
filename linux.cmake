@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2014-2021 Intel Corporation
+# Copyright (C) 2014-2022 Intel Corporation
 set(TEE_SOURCES src/linux/metee_linux.c src/linux/mei.c)
 
 add_library(${PROJECT_NAME} ${TEE_SOURCES})
@@ -9,6 +9,13 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 			   $<$<BOOL:BUILD_SHARED_LIBS>:METEE_DLL>
 			   $<$<BOOL:BUILD_SHARED_LIBS>:METEE_DLL_EXPORT>
 )
+
+# Check for new IOCTLs
+include(CheckSymbolExists)
+check_symbol_exists(IOCTL_MEI_CONNECT_CLIENT_VTAG linux/mei.h HAVE_VTAG)
+if(NOT HAVE_VTAG)
+  include_directories(BEFORE "src/linux/include")
+endif()
 
 # More warnings and warning-as-error
 target_compile_options(

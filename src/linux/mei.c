@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright(c) 2013 - 2020 Intel Corporation. All rights reserved.
+ * Copyright(c) 2013 - 2022 Intel Corporation. All rights reserved.
  *
  * Intel Management Engine Interface (Intel MEI) Library
  */
@@ -156,6 +156,17 @@ static inline int __mei_connect(struct mei *me, struct mei_connect_client_data *
 
 	errno = 0;
 	rc = ioctl(me->fd, IOCTL_MEI_CONNECT_CLIENT, d);
+	me->last_err = errno;
+	return rc == -1 ? -me->last_err : 0;
+}
+
+static inline int __mei_connect_vtag(struct mei *me,
+				     struct mei_connect_client_data_vtag *d)
+{
+	int rc;
+
+	errno = 0;
+	rc = ioctl(me->fd, IOCTL_MEI_CONNECT_CLIENT_VTAG, d);
 	me->last_err = errno;
 	return rc == -1 ? -me->last_err : 0;
 }
@@ -404,32 +415,45 @@ int mei_set_nonblock(struct mei *me)
 	return __mei_set_nonblock(me);
 }
 
-int mei_connect(struct mei *me)
+static int __int_mei_connect(struct mei *me, uint8_t vtag)
 {
 	struct mei_client *cl;
 	struct mei_connect_client_data data;
+	struct mei_connect_client_data_vtag data_v;
 	int rc;
 
 	if (!me)
 		return -EINVAL;
 
 	if (me->state != MEI_CL_STATE_INITIALIZED &&
-	    me->state != MEI_CL_STATE_DISCONNECTED) {
+	    me->state != MEI_CL_STATE_DISCONNECTED &&
+	    me->state != MEI_CL_STATE_NOT_PRESENT) {
 		mei_err(me, "client state [%d]\n", me->state);
 		return -EINVAL;
 	}
 
-	memset(&data, 0, sizeof(data));
-	memcpy(&data.in_client_uuid, &me->guid, sizeof(me->guid));
+	me->vtag = vtag;
+	if (me->vtag) {
+		memset(&data_v, 0, sizeof(data_v));
+		memcpy(&data_v.connect.in_client_uuid, &me->guid,
+		       sizeof(me->guid));
+		data_v.connect.vtag = me->vtag;
 
-	rc = __mei_connect(me, &data);
+		rc = __mei_connect_vtag(me, &data_v);
+		cl = &data_v.out_client_properties;
+	} else {
+		memset(&data, 0, sizeof(data));
+		memcpy(&data.in_client_uuid, &me->guid, sizeof(me->guid));
+
+		rc = __mei_connect(me, &data);
+		cl = &data.out_client_properties;
+	}
 	if (rc < 0) {
 		me->state = __mei_errno_to_state(me);
 		mei_err(me, "Cannot connect to client [%d]:%s\n", rc, strerror(-rc));
 		return rc;
 	}
 
-	cl = &data.out_client_properties;
 	mei_msg(me, "max_message_length %d\n", cl->max_msg_length);
 	mei_msg(me, "protocol_version %d\n", cl->protocol_version);
 
@@ -444,6 +468,16 @@ int mei_connect(struct mei *me)
 	}
 
 	return rc;
+}
+
+int mei_connect(struct mei *me)
+{
+	return __int_mei_connect(me, 0);
+}
+
+int mei_connect_vtag(struct mei *me, uint8_t vtag)
+{
+	return __int_mei_connect(me, vtag);
 }
 
 ssize_t mei_recv_msg(struct mei *me, unsigned char *buffer, size_t len)
