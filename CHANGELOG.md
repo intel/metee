@@ -1,3 +1,9 @@
+## [3.1.3]
+
+### Fixes
+ - samples: fix assignment and add explicit type-cast
+ - Linux: pull-in libmei 1.5.1 with fix for reconnect if client not found
+
 ## [3.1.2]
 
 ### Fixed
