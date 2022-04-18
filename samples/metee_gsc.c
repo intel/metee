@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2020 Intel Corporation
+ * Copyright (C) 2020-2022 Intel Corporation
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -259,13 +259,13 @@ static uint32_t mk_host_if_fw_version_resp(struct mk_host_if *acmd)
 	size_t recvd;
 	TEESTATUS status;
 	unsigned char rec_msg[100];
-	struct gsc_fwu_heci_version_resp *response = rec_msg[0];
+	struct gsc_fwu_heci_version_resp *response = (struct gsc_fwu_heci_version_resp *)rec_msg;
 	size_t size = sizeof(struct gsc_fwu_heci_version_resp) + sizeof(struct gsc_fwu_external_version);
 
 	status = TeeRead(&acmd->mei_cl, rec_msg, size, &recvd, MKHI_READ_TIMEOUT);
 	if (status || recvd <= 0)
 		return GSC_FWU_STATUS_FAILURE;
-	printf_if_fw_version(response->version);
+	printf_if_fw_version((struct gsc_fwu_external_version *)response->version);
 	return GSC_FWU_STATUS_SUCCESS;
 }
 
