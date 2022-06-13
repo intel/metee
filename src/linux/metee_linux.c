@@ -193,7 +193,7 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 	if (timeout && (rc = __mei_select(me, true, timeout))) {
 		status = errno2status(rc);
 		ERRPRINT("select failed with status %zd %s\n",
-				rc, strerror(rc));
+				rc, strerror(-rc));
 		goto End;
 	}
 
@@ -201,7 +201,7 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 	if (rc < 0) {
 		status = errno2status(rc);
 		ERRPRINT("read failed with status %zd %s\n",
-				rc, strerror(rc));
+				rc, strerror(-rc));
 		goto End;
 	}
 
@@ -241,14 +241,14 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 	if (timeout && (rc = __mei_select(me, false, timeout))) {
 		status = errno2status(rc);
 		ERRPRINT("select failed with status %zd %s\n",
-				rc, strerror(rc));
+				rc, strerror(-rc));
 		goto End;
 	}
 
 	rc  = mei_send_msg(me, buffer, bufferSize);
 	if (rc < 0) {
 		status = errno2status(rc);
-		ERRPRINT("write failed with status %zd %s\n", rc, strerror(rc));
+		ERRPRINT("write failed with status %zd %s\n", rc, strerror(-rc));
 		goto End;
 	}
 
@@ -285,7 +285,7 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 	rc  = mei_fwstatus(me, fwStatusNum, &fwsts);
 	if (rc < 0) {
 		status = errno2status(rc);
-		ERRPRINT("fw status failed with status %d %s\n", rc, strerror(rc));
+		ERRPRINT("fw status failed with status %d %s\n", rc, strerror(-rc));
 		goto End;
 	}
 
