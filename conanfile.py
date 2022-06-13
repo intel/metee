@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2020 Intel Corporation
+# Copyright (C) 2020-2022 Intel Corporation
 from conans import ConanFile, CMake, tools
 from conans.tools import load
 from conans.model.version import Version
@@ -15,6 +15,9 @@ class MeteeConan(ConanFile):
     default_options = {"shared": False}
     generators = "cmake", "visual_studio"
     exports_sources = "*"
+
+    def configure(self):
+        del self.settings.compiler.libcxx
 
     def package_id(self):
         v = Version(str(self.settings.compiler.version))
