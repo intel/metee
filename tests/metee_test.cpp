@@ -1,17 +1,20 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2020 Intel Corporation
+ * Copyright (C) 2014-2022 Intel Corporation
  */
 #include <vector>
 #include <chrono>
 #include <thread>
 #include <climits>
+#include <fstream>
 #include "metee_test.h"
 #ifdef WIN32
 extern "C" {
 #include "public.h"
 #include "metee_win.h"
 }
+#else
+#include <sys/resource.h>
 #endif // WIN32
 
 DEFINE_GUID(GUID_NON_EXISTS_CLIENT,
@@ -128,6 +131,112 @@ TEST_P(MeTeeTEST, PROD_MKHI_SimpleGetVersion)
 		
 	TeeDisconnect(&Handle);
 	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+}
+
+/*
+Send GetVersion Command to MKHI with timeout and fd > 1024
+1) Open 2000 file descriptors
+2) Open Connection to MKHI
+3) Send GetVersion Req Command
+4) Receive GetVersion Resp Command
+5) Check for Valid Resp
+6) Close Connection
+*/
+TEST_P(MeTeeTEST, PROD_MKHI_1000HandlesGetVersion)
+{
+#ifdef __linux__
+	struct rlimit limit;
+
+	limit.rlim_cur = 2048;
+	limit.rlim_max = 2048;
+	errno = 0;
+	if (setrlimit(RLIMIT_NOFILE, &limit) != 0)
+		FAIL() << "setrlimit() failed with errno=" << errno;
+#endif // __linux__
+	std::vector<std::thread> v;
+
+	for (int g = 0; g <= 199; g++) {
+		v.push_back(std::thread([g]() {
+			int base = g * 10;
+			int i = 0;
+			std::ofstream file0;
+			std::string name0 = "example_" + std::to_string(base) + ".txt";
+			std::ofstream file1;
+			std::string name1 = "example_" + std::to_string(base + 1) + ".txt";
+			std::ofstream file2;
+			std::string name2 = "example_" + std::to_string(base + 2) + ".txt";
+			std::ofstream file3;
+			std::string name3 = "example_" + std::to_string(base + 3) + ".txt";
+			std::ofstream file4;
+			std::string name4 = "example_" + std::to_string(base + 4) + ".txt";
+			std::ofstream file5;
+			std::string name5 = "example_" + std::to_string(base + 5) + ".txt";
+			std::ofstream file6;
+			std::string name6 = "example_" + std::to_string(base + 6) + ".txt";
+			std::ofstream file7;
+			std::string name7 = "example_" + std::to_string(base + 7) + ".txt";
+			std::ofstream file8;
+			std::string name8 = "example_" + std::to_string(base + 8) + ".txt";
+			std::ofstream file9;
+			std::string name9 = "example_" + std::to_string(base + 9) + ".txt";
+			file0.open(name0);
+			file1.open(name1);
+			file2.open(name2);
+			file3.open(name3);
+			file4.open(name4);
+			file5.open(name5);
+			file6.open(name6);
+			file7.open(name7);
+			file8.open(name8);
+			file9.open(name9);
+			while (i++ < 5) {
+				file0 << "Writing to " << name0 << std::endl;
+				file1 << "Writing to " << name1 << std::endl;
+				file2 << "Writing to " << name2 << std::endl;
+				file3 << "Writing to " << name3 << std::endl;
+				file4 << "Writing to " << name4 << std::endl;
+				file5 << "Writing to " << name5 << std::endl;
+				file6 << "Writing to " << name6 << std::endl;
+				file7 << "Writing to " << name7 << std::endl;
+				file8 << "Writing to " << name8 << std::endl;
+				file9 << "Writing to " << name9 << std::endl;
+				std::this_thread::sleep_for(std::chrono::seconds(5));
+			}
+		}));
+	}
+	std::this_thread::sleep_for(std::chrono::seconds(5));
+
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
+	size_t NumberOfBytes = 0;
+	struct MeTeeTESTParams intf = GetParam();
+	std::vector <char> MaxResponse;
+	GEN_GET_FW_VERSION_ACK* pResponseMessage; //max length for this client is 2048
+	TEESTATUS status;
+
+	status = TestTeeInitGUID(&Handle, intf.client, intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(SUCCESS, status);
+	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+	ASSERT_EQ(SUCCESS, TeeConnect(&Handle));
+
+
+	MaxResponse.resize(Handle.maxMsgLen*sizeof(char));
+	ASSERT_EQ(SUCCESS, TeeWrite(&Handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), &NumberOfBytes, 1000));
+	ASSERT_EQ(sizeof(GEN_GET_FW_VERSION), NumberOfBytes);
+
+	ASSERT_EQ(SUCCESS, TeeRead(&Handle, &MaxResponse[0], Handle.maxMsgLen, &NumberOfBytes, 1000));
+	pResponseMessage = (GEN_GET_FW_VERSION_ACK*)(&MaxResponse[0]);
+
+	ASSERT_EQ(SUCCESS, pResponseMessage->Header.Fields.Result);
+	EXPECT_NE(0, pResponseMessage->Data.FWVersion.CodeMajor);
+	EXPECT_NE(0, pResponseMessage->Data.FWVersion.CodeBuildNo);
+
+	TeeDisconnect(&Handle);
+	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+
+	for (std::vector<std::thread>::iterator it = v.begin(); it != v.end(); it++)
+		it->std::thread::join();
 }
 
 /*
