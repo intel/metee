@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2020 Intel Corporation
+ * Copyright (C) 2014-2022 Intel Corporation
  */
 #include <errno.h>
 #include <fcntl.h>
@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include <sys/select.h>
+#include <sys/poll.h>
 #include <unistd.h>
 
 #include "metee.h"
@@ -21,7 +21,6 @@
 #define MAX_FW_STATUS_NUM 5
 
 #define MILISEC_IN_SEC 1000
-#define MICROSEC_IN_SEC 1000000
 
 /* use inline function instead of macro to avoid -Waddress warning in GCC */
 static inline struct mei *to_mei(PTEEHANDLE _h) __attribute__((always_inline));
@@ -33,20 +32,12 @@ static inline struct mei *to_mei(PTEEHANDLE _h)
 static inline int __mei_select(struct mei *me, bool on_read, unsigned long timeout)
 {
 	int rv;
-	fd_set rset, wset;
-	struct timeval tv;
+	struct pollfd pfd;
+	pfd.fd = me->fd;
+	pfd.events = (on_read) ? POLLIN : POLLOUT;
 
-	tv.tv_sec =  timeout / MILISEC_IN_SEC;
-	tv.tv_usec = (timeout % MILISEC_IN_SEC) * MICROSEC_IN_SEC;
-
-	FD_ZERO(&rset);
-	FD_ZERO(&wset);
-	if (on_read)
-		FD_SET(me->fd, &rset);
-	else
-		FD_SET(me->fd, &wset);
 	errno = 0;
-	rv = select(me->fd + 1 , &rset, &wset, NULL, &tv);
+	rv = poll(&pfd, 1, (int)(timeout * MILISEC_IN_SEC));
 	if (rv < 0)
 		return -errno;
 	if (rv == 0)
