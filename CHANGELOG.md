@@ -1,3 +1,18 @@
+## [3.1.4]
+
+### Fixes
+ - Linux: replace select with poll
+ - Linux: use positive errno number in strerror
+ - conan: drop cxx requirement
+
+## Changed
+ - build: take gtest 1.12.1
+ - tests: use fixed gtest version in download
+
+### Added
+ - CMake: add Windows presets
+ - test: add test for big file descriptor
+
 ## [3.1.3]
 
 ### Fixes
