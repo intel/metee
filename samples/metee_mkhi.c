@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2012-2020 Intel Corporation
+ * Copyright (C) 2012-2022 Intel Corporation
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -161,9 +161,14 @@ static bool mk_host_if_connect(struct mk_host_if *acmd)
 static bool mk_host_if_init(struct mk_host_if *acmd, const GUID *guid,
                             bool reconnect, bool verbose)
 {
+	int status;
 	acmd->reconnect = reconnect;
 	acmd->verbose = verbose;
-	TeeInit(&acmd->mei_cl, guid, NULL);
+	status = TeeInit(&acmd->mei_cl, guid, NULL);
+	if (!TEE_IS_SUCCESS(status)) {
+		fprintf(stderr, "init failed with status = %d\n", status);
+		return false;
+	}
 	return mk_host_if_connect(acmd);
 }
 
