@@ -482,12 +482,7 @@ TEST_P(MeTeeNTEST, PROD_N_TestLongDevicePath)
 	TEEHANDLE handle = TEEHANDLE_ZERO;
 	const char *longPath = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
 
-#ifdef _WIN32
 	ASSERT_EQ(TEE_DEVICE_NOT_FOUND, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, longPath));
-#else /* _WIN32 */
-	/* TODO: Linux code lose error code in this path */
-	ASSERT_EQ(TEE_INTERNAL_ERROR, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, longPath));
-#endif /* _WIN32 */
 }
 
 TEST_P(MeTeeNTEST, PROD_N_TestLongClientPath)
@@ -556,6 +551,7 @@ TEST_P(MeTeeNTEST, PROD_N_TestConnectByPath)
 		GTEST_SKIP();
 	ASSERT_EQ(TEE_SUCCESS, TeeInit(&handle, intf.client, devicePath));
 }
+#endif // WIN32
 
 TEST_P(MeTeeNTEST, PROD_N_TestConnectByWrongPath)
 {
@@ -563,15 +559,6 @@ TEST_P(MeTeeNTEST, PROD_N_TestConnectByWrongPath)
 
 	ASSERT_EQ(TEE_DEVICE_NOT_FOUND, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, "\\NO_SUCH_DEVICE"));
 }
-
-TEST_P(MeTeeNTEST, PROD_N_TestConnectByLongPath)
-{
-	TEEHANDLE handle = TEEHANDLE_ZERO;
-	const char *longPath = "\\Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
-
-	ASSERT_EQ(TEE_DEVICE_NOT_FOUND, TeeInit(&handle, &GUID_NON_EXISTS_CLIENT, longPath));
-}
-#endif // WIN32
 
 TEST_P(MeTeeDataNTEST, PROD_N_TestFWUNullBufferWrite)
 {
