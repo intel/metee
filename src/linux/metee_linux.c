@@ -45,7 +45,6 @@ static inline int __mei_select(struct mei *me, bool on_read, unsigned long timeo
 	return 0;
 }
 
-
 static inline TEESTATUS errno2status(int err)
 {
 	switch (err) {
@@ -59,10 +58,25 @@ static inline TEESTATUS errno2status(int err)
 	}
 }
 
+static inline TEESTATUS errno2status_init(int err)
+{
+	switch (err) {
+		case 0      : return TEE_SUCCESS;
+		case -ENOENT: return TEE_DEVICE_NOT_FOUND;
+		case -ENAMETOOLONG: return TEE_DEVICE_NOT_FOUND;
+		case -EBUSY : return TEE_BUSY;
+		case -ENODEV: return TEE_DEVICE_NOT_READY;
+		case -ETIME : return TEE_TIMEOUT;
+		case -EACCES: return TEE_PERMISSION_DENIED;
+		default     : return TEE_INTERNAL_ERROR;
+	}
+}
+
 TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const char *device)
 {
 	struct mei *me;
 	TEESTATUS  status;
+	int rc;
 #if defined(DEBUG) && !defined(SYSLOG)
 	bool verbose = true;
 #else
@@ -78,10 +92,17 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIO
 	}
 
 	__tee_init_handle(handle);
-	me = mei_alloc(device ? device : MEI_DEFAULT_DEVICE, guid, 0, verbose);
+	me = malloc(sizeof(struct mei));
 	if (!me) {
-		ERRPRINT("Cannot init mei structure\n");
+		ERRPRINT("Cannot alloc mei structure\n");
 		status = TEE_INTERNAL_ERROR;
+		goto End;
+	}
+	rc = mei_init(me, device ? device : MEI_DEFAULT_DEVICE, guid, 0, verbose);
+	if (rc) {
+		free(me);
+		ERRPRINT("Cannot init mei, rc = %d\n", rc);
+		status = errno2status_init(rc);
 		goto End;
 	}
 	handle->handle = me;
@@ -97,6 +118,7 @@ TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 {
 	struct mei *me;
 	TEESTATUS  status;
+	int rc;
 #if defined(DEBUG) && !defined(SYSLOG)
 	bool verbose = true;
 #else
@@ -112,10 +134,17 @@ TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 	}
 
 	__tee_init_handle(handle);
-	me = mei_alloc_fd(device_handle, guid, 0, verbose);
+	me = malloc(sizeof(struct mei));
 	if (!me) {
-		ERRPRINT("Cannot init mei structure\n");
+		ERRPRINT("Cannot alloc mei structure\n");
 		status = TEE_INTERNAL_ERROR;
+		goto End;
+	}
+	rc = mei_init_fd(me, device_handle, guid, 0, verbose);
+	if (rc) {
+		free(me);
+		ERRPRINT("Cannot init mei, rc = %d\n", rc);
+		status = errno2status_init(rc);
 		goto End;
 	}
 	handle->handle = me;
