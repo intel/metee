@@ -1,3 +1,10 @@
+## [3.1.5]
+
+### Fixes
+ - Linux: return better errors from TeeInit
+ - samples: mkhi: account for errors from init
+ - tests: update tests for fixed linux init
+
 ## [3.1.4]
 
 ### Fixes
