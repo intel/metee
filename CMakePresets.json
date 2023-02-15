@@ -1,7 +1,7 @@
 {
   "version": 2,
   "configurePresets": [
-      {
+    {
       "name": "base",
       "displayName": "Windows x86-64 base",
       "description": "Build x86-64 Release, VS2019",
@@ -35,6 +35,16 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
+    },
+    {
+      "name": "ReleaseAll",
+      "displayName": "Windows x86-64 Release All",
+      "description": "Build x86-64 Release, VS2019, including test and samples",
+      "inherits": "Release",
+      "cacheVariables": {
+        "BUILD_TEST": "YES",
+        "BUILD_SAMPLES": "YES"
+      }
     }
   ],
   "buildPresets": [
@@ -46,6 +56,11 @@
     {
       "name": "Release",
       "configurePreset": "Release",
+      "configuration": "Release"
+    },
+    {
+      "name": "ReleaseAll",
+      "configurePreset": "ReleaseAll",
       "configuration": "Release"
     }
   ]
