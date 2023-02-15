@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2020 Intel Corporation
+ * Copyright (C) 2014-2023 Intel Corporation
  */
 #include <assert.h>
 #include <windows.h>
@@ -17,7 +17,7 @@ static inline struct METEE_WIN_IMPL *to_int(PTEEHANDLE _h)
 
 static TEESTATUS __CreateFile(const char *devicePath, PHANDLE deviceHandle)
 {
-	TEESTATUS status = TEE_SUCCESS;
+	TEESTATUS status;
 
 	*deviceHandle = CreateFileA(devicePath,
 					GENERIC_READ | GENERIC_WRITE,
@@ -35,13 +35,16 @@ static TEESTATUS __CreateFile(const char *devicePath, PHANDLE deviceHandle)
 		else
 			status = TEE_DEVICE_NOT_READY;
 	}
+	else {
+		status = TEE_SUCCESS;
+	}
 
 	return status;
 }
 
 static TEESTATUS __TeeInit(PTEEHANDLE handle, const GUID *guid, const char *devicePath)
 {
-	TEESTATUS       status               = INIT_STATUS;
+	TEESTATUS       status;
 	HANDLE          deviceHandle         = INVALID_HANDLE_VALUE;
 	error_status_t  result;
 	struct METEE_WIN_IMPL *impl_handle   = NULL;
@@ -107,7 +110,7 @@ Cleanup:
 TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 			 IN OPTIONAL const char *device)
 {
-	TEESTATUS   status               = INIT_STATUS;
+	TEESTATUS   status;
 	char        devicePath[MAX_PATH] = {0};
 	const char *devicePathP          = NULL;
 
@@ -140,7 +143,7 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 TEESTATUS TEEAPI TeeInitGUID(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 			     IN OPTIONAL const GUID *device)
 {
-	TEESTATUS status               = INIT_STATUS;
+	TEESTATUS status;
 	char      devicePath[MAX_PATH] = {0};
 	LPCGUID   currentUUID          = NULL;
 
@@ -171,7 +174,7 @@ TEESTATUS TEEAPI TeeInitGUID(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 			       IN const TEE_DEVICE_HANDLE device_handle)
 {
-	TEESTATUS              status        = INIT_STATUS;
+	TEESTATUS              status;
 	struct METEE_WIN_IMPL *impl_handle   = NULL;
 	error_status_t         result;
 
@@ -214,7 +217,7 @@ Cleanup:
 TEESTATUS TEEAPI TeeConnect(OUT PTEEHANDLE handle)
 {
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
-	TEESTATUS       status        = INIT_STATUS;
+	TEESTATUS       status;
 	DWORD           bytesReturned = 0;
 	FW_CLIENT       fwClient      = {0};
 
@@ -275,7 +278,7 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void* buffer, IN size_t bu
 			 OUT OPTIONAL size_t* pNumOfBytesRead, IN OPTIONAL uint32_t timeout)
 {
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
-	TEESTATUS       status = INIT_STATUS;
+	TEESTATUS       status;
 	EVENTHANDLE     evt    = NULL;
 	DWORD           bytesRead = 0;
 
@@ -330,7 +333,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 			  OUT OPTIONAL size_t* numberOfBytesWritten, IN OPTIONAL uint32_t timeout)
 {
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
-	TEESTATUS       status = INIT_STATUS;
+	TEESTATUS       status;
 	EVENTHANDLE     evt    = NULL;
 	DWORD           bytesWritten = 0;
 
@@ -384,7 +387,7 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 			     IN uint32_t fwStatusNum, OUT uint32_t *fwStatus)
 {
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
-	TEESTATUS status = INIT_STATUS;
+	TEESTATUS status;
 	DWORD bytesReturned = 0;
 	DWORD fwSts = 0;
 	DWORD fwStsNum = fwStatusNum;
@@ -477,7 +480,7 @@ struct HECI_VERSION
 TEESTATUS TEEAPI GetDriverVersion(IN PTEEHANDLE handle, IN OUT teeDriverVersion_t *driverVersion)
 {
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
-	TEESTATUS status = INIT_STATUS;
+	TEESTATUS status;
 	DWORD bytesReturned = 0;
 	struct HECI_VERSION ver;
 

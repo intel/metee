@@ -45,7 +45,7 @@ void DebugPrint(const char* args, ...)
 TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation, IN HANDLE handle,
 		                  IN PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt)
 {
-	TEESTATUS       status          = INIT_STATUS;
+	TEESTATUS       status;
 	EVENTHANDLE     pOverlapped     = NULL;
 	DWORD           bytesTransferred= 0;
 	BOOLEAN         optSuccesed     = FALSE;
@@ -124,7 +124,7 @@ Cleanup:
 TEESTATUS EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseconds,
 			OUT OPTIONAL LPDWORD pNumberOfBytesTransferred)
 {
-	TEESTATUS       status                  = INIT_STATUS;
+	TEESTATUS       status;
 	DWORD           err                     = ERROR_INTERNAL_ERROR;
 	EVENTHANDLE     pOverlapped             = evt;
 	DWORD           bytesTransferred        = 0;
@@ -180,7 +180,7 @@ Cleanup:
 
 DWORD WINAPI WaitForOperationEnd(LPVOID lpThreadParameter)
 {
-	TEESTATUS status = INIT_STATUS;
+	TEESTATUS status;
 	DWORD bytesTransferred = 0;
 	POPERATION_CONTEXT pOpContext = (POPERATION_CONTEXT)lpThreadParameter;
 
@@ -207,7 +207,7 @@ TEESTATUS EndReadInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD millisecon
 			  OUT OPTIONAL LPDWORD pNumberOfBytesRead)
 
 {
-	TEESTATUS status = INIT_STATUS;
+	TEESTATUS status;
 
 	FUNC_ENTRY();
 
@@ -222,7 +222,7 @@ TEESTATUS BeginReadInternal(IN HANDLE handle,
 			    IN PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt)
 
 {
-	TEESTATUS status = INIT_STATUS;
+	TEESTATUS status;
 
 	FUNC_ENTRY();
 
@@ -236,7 +236,7 @@ TEESTATUS BeginReadInternal(IN HANDLE handle,
 TEESTATUS BeginWriteInternal(IN HANDLE handle,
 			     IN const PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt)
 {
-	TEESTATUS status = INIT_STATUS;
+	TEESTATUS status;
 
 	FUNC_ENTRY();
 
@@ -250,7 +250,7 @@ TEESTATUS BeginWriteInternal(IN HANDLE handle,
 TEESTATUS EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
 			   OUT OPTIONAL LPDWORD pNumberOfBytesWritten)
 {
-	TEESTATUS status = INIT_STATUS;
+	TEESTATUS status;
 
 	FUNC_ENTRY();
 
@@ -277,7 +277,7 @@ TEESTATUS EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseco
 TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid,
 			_Out_writes_(pathSize) char *path, _In_ SIZE_T pathSize)
 {
-	CONFIGRET     cr                          = CR_SUCCESS;
+	CONFIGRET     cr;
 	char         *deviceInterfaceList         = NULL;
 	ULONG         deviceInterfaceListLength   = 0;
 	HRESULT       hr                          = E_FAIL;
@@ -354,7 +354,8 @@ TEESTATUS SendIOCTL(IN HANDLE handle, IN DWORD ioControlCode,
 		    IN LPVOID pOutBuffer, IN DWORD outBufferSize, OUT LPDWORD pBytesRetuned)
 {
 	OVERLAPPED      overlapped = {0}; // it's OK to put the overlapped in the stack here
-	TEESTATUS       status     = INIT_STATUS;
+	TEESTATUS       status;
+	DWORD           err;
 
 	FUNC_ENTRY();
 
@@ -366,8 +367,9 @@ TEESTATUS SendIOCTL(IN HANDLE handle, IN DWORD ioControlCode,
 
 	overlapped.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	if (INVALID_HANDLE_VALUE == overlapped.hEvent) {
-		status = (TEESTATUS)GetLastError();
-		ERRPRINT("Error in CreateEvent, error: %d\n", status);
+		err = GetLastError();
+		ERRPRINT("Error in CreateEvent, error: %d\n", err);
+		status = Win32ErrorToTee(err);
 		goto Cleanup;
 	}
 
@@ -376,19 +378,20 @@ TEESTATUS SendIOCTL(IN HANDLE handle, IN DWORD ioControlCode,
 			     pOutBuffer, outBufferSize,
 			     pBytesRetuned, &overlapped)) {
 
-		TEESTATUS tempStatus = (TEESTATUS)GetLastError();
+		err = GetLastError();
 		// it's ok to get an error here, because it's overlapped
-		if (ERROR_IO_PENDING != tempStatus) {
-			ERRPRINT("Error in DeviceIoControl, error: %d\n", tempStatus);
-			status = tempStatus;
+		if (ERROR_IO_PENDING != err) {
+			ERRPRINT("Error in DeviceIoControl, error: %d\n", err);
+			status = Win32ErrorToTee(err);
 			goto Cleanup;
 		}
 	}
 
 
 	if (!GetOverlappedResult(handle, &overlapped, pBytesRetuned, TRUE)) {
-		status = (TEESTATUS)GetLastError();
-		ERRPRINT("Error in GetOverlappedResult, error: %d\n", status);
+		err = GetLastError();
+		ERRPRINT("Error in GetOverlappedResult, error: %d\n", err);
+		status = Win32ErrorToTee(err);
 		goto Cleanup;
 	}
 
