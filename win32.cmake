@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2014-2020 Intel Corporation
+# Copyright (C) 2014-2023 Intel Corporation
 
 set(TEE_SOURCES
     src/Windows/metee_win.c
@@ -23,8 +23,8 @@ if(NOT CONSOLE_OUTPUT)
 endif()
 
 # Secure compile flags
-target_compile_definitions(${PROJECT_NAME}
-                           PRIVATE /GS /sdl)
+target_compile_options(${PROJECT_NAME}
+                       PRIVATE /GS /sdl)
 
 # More warnings and warning-as-error
 target_compile_options(${PROJECT_NAME}
