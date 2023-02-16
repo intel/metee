@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright(c) 2013 - 2022 Intel Corporation. All rights reserved.
+ * Copyright(c) 2013 - 2023 Intel Corporation. All rights reserved.
  *
  * Intel Management Engine Interface (Intel MEI) Library
  */
@@ -310,8 +310,12 @@ static int __mei_fd_to_devname(struct mei *me, int fd)
 	int ret;
 
 	ret = snprintf(proc, PATH_MAX, "/proc/self/fd/%d", fd);
+	if (ret < 0) {
+		mei_err(me, "Proc path is bad %d\n", ret);
+		return ret;
+	}
 	if (ret >= PATH_MAX) {
-		mei_err(me, "Proc path is too long\n");
+		mei_err(me, "Proc path is too long %d\n", ret);
 		return -ENAMETOOLONG;
 	}
 
@@ -321,6 +325,15 @@ static int __mei_fd_to_devname(struct mei *me, int fd)
 		mei_err(me, "Cannot obtain device name %d\n", errno);
 		return -errno;
 	}
+	if (ret == PATH_MAX) {
+		mei_err(me, "Cannot obtain device name, too long\n");
+		return -ENAMETOOLONG;
+	}
+	if (ret < 0 || ret > PATH_MAX) {
+		mei_err(me, "Cannot obtain device name %d\n", ret);
+		return -EFAULT;
+	}
+	name[ret] = '\0';
 
 	me->device = strdup(name);
 	if (!me->device)
@@ -487,7 +500,7 @@ ssize_t mei_recv_msg(struct mei *me, unsigned char *buffer, size_t len)
 	if (!me || !buffer)
 		return -EINVAL;
 
-	mei_msg(me, "call read length = %zd\n", len);
+	mei_msg(me, "call read length = %zu\n", len);
 
 	rc = __mei_read(me, buffer, len);
 	if (rc < 0) {
@@ -508,7 +521,7 @@ ssize_t mei_send_msg(struct mei *me, const unsigned char *buffer, size_t len)
 	if (!me || !buffer)
 		return -EINVAL;
 
-	mei_msg(me, "call write length = %zd\n", len);
+	mei_msg(me, "call write length = %zu\n", len);
 	mei_dump_hex_buffer(me, buffer, len);
 
 	rc  = __mei_write(me, buffer, len);
