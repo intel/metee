@@ -194,6 +194,7 @@ TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 	if (result != 0) {
 		ERRPRINT("Error in in guid copy: result %u\n", result);
 		status = TEE_UNABLE_TO_COMPLETE_OPERATION;
+		goto Cleanup;
 	}
 
 	__tee_init_handle(handle);
