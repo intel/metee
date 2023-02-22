@@ -125,7 +125,7 @@ TEESTATUS EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseco
 			OUT OPTIONAL LPDWORD pNumberOfBytesTransferred)
 {
 	TEESTATUS       status;
-	DWORD           err                     = ERROR_INTERNAL_ERROR;
+	DWORD           err;
 	EVENTHANDLE     pOverlapped             = evt;
 	DWORD           bytesTransferred        = 0;
 	LPDWORD         pBytesTransferred       = NULL;
