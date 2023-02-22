@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2020 Intel Corporation
+ * Copyright (C) 2014-2023 Intel Corporation
  */
 #ifndef __TEELIBWIN_H
 #define __TEELIBWIN_H
@@ -85,9 +85,6 @@ TEESTATUS BeginWriteInternal(IN HANDLE handle,
 			     IN const PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt);
 TEESTATUS EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
 			   OUT OPTIONAL LPDWORD pNumberOfBytesWritten);
-TEESTATUS BeginOverlapped(IN TEE_OPERATION operation, IN PTEEHANDLE handle,
-			  IN PVOID buffer, IN ULONG bufferSize,
-			  IN LPTEE_COMPLETION_ROUTINE completionRoutine);
 TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid,
 			_Out_writes_(pathSize) char *path, _In_ SIZE_T pathSize);
 TEESTATUS SendIOCTL(IN HANDLE handle, IN DWORD ioControlCode, IN LPVOID pInBuffer,

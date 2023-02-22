@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2021 Intel Corporation
+ * Copyright (C) 2014-2023 Intel Corporation
  */
 #include <assert.h>
 #include <windows.h>
@@ -259,117 +259,6 @@ TEESTATUS EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseco
 	FUNC_EXIT(status);
 
 	return status;
-}
-
-TEESTATUS BeginOverlapped(IN TEE_OPERATION operation, IN PTEEHANDLE handle, IN PVOID buffer,
-			  IN ULONG bufferSize, IN LPTEE_COMPLETION_ROUTINE completionRoutine)
-{
-	TEESTATUS               status                  = INIT_STATUS;
-	TEESTATUS               tempStatus              = INIT_STATUS;
-	EVENTHANDLE             pOverlapped             = NULL;
-	DWORD                   bytesTransferred        = 0;
-	POPERATION_CONTEXT      pOpContext              = NULL;
-	HANDLE                  tHandle                 = INVALID_HANDLE_VALUE;
-	DWORD                   tID                     = 0;
-
-
-	FUNC_ENTRY();
-
-	if (IS_HANDLE_INVALID(handle) || NULL == buffer || 0 == bufferSize || NULL == completionRoutine) {
-		status = ERROR_INVALID_PARAMETER;
-		ERRPRINT("One of the parameters was illegal");
-		goto Cleanup;
-	}
-
-	// allocate overlapped struct
-	pOverlapped = (EVENTHANDLE)MALLOC(sizeof(OVERLAPPED));
-	if (NULL == pOverlapped) {
-		status = (TEESTATUS)GetLastError();
-		ERRPRINT("Error in MALLOC, error: %d\n", status);
-		goto Cleanup;
-	}
-
-	pOverlapped->hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (NULL == pOverlapped->hEvent) {
-		status = (TEESTATUS)GetLastError();
-		ERRPRINT("Error in MALLOC, error: %d\n", status);
-		goto Cleanup;
-	}
-
-	if (operation == ReadOperation) {
-		if (!ReadFile(handle->handle, buffer, bufferSize, &bytesTransferred,
-			      (LPOVERLAPPED)pOverlapped)) {
-			status = (TEESTATUS)GetLastError();
-			ERRPRINT("Error in ReadFile, error: %d\n", status);
-			goto Cleanup;
-		}
-		else {
-			status = 0;
-		}
-	}
-	else if (operation == WriteOperation) {
-		if (!WriteFile(handle->handle, buffer, bufferSize, &bytesTransferred,
-			       (LPOVERLAPPED)pOverlapped)) {
-			status = (TEESTATUS)GetLastError();
-			ERRPRINT("Error in WriteFile, error: %d\n", status);
-			goto Cleanup;
-		}
-		else {
-			status = 0;
-		}
-	}
-
-	if (!status) {
-		//we don't want to change the main status b/c IO_PENDING us OK
-		tempStatus = (TEESTATUS)GetLastError();
-
-		// it's ok to get an error here, because it's overlapped
-		if (ERROR_IO_PENDING != tempStatus) {
-			status = tempStatus;
-			ERRPRINT("Error in ReadFile, error: %d\n", status);
-			goto Cleanup;
-		}
-	}
-
-	//Create the operation context
-	pOpContext = (POPERATION_CONTEXT)MALLOC(sizeof(OPERATION_CONTEXT));
-	if (NULL == pOpContext) {
-		status = (TEESTATUS)GetLastError();
-		ERRPRINT("Error in MALLOC, error: %d\n", status);
-		goto Cleanup;
-	}
-
-	pOpContext->handle = handle->handle;
-	pOpContext->pOverlapped = pOverlapped;
-	pOpContext->completionRoutine = completionRoutine;
-	tHandle = CreateThread(NULL, 0, WaitForOperationEnd, pOpContext, 0, &tID);
-	if (NULL == tHandle) {
-		status = (TEESTATUS)GetLastError();
-		ERRPRINT("Error in CreateThread , error: %d\n", status);
-		goto Cleanup;
-	}
-
-	ERRPRINT("Created thread with tid %d\n", tID);
-
-	status = TEE_SUCCESS;
-
-Cleanup:
-
-	if (TEE_SUCCESS != status) {
-		if (pOverlapped) {
-			if (pOverlapped->hEvent)
-				CloseHandle(pOverlapped->hEvent);
-			FREE(pOverlapped);
-		}
-
-		if (pOpContext)
-			FREE(pOpContext);
-	}
-
-	FUNC_EXIT(status);
-
-	return status;
-
 }
 
 /*
