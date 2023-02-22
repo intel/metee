@@ -1,18 +1,31 @@
+## [3.1.6]
+
+### Fixed
+ - CMake: fix secure compiler options
+ - Windows: convert win32 errors to library errors
+ - doc: update doxygen config
+ - Linux: pull in libmei 1.5.2
+ - Windows: return with error on memcpy failure
+ - Windows: Drop non needed variable initialization on declaration
+
+### Added
+ - CMake: add preset to compile all code
+
 ## [3.1.5]
 
-### Fixes
+### Fixed
  - Linux: return better errors from TeeInit
  - samples: mkhi: account for errors from init
  - tests: update tests for fixed linux init
 
 ## [3.1.4]
 
-### Fixes
+### Fixed
  - Linux: replace select with poll
  - Linux: use positive errno number in strerror
  - conan: drop cxx requirement
 
-## Changed
+### Changed
  - build: take gtest 1.12.1
  - tests: use fixed gtest version in download
 
@@ -22,7 +35,7 @@
 
 ## [3.1.3]
 
-### Fixes
+### Fixed
  - samples: fix assignment and add explicit type-cast
  - Linux: pull-in libmei 1.5.1 with fix for reconnect if client not found
 
