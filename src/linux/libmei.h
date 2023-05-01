@@ -48,6 +48,14 @@ enum mei_cl_state {
 	MEI_CL_STATE_ERROR,             /**< client is in error state */
 };
 
+/*! log level
+ */
+enum mei_log_level {
+	MEI_LOG_LEVEL_QUIET = 0,   /**< no log prints */
+	MEI_LOG_LEVEL_ERROR = 1,   /**< error log prints */
+	MEI_LOG_LEVEL_VERBOSE = 2  /**< verbose log prints */
+};
+
 /*! Structure to store connection data
  */
 struct mei {
@@ -58,7 +66,7 @@ struct mei {
 	int state;              /**< client connection state */
 	int last_err;           /**< saved errno */
 	bool notify_en;         /**< notification is enabled */
-	bool verbose;           /**< verbose execution */
+	enum mei_log_level log_level; /**< libmei log level */
 	bool close_on_exit;     /**< close handle on deinit */
 	char *device;           /**< device name */
 	uint8_t vtag;           /**< vtag used in communication */
@@ -220,6 +228,20 @@ int mei_notification_get(struct mei *me);
  */
 int mei_fwstatus(struct mei *me, uint32_t fwsts_num, uint32_t *fwsts);
 
+/*! Set log level
+ *
+ *  \param me The mei handle
+ *  \param log_level log level to set
+ *  \return previous log level
+ */
+uint32_t mei_set_log_level(struct mei *me, uint32_t log_level);
+
+/*! Retrieve current log level
+ *
+ *  \param me The mei handle
+ *  \return current log level
+ */
+uint32_t mei_get_log_level(const struct mei *me);
 
 #ifdef __cplusplus
 }

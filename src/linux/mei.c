@@ -25,7 +25,7 @@
 #ifdef ANDROID
 #define LOG_TAG "libmei"
 #include <cutils/log.h>
-#define mei_msg(_me, fmt, ARGS...) ALOGV_IF(_me->verbose, fmt, ##ARGS)
+#define mei_msg(_me, fmt, ARGS...) ALOGV_IF((_me->log_level >= MEI_LOG_LEVEL_VERBOSE), fmt, ##ARGS)
 #define mei_err(_me, fmt, ARGS...) ALOGE(fmt, ##ARGS)
 static inline void __dump_buffer(const char *buf)
 {
@@ -43,13 +43,15 @@ static inline void __dump_buffer(const char *buf)
 	#define __mei_err(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
 #endif /* SYSLOG */
 
-#define mei_msg(_me, fmt, ARGS...) do {   \
-	if ((_me)->verbose)               \
-		__mei_msg(fmt, ##ARGS);   \
+#define mei_msg(_me, fmt, ARGS...) do {                \
+	if ((_me)->log_level >= MEI_LOG_LEVEL_VERBOSE) \
+		__mei_msg(fmt, ##ARGS);                \
 } while (0)
 
-#define mei_err(_me, fmt, ARGS...) \
-	__mei_err("me: error: " fmt, ##ARGS)
+#define mei_err(_me, fmt, ARGS...) do {               \
+	if ((_me)->log_level > MEI_LOG_LEVEL_QUIET)   \
+		__mei_err("me: error: " fmt, ##ARGS); \
+} while (0)
 
 static inline void __dump_buffer(const char *buf)
 {
@@ -81,7 +83,7 @@ static void dump_hex_buffer(const unsigned char *buf, size_t len)
 static void mei_dump_hex_buffer(struct mei *me,
 				const unsigned char *buf, size_t len)
 {
-	if (!me->verbose)
+	if (me->log_level < MEI_LOG_LEVEL_VERBOSE)
 		return;
 
 	dump_hex_buffer(buf, len);
@@ -275,7 +277,7 @@ int mei_init(struct mei *me, const char *device, const uuid_le *guid,
 	me->device = NULL;
 	mei_deinit(me);
 
-	me->verbose = verbose;
+	me->log_level = verbose ? MEI_LOG_LEVEL_VERBOSE : MEI_LOG_LEVEL_ERROR;
 
 	mei_msg(me, "API version %u.%u\n",
 		mei_get_api_version() >> 16 & 0xFF,
@@ -356,7 +358,7 @@ int mei_init_fd(struct mei *me, int fd, const uuid_le *guid,
 	mei_deinit(me);
 	me->fd = fd;
 
-	me->verbose = verbose;
+	me->log_level = verbose ? MEI_LOG_LEVEL_VERBOSE : MEI_LOG_LEVEL_ERROR;
 
 	mei_msg(me, "API version %u.%u\n",
 		mei_get_api_version() >> 16 & 0xFF,
@@ -626,4 +628,25 @@ int mei_fwstatus(struct mei *me, uint32_t fwsts_num, uint32_t *fwsts)
 unsigned int mei_get_api_version(void)
 {
 	return LIBMEI_API_VERSION;
+}
+
+uint32_t mei_set_log_level(struct mei *me, uint32_t log_level)
+{
+	uint32_t prev_log_level;
+
+	if (!me)
+		return MEI_LOG_LEVEL_ERROR;
+
+	prev_log_level = log_level;
+	me->log_level = (log_level > MEI_LOG_LEVEL_VERBOSE) ? MEI_LOG_LEVEL_VERBOSE : log_level;
+
+	return prev_log_level;
+}
+
+uint32_t mei_get_log_level(const struct mei *me)
+{
+	if (!me)
+		return MEI_LOG_LEVEL_ERROR;
+
+	return me->log_level;
 }
