@@ -83,25 +83,21 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIO
 	bool verbose = false;
 #endif // DEBUG and !SYSLOG
 
-	FUNC_ENTRY();
-
 	if (guid == NULL || handle == NULL) {
-		ERRPRINT("One of the parameters was illegal");
-		status = TEE_INVALID_PARAMETER;
-		goto End;
+		return TEE_INVALID_PARAMETER;
 	}
 
 	__tee_init_handle(handle);
 	me = malloc(sizeof(struct mei));
 	if (!me) {
-		ERRPRINT("Cannot alloc mei structure\n");
+		ERRPRINT(handle, "Cannot alloc mei structure\n");
 		status = TEE_INTERNAL_ERROR;
 		goto End;
 	}
 	rc = mei_init(me, device ? device : MEI_DEFAULT_DEVICE, guid, 0, verbose);
 	if (rc) {
 		free(me);
-		ERRPRINT("Cannot init mei, rc = %d\n", rc);
+		ERRPRINT(handle, "Cannot init mei, rc = %d\n", rc);
 		status = errno2status_init(rc);
 		goto End;
 	}
@@ -109,7 +105,6 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIO
 	status = TEE_SUCCESS;
 
 End:
-	FUNC_EXIT(status);
 	return status;
 }
 
@@ -125,25 +120,21 @@ TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 	bool verbose = false;
 #endif // DEBUG and !SYSLOG
 
-	FUNC_ENTRY();
-
 	if (guid == NULL || handle == NULL) {
-		ERRPRINT("One of the parameters was illegal");
-		status = TEE_INVALID_PARAMETER;
-		goto End;
+		return TEE_INVALID_PARAMETER;
 	}
 
 	__tee_init_handle(handle);
 	me = malloc(sizeof(struct mei));
 	if (!me) {
-		ERRPRINT("Cannot alloc mei structure\n");
+		ERRPRINT(handle, "Cannot alloc mei structure\n");
 		status = TEE_INTERNAL_ERROR;
 		goto End;
 	}
 	rc = mei_init_fd(me, device_handle, guid, 0, verbose);
 	if (rc) {
 		free(me);
-		ERRPRINT("Cannot init mei, rc = %d\n", rc);
+		ERRPRINT(handle, "Cannot init mei, rc = %d\n", rc);
 		status = errno2status_init(rc);
 		goto End;
 	}
@@ -151,7 +142,6 @@ TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 	status = TEE_SUCCESS;
 
 End:
-	FUNC_EXIT(status);
 	return status;
 }
 
@@ -161,18 +151,21 @@ TEESTATUS TEEAPI TeeConnect(IN OUT PTEEHANDLE handle)
 	TEESTATUS  status;
 	int        rc;
 
+	if (!handle) {
+		return TEE_INVALID_PARAMETER;
+	}
 
-	FUNC_ENTRY();
+	FUNC_ENTRY(handle);
 
 	if (!me) {
-		ERRPRINT("One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal");
 		status = TEE_INVALID_PARAMETER;
 		goto End;
 	}
 
 	rc = mei_connect(me);
 	if (rc) {
-		ERRPRINT("Cannot establish a handle to the Intel MEI driver\n");
+		ERRPRINT(handle, "Cannot establish a handle to the Intel MEI driver\n");
 		status = errno2status(rc);
 		goto End;
 	}
@@ -183,7 +176,7 @@ TEESTATUS TEEAPI TeeConnect(IN OUT PTEEHANDLE handle)
 	status = TEE_SUCCESS;
 
 End:
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 	return status;
 }
 
@@ -194,25 +187,29 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 	TEESTATUS status;
 	ssize_t rc;
 
-	FUNC_ENTRY();
+	if (!handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	FUNC_ENTRY(handle);
 
 	if (!me || !buffer || !bufferSize) {
-		ERRPRINT("One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal");
 		status = TEE_INVALID_PARAMETER;
 		goto End;
 	}
 
 	if (me->state != MEI_CL_STATE_CONNECTED) {
-		ERRPRINT("The client is not connected\n");
+		ERRPRINT(handle, "The client is not connected\n");
 		status = TEE_DISCONNECTED;
 		goto End;
 	}
 
-	DBGPRINT("call read length = %zd\n", bufferSize);
+	DBGPRINT(handle, "call read length = %zd\n", bufferSize);
 
 	if (timeout && (rc = __mei_select(me, true, timeout))) {
 		status = errno2status(rc);
-		ERRPRINT("select failed with status %zd %s\n",
+		ERRPRINT(handle, "select failed with status %zd %s\n",
 				rc, strerror(-rc));
 		goto End;
 	}
@@ -220,18 +217,18 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 	rc = mei_recv_msg(me, buffer, bufferSize);
 	if (rc < 0) {
 		status = errno2status(rc);
-		ERRPRINT("read failed with status %zd %s\n",
+		ERRPRINT(handle, "read failed with status %zd %s\n",
 				rc, strerror(-rc));
 		goto End;
 	}
 
 	status = TEE_SUCCESS;
-	DBGPRINT("read succeeded with result %zd\n", rc);
+	DBGPRINT(handle, "read succeeded with result %zd\n", rc);
 	if (pNumOfBytesRead)
 		*pNumOfBytesRead = rc;
 
 End:
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 	return status;
 }
 
@@ -242,25 +239,29 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 	TEESTATUS status;
 	ssize_t rc;
 
-	FUNC_ENTRY();
+	if (!handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	FUNC_ENTRY(handle);
 
 	if (!me || !buffer || !bufferSize) {
-		ERRPRINT("One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal");
 		status = TEE_INVALID_PARAMETER;
 		goto End;
 	}
 
 	if (me->state != MEI_CL_STATE_CONNECTED) {
-		ERRPRINT("The client is not connected\n");
+		ERRPRINT(handle, "The client is not connected\n");
 		status = TEE_DISCONNECTED;
 		goto End;
 	}
 
-	DBGPRINT("call write length = %zd\n", bufferSize);
+	DBGPRINT(handle, "call write length = %zd\n", bufferSize);
 
 	if (timeout && (rc = __mei_select(me, false, timeout))) {
 		status = errno2status(rc);
-		ERRPRINT("select failed with status %zd %s\n",
+		ERRPRINT(handle, "select failed with status %zd %s\n",
 				rc, strerror(-rc));
 		goto End;
 	}
@@ -268,7 +269,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 	rc  = mei_send_msg(me, buffer, bufferSize);
 	if (rc < 0) {
 		status = errno2status(rc);
-		ERRPRINT("write failed with status %zd %s\n", rc, strerror(-rc));
+		ERRPRINT(handle, "write failed with status %zd %s\n", rc, strerror(-rc));
 		goto End;
 	}
 
@@ -277,7 +278,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 
 	status = TEE_SUCCESS;
 End:
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 	return status;
 }
 
@@ -289,23 +290,27 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
         uint32_t fwsts;
 	int rc;
 
-	FUNC_ENTRY();
+	if (!handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	FUNC_ENTRY(handle);
 
 	if (!me || !fwStatus) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT("One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal");
 		goto End;
 	}
 	if (fwStatusNum > MAX_FW_STATUS_NUM) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT("fwStatusNum should be 0..5");
+		ERRPRINT(handle, "fwStatusNum should be 0..5");
 		goto End;
 	}
 
 	rc  = mei_fwstatus(me, fwStatusNum, &fwsts);
 	if (rc < 0) {
 		status = errno2status(rc);
-		ERRPRINT("fw status failed with status %d %s\n", rc, strerror(-rc));
+		ERRPRINT(handle, "fw status failed with status %d %s\n", rc, strerror(-rc));
 		goto End;
 	}
 
@@ -313,35 +318,40 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 	status = TEE_SUCCESS;
 
 End:
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 	return status;
 }
 
 void TEEAPI TeeDisconnect(PTEEHANDLE handle)
 {
 	struct mei *me  =  to_mei(handle);
-	FUNC_ENTRY();
+
+	if (!handle) {
+		return;
+	}
+
+	FUNC_ENTRY(handle);
 	if (me) {
 		mei_free(me);
 		handle->handle = NULL;
 	}
 
-	FUNC_EXIT(TEE_SUCCESS);
+	FUNC_EXIT(handle, TEE_SUCCESS);
 }
 
 TEE_DEVICE_HANDLE TEEAPI TeeGetDeviceHandle(IN PTEEHANDLE handle)
 {
 	struct mei *me = to_mei(handle);
 
-	FUNC_ENTRY();
+	if (!handle) {
+		return TEE_INVALID_PARAMETER;
+	}
 
 	if (!me) {
-		ERRPRINT("One of the parameters was illegal");
-		FUNC_EXIT(TEE_INVALID_PARAMETER)
+		ERRPRINT(handle, "One of the parameters was illegal");
 		return TEE_INVALID_DEVICE_HANDLE;
 	}
 	
-	FUNC_EXIT(TEE_SUCCESS);
 	return me->fd;
 }
 
@@ -350,16 +360,69 @@ TEESTATUS TEEAPI GetDriverVersion(IN PTEEHANDLE handle, IN OUT teeDriverVersion_
 	struct mei *me = to_mei(handle);
 	TEESTATUS status;
 
-	FUNC_ENTRY();
+	if (!handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	FUNC_ENTRY(handle);
 
 	if (!me || !driverVersion) {
-		ERRPRINT("One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal");
 		status = TEE_INVALID_PARAMETER;
 		goto End;
 	}
 	
 	status = TEE_NOTSUPPORTED;
 End:
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 	return status;
+}
+
+uint32_t TEEAPI TeeSetLogLevel(IN PTEEHANDLE handle, IN uint32_t log_level)
+{
+	struct mei *me = to_mei(handle);
+	uint32_t prev_log_level = TEE_LOG_LEVEL_ERROR;
+	int rc;
+
+	if (!handle) {
+		return prev_log_level;
+	}
+
+	FUNC_ENTRY(handle);
+
+	if (!me) {
+		ERRPRINT(handle, "Illegal handle\n");
+		goto End;
+	}
+
+	prev_log_level = handle->log_level;
+	handle->log_level = (log_level > TEE_LOG_LEVEL_VERBOSE) ? TEE_LOG_LEVEL_VERBOSE : log_level;
+
+	rc = mei_set_log_level(me, handle->log_level);
+	if (rc < 0) {
+		ERRPRINT(handle, "libmei set log level failed with status %d %s\n",
+			 rc, strerror(-rc));
+		goto End;
+	}
+
+End:
+	FUNC_EXIT(handle, prev_log_level);
+	return prev_log_level;
+}
+
+uint32_t TEEAPI TeeGetLogLevel(IN const PTEEHANDLE handle)
+{
+	uint32_t prev_log_level = TEE_LOG_LEVEL_ERROR;
+
+	if (!handle) {
+		return prev_log_level;
+	}
+
+	FUNC_ENTRY(handle);
+
+	prev_log_level = handle->log_level;
+
+	FUNC_EXIT(handle, prev_log_level);
+
+	return prev_log_level;
 }

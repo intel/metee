@@ -12,7 +12,9 @@
 #include "metee.h"
 
 	#if _DEBUG
-		#define PRINTS_ENABLE
+		#define TEE_DEFAULT_LOG_LEVEL TEE_LOG_LEVEL_VERBOSE
+	#else
+		#define TEE_DEFAULT_LOG_LEVEL TEE_LOG_LEVEL_QUIET
 	#endif
 
 	#define MALLOC(X)   HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, X)
@@ -33,13 +35,13 @@
 		#include <cutils/log.h>
 		#define DebugPrint(fmt, ...) ALOGV_IF(true, fmt, ##__VA_ARGS__)
 		#define ErrorPrint(fmt, ...) ALOGE_IF(true, fmt, ##__VA_ARGS__)
-		#if LOG_NDEBUG
-			#define PRINTS_ENABLE
+
+		#ifdef LOG_NDEBUG
+			#define TEE_DEFAULT_LOG_LEVEL TEE_LOG_LEVEL_VERBOSE
+		#else
+			#define TEE_DEFAULT_LOG_LEVEL TEE_LOG_LEVEL_QUIET
 		#endif
 	#else /* LINUX */
-		#ifdef DEBUG
-			#define PRINTS_ENABLE
-		#endif
 		#ifdef SYSLOG
 			#include <syslog.h>
 			#define DebugPrint(fmt, ...) syslog(LOG_DEBUG, fmt, ##__VA_ARGS__)
@@ -49,6 +51,13 @@
 			#define DebugPrint(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
 			#define ErrorPrint(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
 		#endif /* SYSLOG */
+
+		#ifdef DEBUG
+			#define TEE_DEFAULT_LOG_LEVEL TEE_LOG_LEVEL_VERBOSE
+		#else
+			#define TEE_DEFAULT_LOG_LEVEL TEE_LOG_LEVEL_QUIET
+		#endif
+
 	#endif /* ANDROID */
 
 	#define MALLOC(X)   malloc(X)
@@ -59,22 +68,16 @@
 #endif /* _WIN32 */
 
 
-#ifdef PRINTS_ENABLE
-#define DBGPRINT(_x_, ...) \
-	DebugPrint("TEELIB: (%s:%s():%d) " _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);
-#else
-	#define DBGPRINT(_x_, ...)
-#endif /* PRINTS_ENABLE */
+#define DBGPRINT(h, _x_, ...) \
+	if (h && h->log_level >= TEE_LOG_LEVEL_VERBOSE) \
+		DebugPrint("TEELIB: (%s:%s():%d) " _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);
 
-#ifdef PRINTS_ENABLE
-#define ERRPRINT(_x_, ...) \
-	ErrorPrint("TEELIB: (%s:%s():%d) " _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);
-#else
-	#define ERRPRINT(_x_, ...)
-#endif
+#define ERRPRINT(h, _x_, ...) \
+	if (h && h->log_level >= TEE_LOG_LEVEL_ERROR) \
+		ErrorPrint("TEELIB: (%s:%s():%d) " _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);
 
-#define FUNC_ENTRY()         ERRPRINT("Entry\n")
-#define FUNC_EXIT(status)    ERRPRINT("Exit with status: %d\n", status)
+#define FUNC_ENTRY(h)         ERRPRINT(h, "Entry\n")
+#define FUNC_EXIT(h, status)  ERRPRINT(h, "Exit with status: %d\n", status)
 
 static inline void __tee_init_handle(PTEEHANDLE handle) { memset(handle, 0, sizeof(TEEHANDLE));}
 

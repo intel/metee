@@ -61,6 +61,14 @@ extern "C" {
 #endif /* _WIN32 */
 //! @endcond
 
+/*! log level
+ */
+enum tee_log_level {
+        TEE_LOG_LEVEL_QUIET = 0,   /**< no log prints */
+        TEE_LOG_LEVEL_ERROR = 1,   /**< error log prints */
+        TEE_LOG_LEVEL_VERBOSE = 2  /**< verbose log prints */
+};
+
 /*!
  * Structure to store connection data
  */
@@ -69,6 +77,7 @@ typedef struct _TEEHANDLE {
 	void    *handle;          /**< Handle to the internal structure */
 	size_t  maxMsgLen;        /**< FW Client Max Message Length */
 	uint8_t protcolVer;       /**< FW Client Protocol FW */
+	enum tee_log_level log_level; /**< Log level */
 } TEEHANDLE;
 
 /*!
@@ -218,6 +227,21 @@ typedef struct {
  *  \return 0 if successful, otherwise error code.
  */
 TEESTATUS TEEAPI GetDriverVersion(IN PTEEHANDLE handle, IN OUT teeDriverVersion_t *driverVersion);
+
+/*! Set log level
+ *
+ *  \param handle The handle of the session.
+ *  \param log_level log level to set
+ *  \return previous log level
+ */
+uint32_t TEEAPI TeeSetLogLevel(IN PTEEHANDLE handle, IN uint32_t log_level);
+
+/*! Retrieve current log level
+ *
+ *  \param handle The handle of the session.
+ *  \return current log level
+ */
+uint32_t TEEAPI TeeGetLogLevel(IN const PTEEHANDLE handle);
 
 #ifdef __cplusplus
 }

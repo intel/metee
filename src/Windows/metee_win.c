@@ -15,9 +15,11 @@ static inline struct METEE_WIN_IMPL *to_int(PTEEHANDLE _h)
 	return _h ? (struct METEE_WIN_IMPL *)_h->handle : NULL;
 }
 
-static TEESTATUS __CreateFile(const char *devicePath, PHANDLE deviceHandle)
+static TEESTATUS __CreateFile(PTEEHANDLE handle, const char *devicePath, PHANDLE deviceHandle)
 {
 	TEESTATUS status;
+
+	FUNC_ENTRY(handle);
 
 	*deviceHandle = CreateFileA(devicePath,
 					GENERIC_READ | GENERIC_WRITE,
@@ -29,7 +31,7 @@ static TEESTATUS __CreateFile(const char *devicePath, PHANDLE deviceHandle)
 
 	if (*deviceHandle == INVALID_HANDLE_VALUE) {
 		DWORD err = GetLastError();
-		ERRPRINT("Error in CreateFile, error: %lu\n", err);
+		ERRPRINT(handle, "Error in CreateFile, error: %lu\n", err);
 		if (err == ERROR_FILE_NOT_FOUND || err == ERROR_PATH_NOT_FOUND)
 			status = TEE_DEVICE_NOT_FOUND;
 		else
@@ -38,6 +40,8 @@ static TEESTATUS __CreateFile(const char *devicePath, PHANDLE deviceHandle)
 	else {
 		status = TEE_SUCCESS;
 	}
+
+	FUNC_EXIT(handle, status);
 
 	return status;
 }
@@ -49,22 +53,21 @@ static TEESTATUS __TeeInit(PTEEHANDLE handle, const GUID *guid, const char *devi
 	error_status_t  result;
 	struct METEE_WIN_IMPL *impl_handle   = NULL;
 
-	FUNC_ENTRY();
+	FUNC_ENTRY(handle);
 
 	impl_handle = (struct METEE_WIN_IMPL *)malloc(sizeof(*impl_handle));
 	if (NULL == impl_handle) {
 		status = TEE_INTERNAL_ERROR;
-		ERRPRINT("Can't allocate memory for internal struct");
+		ERRPRINT(handle, "Can't allocate memory for internal struct");
 		goto Cleanup;
 	}
 	impl_handle->close_on_exit = true;
 	impl_handle->state = METEE_CLIENT_STATE_NONE;
 	impl_handle->device_path = NULL;
 
-	__tee_init_handle(handle);
 	handle->handle = impl_handle;
 
-	status = __CreateFile(devicePath, &deviceHandle);
+	status = __CreateFile(handle, devicePath, &deviceHandle);
 	if (status != TEE_SUCCESS) {
 		goto Cleanup;
 	}
@@ -72,14 +75,14 @@ static TEESTATUS __TeeInit(PTEEHANDLE handle, const GUID *guid, const char *devi
 	result  = memcpy_s(&impl_handle->guid, sizeof(impl_handle->guid),
 			   guid, sizeof(GUID));
 	if (result != 0) {
-		ERRPRINT("Error in in guid copy: result %u\n", result);
+		ERRPRINT(handle, "Error in in guid copy: result %u\n", result);
 		status = TEE_UNABLE_TO_COMPLETE_OPERATION;
 		goto Cleanup;
 	}
 
 	impl_handle->device_path = _strdup(devicePath);
 	if (impl_handle->device_path == NULL) {
-		ERRPRINT("Error in in device path copy\n");
+		ERRPRINT(handle, "Error in in device path copy\n");
 		status = TEE_UNABLE_TO_COMPLETE_OPERATION;
 		goto Cleanup;
 	}
@@ -99,7 +102,7 @@ Cleanup:
 			handle->handle = NULL;
 	}
 
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 
 	return status;
 }
@@ -114,20 +117,21 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 	char        devicePath[MAX_PATH] = {0};
 	const char *devicePathP          = NULL;
 
-	FUNC_ENTRY();
-
 	if (NULL == guid || NULL == handle) {
-		status = TEE_INVALID_PARAMETER;
-		ERRPRINT("One of the parameters was illegal");
-		return status;
+		return TEE_INVALID_PARAMETER;
 	}
+
+	FUNC_ENTRY(handle);
+
+        __tee_init_handle(handle);
+	handle->log_level = TEE_DEFAULT_LOG_LEVEL;
 
 	if (device != NULL) {
 		devicePathP = device;
 	} else {
-		status = GetDevicePath(&GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
+		status = GetDevicePath(handle, &GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
 		if (status) {
-			ERRPRINT("Error in GetDevicePath, error: %d\n", status);
+			ERRPRINT(handle, "Error in GetDevicePath, error: %d\n", status);
 			return status;
 		}
 		devicePathP = devicePath;
@@ -135,7 +139,7 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 
 	status = __TeeInit(handle, guid, devicePathP);
 
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 
 	return status;
 }
@@ -147,26 +151,27 @@ TEESTATUS TEEAPI TeeInitGUID(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 	char      devicePath[MAX_PATH] = {0};
 	LPCGUID   currentUUID          = NULL;
 
-	FUNC_ENTRY();
-
 	if (NULL == guid || NULL == handle) {
-		status = TEE_INVALID_PARAMETER;
-		ERRPRINT("One of the parameters was illegal");
-		return status;
+		return TEE_INVALID_PARAMETER;
 	}
+
+	FUNC_ENTRY(handle);
+
+	__tee_init_handle(handle);
+	handle->log_level = TEE_DEFAULT_LOG_LEVEL;
 
 	currentUUID = (device != NULL) ? device : &GUID_DEVINTERFACE_HECI;
 
 	// get device path
-	status = GetDevicePath(currentUUID, devicePath, MAX_PATH);
+	status = GetDevicePath(handle, currentUUID, devicePath, MAX_PATH);
 	if (status) {
-		ERRPRINT("Error in GetDevicePath, error: %d\n", status);
+		ERRPRINT(handle, "Error in GetDevicePath, error: %d\n", status);
 		return status;
 	}
 
 	status = __TeeInit(handle, guid, devicePath);
 
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 
 	return status;
 }
@@ -178,12 +183,19 @@ TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 	struct METEE_WIN_IMPL *impl_handle   = NULL;
 	error_status_t         result;
 
-	FUNC_ENTRY();
+	if (NULL == guid || NULL == handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	FUNC_ENTRY(handle);
+
+	__tee_init_handle(handle);
+	handle->log_level = TEE_DEFAULT_LOG_LEVEL;
 
 	impl_handle = (struct METEE_WIN_IMPL *)malloc(sizeof(*impl_handle));
 	if (NULL == impl_handle) {
 		status = TEE_INTERNAL_ERROR;
-		ERRPRINT("Can't allocate memory for internal struct");
+		ERRPRINT(handle, "Can't allocate memory for internal struct");
 		goto Cleanup;
 	}
 	impl_handle->close_on_exit = false;
@@ -192,12 +204,11 @@ TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 	impl_handle->state = METEE_CLIENT_STATE_NONE;
 	result = memcpy_s(&impl_handle->guid, sizeof(impl_handle->guid), guid, sizeof(GUID));
 	if (result != 0) {
-		ERRPRINT("Error in in guid copy: result %u\n", result);
+		ERRPRINT(handle, "Error in in guid copy: result %u\n", result);
 		status = TEE_UNABLE_TO_COMPLETE_OPERATION;
 		goto Cleanup;
 	}
 
-	__tee_init_handle(handle);
 	handle->handle = impl_handle;
 
 	status = TEE_SUCCESS;
@@ -209,11 +220,10 @@ Cleanup:
 			free(impl_handle);
 	}
 
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 
 	return status;
 }
-
 
 TEESTATUS TEEAPI TeeConnect(OUT PTEEHANDLE handle)
 {
@@ -222,18 +232,21 @@ TEESTATUS TEEAPI TeeConnect(OUT PTEEHANDLE handle)
 	DWORD           bytesReturned = 0;
 	FW_CLIENT       fwClient      = {0};
 
+	if (NULL == handle) {
+		return TEE_INVALID_PARAMETER;
+	}
 
-	FUNC_ENTRY();
+	FUNC_ENTRY(handle);
 
 	if (NULL == impl_handle) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT("One of the parameters was illegal\n");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto Cleanup;
 	}
 
 	if (impl_handle->state == METEE_CLIENT_STATE_CONNECTED) {
 		status = TEE_INTERNAL_ERROR;
-		ERRPRINT("The client is already connected\n");
+		ERRPRINT(handle, "The client is already connected\n");
 		goto Cleanup;
 	}
 
@@ -242,23 +255,23 @@ TEESTATUS TEEAPI TeeConnect(OUT PTEEHANDLE handle)
 		/* the handle have to be reopened in this case to reconnect to work */
 		CloseHandle(impl_handle->handle);
 		impl_handle->handle = NULL;
-		status = __CreateFile(impl_handle->device_path, &impl_handle->handle);
+		status = __CreateFile(handle, impl_handle->device_path, &impl_handle->handle);
 		if (status != TEE_SUCCESS) {
 			goto Cleanup;
 		}
 	}
 
-	status = SendIOCTL(impl_handle->handle, (DWORD)IOCTL_TEEDRIVER_CONNECT_CLIENT,
-						(LPVOID)&impl_handle->guid, sizeof(GUID),
-						&fwClient, sizeof(FW_CLIENT),
-						&bytesReturned);
+	status = SendIOCTL(handle, (DWORD)IOCTL_TEEDRIVER_CONNECT_CLIENT,
+			   (LPVOID)&impl_handle->guid, sizeof(GUID),
+			   &fwClient, sizeof(FW_CLIENT),
+			   &bytesReturned);
 	if (status) {
 		DWORD err = GetLastError();
 		status = Win32ErrorToTee(err);
 		// Connect IOCTL returns invalid handle if client is not found
 		if (status == TEE_INVALID_PARAMETER)
 			status = TEE_CLIENT_NOT_FOUND;
-		ERRPRINT("Error in SendIOCTL, error: %lu\n", err);
+		ERRPRINT(handle, "Error in SendIOCTL, error: %lu\n", err);
 		goto Cleanup;
 	}
 	impl_handle->state = METEE_CLIENT_STATE_CONNECTED;
@@ -270,7 +283,7 @@ TEESTATUS TEEAPI TeeConnect(OUT PTEEHANDLE handle)
 
 Cleanup:
 
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 
 	return status;
 }
@@ -283,23 +296,27 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void* buffer, IN size_t bu
 	EVENTHANDLE     evt    = NULL;
 	DWORD           bytesRead = 0;
 
-	FUNC_ENTRY();
+	if (NULL == handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	FUNC_ENTRY(handle);
 
 	if (NULL == impl_handle || NULL == buffer || 0 == bufferSize) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT("One of the parameters was illegal\n");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto Cleanup;
 	}
 
 	if (impl_handle->state != METEE_CLIENT_STATE_CONNECTED) {
 		status = TEE_DISCONNECTED;
-		ERRPRINT("The client is not connected\n");
+		ERRPRINT(handle, "The client is not connected\n");
 		goto Cleanup;
 	}
 
-	status = BeginReadInternal(impl_handle->handle, buffer, (ULONG)bufferSize, &evt);
+	status = BeginReadInternal(handle, buffer, (ULONG)bufferSize, &evt);
 	if (status) {
-		ERRPRINT("Error in BeginReadInternal, error: %d\n", status);
+		ERRPRINT(handle, "Error in BeginReadInternal, error: %d\n", status);
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
@@ -309,9 +326,9 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void* buffer, IN size_t bu
 	if (timeout == 0)
 		timeout = INFINITE;
 
-	status = EndReadInternal(impl_handle->handle, evt, timeout, &bytesRead);
+	status = EndReadInternal(handle, evt, timeout, &bytesRead);
 	if (status) {
-		ERRPRINT("Error in EndReadInternal, error: %d\n", status);
+		ERRPRINT(handle, "Error in EndReadInternal, error: %d\n", status);
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
@@ -325,7 +342,7 @@ Cleanup:
 	if (impl_handle)
 		impl_handle->evt = NULL;
 
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 
 	return status;
 }
@@ -338,23 +355,27 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 	EVENTHANDLE     evt    = NULL;
 	DWORD           bytesWritten = 0;
 
-	FUNC_ENTRY();
+	if (NULL == handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	FUNC_ENTRY(handle);
 
 	if (NULL == impl_handle || NULL == buffer || 0 == bufferSize) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT("One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal");
 		goto Cleanup;
 	}
 
 	if (impl_handle->state != METEE_CLIENT_STATE_CONNECTED) {
 		status = TEE_DISCONNECTED;
-		ERRPRINT("The client is not connected");
+		ERRPRINT(handle, "The client is not connected");
 		goto Cleanup;
 	}
 
-	status = BeginWriteInternal(impl_handle->handle, (PVOID)buffer, (ULONG)bufferSize, &evt);
+	status = BeginWriteInternal(handle, (PVOID)buffer, (ULONG)bufferSize, &evt);
 	if (status) {
-		ERRPRINT("Error in BeginWrite, error: %d\n", status);
+		ERRPRINT(handle, "Error in BeginWrite, error: %d\n", status);
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
@@ -364,9 +385,9 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 	if (timeout == 0)
 		timeout = INFINITE;
 
-	status = EndWriteInternal(impl_handle->handle, evt, timeout, &bytesWritten);
+	status = EndWriteInternal(handle, evt, timeout, &bytesWritten);
 	if (status) {
-		ERRPRINT("Error in EndWrite, error: %d\n", status);
+		ERRPRINT(handle, "Error in EndWrite, error: %d\n", status);
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
@@ -379,7 +400,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 Cleanup:
 	if (impl_handle)
 		impl_handle->evt = NULL;
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 
 	return status;
 }
@@ -393,27 +414,31 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 	DWORD fwSts = 0;
 	DWORD fwStsNum = fwStatusNum;
 
-	FUNC_ENTRY();
+	if (NULL == handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	FUNC_ENTRY(handle);
 
 	if (NULL == impl_handle || NULL == fwStatus) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT("One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal");
 		goto Cleanup;
 	}
 	if (fwStatusNum > 5) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT("fwStatusNum should be 0..5");
+		ERRPRINT(handle, "fwStatusNum should be 0..5");
 		goto Cleanup;
 	}
 
-	status = SendIOCTL(impl_handle->handle, (DWORD)IOCTL_TEEDRIVER_GET_FW_STS,
+	status = SendIOCTL(handle, (DWORD)IOCTL_TEEDRIVER_GET_FW_STS,
 		&fwStsNum, sizeof(DWORD),
 		&fwSts, sizeof(DWORD),
 		&bytesReturned);
 	if (status) {
 		DWORD err = GetLastError();
 		status = Win32ErrorToTee(err);
-		ERRPRINT("Error in SendIOCTL, error: %lu\n", err);
+		ERRPRINT(handle, "Error in SendIOCTL, error: %lu\n", err);
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
@@ -422,7 +447,7 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 	status = TEE_SUCCESS;
 
 Cleanup:
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 	return status;
 }
 
@@ -431,7 +456,11 @@ VOID TEEAPI TeeDisconnect(IN PTEEHANDLE handle)
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
 	DWORD ret;
 
-	FUNC_ENTRY();
+	if (NULL == handle) {
+		return;
+	}
+
+	FUNC_ENTRY(handle);
 	if (NULL == impl_handle) {
 		goto Cleanup;
 	}
@@ -439,7 +468,7 @@ VOID TEEAPI TeeDisconnect(IN PTEEHANDLE handle)
 	if (CancelIo(impl_handle->handle)) {
 		ret = WaitForSingleObject(impl_handle->evt, CANCEL_TIMEOUT);
 		if (ret != WAIT_OBJECT_0) {
-			ERRPRINT("Error in WaitForSingleObject, return: %lu, error: %lu\n",
+			ERRPRINT(handle, "Error in WaitForSingleObject, return: %lu, error: %lu\n",
 				 ret, GetLastError());
 		}
 	}
@@ -451,19 +480,23 @@ VOID TEEAPI TeeDisconnect(IN PTEEHANDLE handle)
 	handle->handle = NULL;
 
 Cleanup:
-	FUNC_EXIT(0);
+	FUNC_EXIT(handle, 0);
 }
 
 TEE_DEVICE_HANDLE TEEAPI TeeGetDeviceHandle(IN PTEEHANDLE handle)
 {
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
 
-	FUNC_ENTRY();
-	if (NULL == impl_handle) {
-		FUNC_EXIT(TEE_INVALID_PARAMETER);
+	if (NULL == handle) {
 		return TEE_INVALID_DEVICE_HANDLE;
 	}
-	FUNC_EXIT(TEE_SUCCESS);
+
+	FUNC_ENTRY(handle);
+	if (NULL == impl_handle) {
+		FUNC_EXIT(handle, TEE_INVALID_PARAMETER);
+		return TEE_INVALID_DEVICE_HANDLE;
+	}
+	FUNC_EXIT(handle, TEE_SUCCESS);
 	return impl_handle->handle;
 }
 
@@ -485,22 +518,24 @@ TEESTATUS TEEAPI GetDriverVersion(IN PTEEHANDLE handle, IN OUT teeDriverVersion_
 	DWORD bytesReturned = 0;
 	struct HECI_VERSION ver;
 
-	FUNC_ENTRY();
+	if (NULL == handle) {
+		return TEE_INVALID_DEVICE_HANDLE;
+	}
+
+	FUNC_ENTRY(handle);
 
 	if (NULL == impl_handle || NULL == driverVersion) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT("One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal");
 		goto Cleanup;
 	}
 
-	status = SendIOCTL(impl_handle->handle, (DWORD)IOCTL_HECI_GET_VERSION,
-						NULL, 0,
-						&ver, sizeof(ver),
-						&bytesReturned);
+	status = SendIOCTL(handle, (DWORD)IOCTL_HECI_GET_VERSION, NULL, 0,
+			   &ver, sizeof(ver), &bytesReturned);
 	if (status) {
 		DWORD err = GetLastError();
 		status = Win32ErrorToTee(err);
-		ERRPRINT("Error in SendIOCTL, error: %lu\n", err);
+		ERRPRINT(handle, "Error in SendIOCTL, error: %lu\n", err);
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
@@ -513,6 +548,40 @@ TEESTATUS TEEAPI GetDriverVersion(IN PTEEHANDLE handle, IN OUT teeDriverVersion_
 	status = TEE_SUCCESS;
 
 Cleanup:
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 	return status;
+}
+
+uint32_t TEEAPI TeeSetLogLevel(IN PTEEHANDLE handle, IN uint32_t log_level)
+{
+	uint32_t prev_log_level = TEE_DEFAULT_LOG_LEVEL;
+
+	if (NULL == handle) {
+		return prev_log_level;
+	}
+	FUNC_ENTRY(handle);
+
+	prev_log_level = handle->log_level;
+	handle->log_level = (log_level > TEE_LOG_LEVEL_VERBOSE) ? TEE_LOG_LEVEL_VERBOSE : log_level;
+
+Cleanup:
+	FUNC_EXIT(handle, prev_log_level);
+	return prev_log_level;
+}
+
+uint32_t TEEAPI TeeGetLogLevel(IN const PTEEHANDLE handle)
+{
+	uint32_t prev_log_level = TEE_DEFAULT_LOG_LEVEL;
+
+	if (NULL == handle) {
+		return prev_log_level;
+        }
+	FUNC_ENTRY(handle);
+
+        prev_log_level = handle->log_level;
+
+Cleanup:
+        FUNC_EXIT(handle, prev_log_level);
+
+        return prev_log_level;
 }

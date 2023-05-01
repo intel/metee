@@ -61,9 +61,12 @@ void MeTeeFDTEST::OpenMEI()
 {
 	DWORD status;
 	char devicePath[MAX_PATH] = {0};
+	PTEEHANDLE handle;
+
+	__tee_init_handle(handle);
 
 	deviceHandle = TEE_INVALID_DEVICE_HANDLE;
-	status = GetDevicePath(&GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
+	status = GetDevicePath(handle, &GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
 	if (status)
 		return;
 	deviceHandle = CreateFileA(devicePath,
@@ -545,8 +548,11 @@ TEST_P(MeTeeNTEST, PROD_N_TestConnectByPath)
 	struct MeTeeTESTParams intf = GetParam();
 	TEESTATUS status;
 	char devicePath[MAX_PATH] = {0};
+	PTEEHANDLE handle;
 
-	status = GetDevicePath((intf.device) ? intf.device : &GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
+	__tee_init_handle(handle);
+
+	status = GetDevicePath(handle, (intf.device) ? intf.device : &GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
 	if (status)
 		GTEST_SKIP();
 	ASSERT_EQ(TEE_SUCCESS, TeeInit(&handle, intf.client, devicePath));

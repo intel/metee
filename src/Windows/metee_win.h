@@ -72,21 +72,21 @@ typedef struct _OPERATION_CONTEXT
 **                Windows Helper Functions                          **
 **********************************************************************/
 TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation,
-				 IN HANDLE handle, IN PVOID buffer,
+				 IN PTEEHANDLE handle, IN PVOID buffer,
 				 IN ULONG bufferSize, OUT PEVENTHANDLE evt);
-TEESTATUS EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseconds,
+TEESTATUS EndOverlapped(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseconds,
 			OUT OPTIONAL LPDWORD pNumberOfBytesTransferred);
-TEESTATUS EndReadInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
+TEESTATUS EndReadInternal(IN PTEEHANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
 			  OUT OPTIONAL LPDWORD pNumberOfBytesRead);
-TEESTATUS BeginReadInternal(IN HANDLE handle, IN PVOID buffer, IN ULONG bufferSize,
+TEESTATUS BeginReadInternal(IN PTEEHANDLE handle, IN PVOID buffer, IN ULONG bufferSize,
 			    OUT PEVENTHANDLE evt);
-TEESTATUS BeginWriteInternal(IN HANDLE handle,
+TEESTATUS BeginWriteInternal(IN PTEEHANDLE handle,
 			     IN const PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt);
-TEESTATUS EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
+TEESTATUS EndWriteInternal(IN PTEEHANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
 			   OUT OPTIONAL LPDWORD pNumberOfBytesWritten);
-TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid,
+TEESTATUS GetDevicePath(IN PTEEHANDLE handle, _In_ LPCGUID InterfaceGuid,
 			_Out_writes_(pathSize) char *path, _In_ SIZE_T pathSize);
-TEESTATUS SendIOCTL(IN HANDLE handle, IN DWORD ioControlCode, IN LPVOID pInBuffer,
+TEESTATUS SendIOCTL(IN PTEEHANDLE handle, IN DWORD ioControlCode, IN LPVOID pInBuffer,
 		    IN DWORD inBufferSize, IN LPVOID pOutBuffer, IN DWORD outBufferSize,
 		    OUT LPDWORD pBytesRetuned);
 TEESTATUS Win32ErrorToTee(_In_ DWORD win32Error);

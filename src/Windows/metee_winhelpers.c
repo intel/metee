@@ -42,19 +42,20 @@ void DebugPrint(const char* args, ...)
 **		TEE_INVALID_PARAMETER
 **		TEE_INTERNAL_ERROR
 */
-TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation, IN HANDLE handle,
+TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation, IN PTEEHANDLE handle,
 		                  IN PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt)
 {
 	TEESTATUS       status;
 	EVENTHANDLE     pOverlapped     = NULL;
 	DWORD           bytesTransferred= 0;
 	BOOLEAN         optSuccesed     = FALSE;
+	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
 
-	FUNC_ENTRY();
+	FUNC_ENTRY(handle);
 
-	if (INVALID_HANDLE_VALUE == handle || NULL == buffer || 0 == bufferSize || NULL == evt) {
+	if (INVALID_HANDLE_VALUE == impl_handle->handle || NULL == buffer || 0 == bufferSize || NULL == evt) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT("One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal");
 		goto Cleanup;
 	}
 
@@ -62,26 +63,26 @@ TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation, IN HANDLE handle,
 	pOverlapped = (EVENTHANDLE)MALLOC(sizeof(OVERLAPPED));
 	if (NULL == pOverlapped) {
 		status = TEE_INTERNAL_ERROR;
-		ERRPRINT("Error in MALLOC, error: %d\n", GetLastError());
+		ERRPRINT(handle, "Error in MALLOC, error: %d\n", GetLastError());
 		goto Cleanup;
 	}
 
 	pOverlapped->hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	if (NULL == pOverlapped->hEvent) {
 		status = TEE_INTERNAL_ERROR;
-		ERRPRINT("Error in CreateEvent, error: %d\n", GetLastError());
+		ERRPRINT(handle, "Error in CreateEvent, error: %d\n", GetLastError());
 		goto Cleanup;
 	}
 
 
 	if (operation == ReadOperation) {
-		if (ReadFile(handle, buffer, bufferSize, &bytesTransferred,
+		if (ReadFile(impl_handle->handle, buffer, bufferSize, &bytesTransferred,
 			     (LPOVERLAPPED)pOverlapped)) {
 			optSuccesed = TRUE;
 		}
 	}
 	else if (operation == WriteOperation) {
-		if (WriteFile(handle, buffer, bufferSize, &bytesTransferred,
+		if (WriteFile(impl_handle->handle, buffer, bufferSize, &bytesTransferred,
 			      (LPOVERLAPPED)pOverlapped)) {
 			optSuccesed = TRUE;
 		}
@@ -92,10 +93,10 @@ TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation, IN HANDLE handle,
 
 		if (ERROR_IO_PENDING != err) {
 			status = Win32ErrorToTee(err);
-			ERRPRINT("Error in ReadFile/Write, error: %d\n", err);
+			ERRPRINT(handle, "Error in ReadFile/Write, error: %d\n", err);
 		}
 		else {
-			ERRPRINT("Pending in ReadFile/Write");
+			ERRPRINT(handle, "Pending in ReadFile/Write");
 			status = TEE_SUCCESS;
 		}
 	}
@@ -115,13 +116,13 @@ Cleanup:
 		*evt = (EVENTHANDLE)pOverlapped;
 	}
 
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 
 	return status;
 
 }
 
-TEESTATUS EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseconds,
+TEESTATUS EndOverlapped(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseconds,
 			OUT OPTIONAL LPDWORD pNumberOfBytesTransferred)
 {
 	TEESTATUS       status;
@@ -129,12 +130,13 @@ TEESTATUS EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseco
 	EVENTHANDLE     pOverlapped             = evt;
 	DWORD           bytesTransferred        = 0;
 	LPDWORD         pBytesTransferred       = NULL;
+	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
 
-	FUNC_ENTRY();
+	FUNC_ENTRY(handle);
 
-	if (INVALID_HANDLE_VALUE == handle || NULL == evt) {
+	if (INVALID_HANDLE_VALUE == impl_handle->handle || NULL == evt) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT("One of the parameters was illegal\n");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto Cleanup;
 	}
 
@@ -144,7 +146,7 @@ TEESTATUS EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseco
 	err = WaitForSingleObject(evt->hEvent, milliseconds);
 	if (err == WAIT_TIMEOUT) {
 		status = TEE_TIMEOUT;
-		ERRPRINT("WaitForSingleObject timed out!\n");
+		ERRPRINT(handle, "WaitForSingleObject timed out!\n");
 		goto Cleanup;
 	}
 
@@ -153,15 +155,15 @@ TEESTATUS EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseco
 		err = GetLastError();
 		status = Win32ErrorToTee(err);
 
-		ERRPRINT("WaitForSingleObject reported error: %d\n", err);
+		ERRPRINT(handle, "WaitForSingleObject reported error: %d\n", err);
 		goto Cleanup;
 	}
 
 	 // last parameter is true b/c if we're here the operation has been completed)
-	if (!GetOverlappedResult(handle, (LPOVERLAPPED)pOverlapped, pBytesTransferred, TRUE)) {
+	if (!GetOverlappedResult(impl_handle->handle, (LPOVERLAPPED)pOverlapped, pBytesTransferred, TRUE)) {
 		err = GetLastError();
 		status = Win32ErrorToTee(err);
-		ERRPRINT("Error in GetOverlappedResult, error: %d\n", err);
+		ERRPRINT(handle, "Error in GetOverlappedResult, error: %d\n", err);
 		goto Cleanup;
 	}
 
@@ -173,65 +175,65 @@ Cleanup:
 			CloseHandle(pOverlapped->hEvent);
 		FREE(pOverlapped);
 	}
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 
 	return status;
 }
 
-TEESTATUS EndReadInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
+TEESTATUS EndReadInternal(IN PTEEHANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
 			  OUT OPTIONAL LPDWORD pNumberOfBytesRead)
 
 {
 	TEESTATUS status;
 
-	FUNC_ENTRY();
+	FUNC_ENTRY(handle);
 
 	status = EndOverlapped(handle, evt, milliseconds, pNumberOfBytesRead);
 
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 
 	return status;
 }
 
-TEESTATUS BeginReadInternal(IN HANDLE handle,
+TEESTATUS BeginReadInternal(IN PTEEHANDLE handle,
 			    IN PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt)
 
 {
 	TEESTATUS status;
 
-	FUNC_ENTRY();
+	FUNC_ENTRY(handle);
 
 	status = BeginOverlappedInternal(ReadOperation ,handle, buffer, bufferSize, evt);
 
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 
 	return status;
 }
 
-TEESTATUS BeginWriteInternal(IN HANDLE handle,
+TEESTATUS BeginWriteInternal(IN PTEEHANDLE handle,
 			     IN const PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt)
 {
 	TEESTATUS status;
 
-	FUNC_ENTRY();
+	FUNC_ENTRY(handle);
 
 	status = BeginOverlappedInternal(WriteOperation ,handle, buffer, bufferSize, evt);
 
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 
 	return status;
 }
 
-TEESTATUS EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
+TEESTATUS EndWriteInternal(IN PTEEHANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
 			   OUT OPTIONAL LPDWORD pNumberOfBytesWritten)
 {
 	TEESTATUS status;
 
-	FUNC_ENTRY();
+	FUNC_ENTRY(handle);
 
 	status = EndOverlapped(handle, evt, milliseconds, pNumberOfBytesWritten);
 
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 
 	return status;
 }
@@ -240,6 +242,7 @@ TEESTATUS EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseco
 **	Return the given Device Path according to it's device GUID
 **
 **	Parameters:
+**              handle - metee handle
 **		InterfaceGuid - Device GUID
 **		path - Device path buffer
 **		pathSize - Device Path buffer size
@@ -249,7 +252,7 @@ TEESTATUS EndWriteInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseco
 **		TEE_INVALID_PARAMETER
 **		TEE_INTERNAL_ERROR
 */
-TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid,
+TEESTATUS GetDevicePath(_In_ PTEEHANDLE handle, _In_ LPCGUID InterfaceGuid,
 			_Out_writes_(pathSize) char *path, _In_ SIZE_T pathSize)
 {
 	CONFIGRET     cr;
@@ -258,11 +261,11 @@ TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid,
 	HRESULT       hr                          = E_FAIL;
 	TEESTATUS     status                      = TEE_INTERNAL_ERROR;
 
-	FUNC_ENTRY();
+	FUNC_ENTRY(handle);
 
 	if (InterfaceGuid == NULL || path == NULL || pathSize < 1) {
 		status = TEE_INTERNAL_ERROR;
-		ERRPRINT("One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal");
 		goto Cleanup;
 	}
 
@@ -274,20 +277,20 @@ TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid,
 		NULL,
 		CM_GET_DEVICE_INTERFACE_LIST_PRESENT);
 	if (cr != CR_SUCCESS) {
-		ERRPRINT("Error 0x%x retrieving device interface list size.\n", cr);
+		ERRPRINT(handle, "Error 0x%x retrieving device interface list size.\n", cr);
 		status = TEE_INTERNAL_ERROR;
 		goto Cleanup;
 	}
 
 	if (deviceInterfaceListLength <= 1) {
 		status = TEE_DEVICE_NOT_FOUND;
-		ERRPRINT("SetupDiGetClassDevs returned status %d", GetLastError());
+		ERRPRINT(handle, "SetupDiGetClassDevs returned status %d", GetLastError());
 		goto Cleanup;
 	}
 
 	deviceInterfaceList = (char*)malloc(deviceInterfaceListLength * sizeof(char));
 	if (deviceInterfaceList == NULL) {
-		ERRPRINT("Error allocating memory for device interface list.\n");
+		ERRPRINT(handle, "Error allocating memory for device interface list.\n");
 		status = TEE_INTERNAL_ERROR;
 		goto Cleanup;
 	}
@@ -300,7 +303,7 @@ TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid,
 		deviceInterfaceListLength,
 		CM_GET_DEVICE_INTERFACE_LIST_PRESENT);
 	if (cr != CR_SUCCESS) {
-		ERRPRINT("Error 0x%x retrieving device interface list.\n", cr);
+		ERRPRINT(handle, "Error 0x%x retrieving device interface list.\n", cr);
 		status = TEE_INTERNAL_ERROR;
 		goto Cleanup;
 	}
@@ -308,7 +311,7 @@ TEESTATUS GetDevicePath(_In_ LPCGUID InterfaceGuid,
 	hr = StringCchCopyA(path, pathSize, deviceInterfaceList);
 	if (FAILED(hr)) {
 		status = TEE_INTERNAL_ERROR;
-		ERRPRINT("Error: StringCchCopy failed with HRESULT 0x%x", hr);
+		ERRPRINT(handle, "Error: StringCchCopy failed with HRESULT 0x%x", hr);
 		goto Cleanup;
 	}
 
@@ -319,36 +322,37 @@ Cleanup:
 		free(deviceInterfaceList);
 	}
 
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 
 	return status;
 }
 
-TEESTATUS SendIOCTL(IN HANDLE handle, IN DWORD ioControlCode,
+TEESTATUS SendIOCTL(IN PTEEHANDLE handle, IN DWORD ioControlCode,
 		    IN LPVOID pInBuffer, IN DWORD inBufferSize,
 		    IN LPVOID pOutBuffer, IN DWORD outBufferSize, OUT LPDWORD pBytesRetuned)
 {
 	OVERLAPPED      overlapped = {0}; // it's OK to put the overlapped in the stack here
 	TEESTATUS       status;
 	DWORD           err;
+	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
 
-	FUNC_ENTRY();
+	FUNC_ENTRY(handle);
 
-	if (INVALID_HANDLE_VALUE == handle || NULL == pBytesRetuned) {
+	if (INVALID_HANDLE_VALUE == impl_handle->handle || NULL == pBytesRetuned) {
 		status = ERROR_INVALID_PARAMETER;
-		ERRPRINT("One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal");
 		goto Cleanup;
 	}
 
 	overlapped.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	if (INVALID_HANDLE_VALUE == overlapped.hEvent) {
 		err = GetLastError();
-		ERRPRINT("Error in CreateEvent, error: %d\n", err);
+		ERRPRINT(handle, "Error in CreateEvent, error: %d\n", err);
 		status = Win32ErrorToTee(err);
 		goto Cleanup;
 	}
 
-	if (!DeviceIoControl(handle, ioControlCode,
+	if (!DeviceIoControl(impl_handle->handle, ioControlCode,
 			     pInBuffer, inBufferSize,
 			     pOutBuffer, outBufferSize,
 			     pBytesRetuned, &overlapped)) {
@@ -356,16 +360,16 @@ TEESTATUS SendIOCTL(IN HANDLE handle, IN DWORD ioControlCode,
 		err = GetLastError();
 		// it's ok to get an error here, because it's overlapped
 		if (ERROR_IO_PENDING != err) {
-			ERRPRINT("Error in DeviceIoControl, error: %d\n", err);
+			ERRPRINT(handle, "Error in DeviceIoControl, error: %d\n", err);
 			status = Win32ErrorToTee(err);
 			goto Cleanup;
 		}
 	}
 
 
-	if (!GetOverlappedResult(handle, &overlapped, pBytesRetuned, TRUE)) {
+	if (!GetOverlappedResult(impl_handle->handle, &overlapped, pBytesRetuned, TRUE)) {
 		err = GetLastError();
-		ERRPRINT("Error in GetOverlappedResult, error: %d\n", err);
+		ERRPRINT(handle, "Error in GetOverlappedResult, error: %d\n", err);
 		status = Win32ErrorToTee(err);
 		goto Cleanup;
 	}
@@ -376,7 +380,7 @@ Cleanup:
 	if (overlapped.hEvent)
 		CloseHandle(overlapped.hEvent);
 
-	FUNC_EXIT(status);
+	FUNC_EXIT(handle, status);
 
 	return status;
 }
