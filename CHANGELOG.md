@@ -1,3 +1,11 @@
+## [3.2.0]
+
+### Added
+ - Linux: pull in libmei 1.5.3
+ - implement log level APIs
+ - Windows: remove redundant function WaitForOperationEnd
+ - Windows: add license for MSFT WDK samples
+
 ## [3.1.6]
 
 ### Fixed
