@@ -76,7 +76,6 @@ TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation,
 				 IN ULONG bufferSize, OUT PEVENTHANDLE evt);
 TEESTATUS EndOverlapped(IN HANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseconds,
 			OUT OPTIONAL LPDWORD pNumberOfBytesTransferred);
-DWORD WINAPI WaitForOperationEnd(LPVOID lpThreadParameter);
 TEESTATUS EndReadInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
 			  OUT OPTIONAL LPDWORD pNumberOfBytesRead);
 TEESTATUS BeginReadInternal(IN HANDLE handle, IN PVOID buffer, IN ULONG bufferSize,

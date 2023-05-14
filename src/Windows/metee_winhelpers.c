@@ -178,31 +178,6 @@ Cleanup:
 	return status;
 }
 
-DWORD WINAPI WaitForOperationEnd(LPVOID lpThreadParameter)
-{
-	TEESTATUS status;
-	DWORD bytesTransferred = 0;
-	POPERATION_CONTEXT pOpContext = (POPERATION_CONTEXT)lpThreadParameter;
-
-	FUNC_ENTRY();
-	if (pOpContext == NULL) {
-		status = ERROR_INVALID_PARAMETER;
-		goto exit;
-	}	
-
-	status = EndOverlapped(pOpContext->handle, pOpContext->pOverlapped,
-			       INFINITE, &bytesTransferred);
-
-	if (pOpContext->completionRoutine)
-		pOpContext->completionRoutine(status, (size_t)bytesTransferred);
-
-	//EndOverlapped already freed the overlapped structure
-	FREE(pOpContext);
-exit:
-	FUNC_EXIT(status);
-	return status;
-}
-
 TEESTATUS EndReadInternal(IN HANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
 			  OUT OPTIONAL LPDWORD pNumberOfBytesRead)
 
