@@ -137,6 +137,41 @@ TEST_P(MeTeeTEST, PROD_MKHI_SimpleGetVersion)
 }
 
 /*
+Set log level
+1) Init metee handle
+2) Get log level
+3) Change log level
+4) Check for valid log levels
+*/
+TEST_P(MeTeeTEST, PROD_MKHI_SetLogLevel)
+{
+        TEEHANDLE Handle = TEEHANDLE_ZERO;
+        struct MeTeeTESTParams intf = GetParam();
+        TEESTATUS status;
+	uint32_t orig_log_level, prev_log_level, new_log_level;
+
+        status = TestTeeInitGUID(&Handle, intf.client, intf.device);
+        if (status == TEE_DEVICE_NOT_FOUND)
+                GTEST_SKIP();
+        ASSERT_EQ(SUCCESS, status);
+        ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+
+        orig_log_level = TeeGetLogLevel(&Handle);
+	prev_log_level = TeeSetLogLevel(&Handle, TEE_LOG_LEVEL_VERBOSE);
+	new_log_level = TeeGetLogLevel(&Handle);
+
+        ASSERT_EQ(orig_log_level, prev_log_level);
+	ASSERT_EQ(new_log_level, TEE_LOG_LEVEL_VERBOSE);
+
+	prev_log_level = TeeSetLogLevel(&Handle, orig_log_level);
+	ASSERT_EQ(prev_log_level, TEE_LOG_LEVEL_VERBOSE);
+
+	new_log_level = TeeGetLogLevel(&Handle);
+	ASSERT_EQ(orig_log_level, new_log_level);
+
+}
+
+/*
 Send GetVersion Command to MKHI with timeout and fd > 1024
 1) Open 2000 file descriptors
 2) Open Connection to MKHI
