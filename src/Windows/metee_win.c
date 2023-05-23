@@ -519,7 +519,7 @@ TEESTATUS TEEAPI GetDriverVersion(IN PTEEHANDLE handle, IN OUT teeDriverVersion_
 	struct HECI_VERSION ver;
 
 	if (NULL == handle) {
-		return TEE_INVALID_DEVICE_HANDLE;
+		return TEE_INVALID_PARAMETER;
 	}
 
 	FUNC_ENTRY(handle);
