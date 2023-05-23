@@ -10,11 +10,6 @@
 #include "metee.h"
 #include "metee_win.h"
 
-static inline struct METEE_WIN_IMPL *to_int(PTEEHANDLE _h)
-{
-	return _h ? (struct METEE_WIN_IMPL *)_h->handle : NULL;
-}
-
 static TEESTATUS __CreateFile(PTEEHANDLE handle, const char *devicePath, PHANDLE deviceHandle)
 {
 	TEESTATUS status;

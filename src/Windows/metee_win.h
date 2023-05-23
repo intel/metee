@@ -91,4 +91,9 @@ TEESTATUS SendIOCTL(IN PTEEHANDLE handle, IN DWORD ioControlCode, IN LPVOID pInB
 		    OUT LPDWORD pBytesRetuned);
 TEESTATUS Win32ErrorToTee(_In_ DWORD win32Error);
 
+static inline struct METEE_WIN_IMPL *to_int(PTEEHANDLE _h)
+{
+        return _h ? (struct METEE_WIN_IMPL *)_h->handle : NULL;
+}
+
 #endif /* __TEELIBWIN_H */
