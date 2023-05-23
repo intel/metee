@@ -564,7 +564,6 @@ uint32_t TEEAPI TeeSetLogLevel(IN PTEEHANDLE handle, IN uint32_t log_level)
 	prev_log_level = handle->log_level;
 	handle->log_level = (log_level > TEE_LOG_LEVEL_VERBOSE) ? TEE_LOG_LEVEL_VERBOSE : log_level;
 
-Cleanup:
 	FUNC_EXIT(handle, prev_log_level);
 	return prev_log_level;
 }
@@ -580,7 +579,6 @@ uint32_t TEEAPI TeeGetLogLevel(IN const PTEEHANDLE handle)
 
         prev_log_level = handle->log_level;
 
-Cleanup:
         FUNC_EXIT(handle, prev_log_level);
 
         return prev_log_level;
