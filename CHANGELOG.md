@@ -1,3 +1,13 @@
+## [3.2.1]
+
+### Added
+ - set security policy for the project
+
+### Fixed
+ - Windows: fix wrong return status
+ - Windows: move to_int inline function to metee_win.h
+ - Windows: remove unused labels
+
 ## [3.2.0]
 
 ### Added
