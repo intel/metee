@@ -382,7 +382,6 @@ uint32_t TEEAPI TeeSetLogLevel(IN PTEEHANDLE handle, IN uint32_t log_level)
 {
 	struct mei *me = to_mei(handle);
 	uint32_t prev_log_level = TEE_LOG_LEVEL_ERROR;
-	int rc;
 
 	if (!handle) {
 		return prev_log_level;
@@ -398,12 +397,7 @@ uint32_t TEEAPI TeeSetLogLevel(IN PTEEHANDLE handle, IN uint32_t log_level)
 	prev_log_level = handle->log_level;
 	handle->log_level = (log_level > TEE_LOG_LEVEL_VERBOSE) ? TEE_LOG_LEVEL_VERBOSE : log_level;
 
-	rc = mei_set_log_level(me, handle->log_level);
-	if (rc < 0) {
-		ERRPRINT(handle, "libmei set log level failed with status %d %s\n",
-			 rc, strerror(-rc));
-		goto End;
-	}
+	mei_set_log_level(me, handle->log_level);
 
 End:
 	FUNC_EXIT(handle, prev_log_level);
