@@ -1,3 +1,8 @@
+## [3.2.2]
+
+### Fixed
+ - Linux: fix return value treatment of mei_set_log_level
+
 ## [3.2.1]
 
 ### Added
