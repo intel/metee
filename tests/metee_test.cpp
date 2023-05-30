@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2022 Intel Corporation
+ * Copyright (C) 2014-2023 Intel Corporation
  */
 #include <vector>
 #include <chrono>
@@ -61,12 +61,12 @@ void MeTeeFDTEST::OpenMEI()
 {
 	DWORD status;
 	char devicePath[MAX_PATH] = {0};
-	PTEEHANDLE handle;
+	TEEHANDLE handle;
 
-	__tee_init_handle(handle);
+	__tee_init_handle(&handle);
 
 	deviceHandle = TEE_INVALID_DEVICE_HANDLE;
-	status = GetDevicePath(handle, &GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
+	status = GetDevicePath(&handle, &GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
 	if (status)
 		return;
 	deviceHandle = CreateFileA(devicePath,
@@ -579,15 +579,14 @@ TEST_P(MeTeeNTEST, PROD_N_TestGetDriverVersion_NullParam)
 #ifdef WIN32
 TEST_P(MeTeeNTEST, PROD_N_TestConnectByPath)
 {
-	TEEHANDLE handle = TEEHANDLE_ZERO;
 	struct MeTeeTESTParams intf = GetParam();
 	TEESTATUS status;
 	char devicePath[MAX_PATH] = {0};
-	PTEEHANDLE handle;
+	TEEHANDLE handle;
 
-	__tee_init_handle(handle);
+	__tee_init_handle(&handle);
 
-	status = GetDevicePath(handle, (intf.device) ? intf.device : &GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
+	status = GetDevicePath(&handle, (intf.device) ? intf.device : &GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
 	if (status)
 		GTEST_SKIP();
 	ASSERT_EQ(TEE_SUCCESS, TeeInit(&handle, intf.client, devicePath));
