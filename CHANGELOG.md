@@ -1,3 +1,9 @@
+## [3.2.3]
+
+### Fixed
+ - tests: fix windows tests
+ - README: update Windows build instructions
+
 ## [3.2.2]
 
 ### Fixed
