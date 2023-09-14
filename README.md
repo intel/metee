@@ -12,11 +12,11 @@ From the "Developer Command Prompt for VS 2019" with C compiler and CMake compon
 
 1. Go to sources directory: `cd <srcdir>`
 2. Create `build` directory: `mkdir build`
-3. Run `cmake -G "Visual Studio 16 2019" -A <Build_arch> <srcdir>` from the `build` directory (best to set build_arch to Win32)
-4. Run `cmake --build . --config Release --target package -j <nproc>` from the `build` directory to build an archive with all executables and libraries
+3. Run `cmake -G "Visual Studio 16 2019" -A <build_arch> <srcdir>` from the `build` directory (best to set *build_arch* to Win32)
+4. Run `cmake --build . --config Release --target package -j <nproc>` from the `build` directory to build an archive with all executables and libraries, *nproc* is the number of parallel threads in compilation, best to set to number of processor threads available
 
-By default CMake links with dynamic runtime (/MD), set BUILD_MSVC_RUNTIME_STATIC to ON to link with static runtime (/MT):
-`cmake -G "Visual Studio 16 2019" -A <Build_arch> -DBUILD_MSVC_RUNTIME_STATIC=ON <srcdir>`
+By default, CMake links with dynamic runtime (/MD), set BUILD_MSVC_RUNTIME_STATIC to ON to link with static runtime (/MT):
+`cmake -G "Visual Studio 16 2019" -A <build_arch> -DBUILD_MSVC_RUNTIME_STATIC=ON <srcdir>`
 
 ### Linux
 
