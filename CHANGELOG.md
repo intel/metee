@@ -1,3 +1,11 @@
+## [3.2.4]
+
+### Fixed
+ - Linux: pull in libmei 1.5.4 with reconnect-on-error fix
+
+### Added
+ - README: add nproc explanation, refine grammar and formatting
+
 ## [3.2.3]
 
 ### Fixed
