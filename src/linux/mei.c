@@ -440,10 +440,8 @@ static int __int_mei_connect(struct mei *me, uint8_t vtag)
 	if (!me)
 		return -EINVAL;
 
-	if (me->state != MEI_CL_STATE_INITIALIZED &&
-	    me->state != MEI_CL_STATE_DISCONNECTED &&
-	    me->state != MEI_CL_STATE_NOT_PRESENT) {
-		mei_err(me, "client state [%d]\n", me->state);
+	if (me->state == MEI_CL_STATE_CONNECTED) {
+		mei_err(me, "client is connected [%d]\n", me->state);
 		return -EINVAL;
 	}
 
