@@ -27,6 +27,16 @@
       }
     },
     {
+      "name": "DebugAll",
+      "displayName": "Windows x86-64 Debug All",
+      "description": "Build x86-64 Debug, VS2019, including test and samples",
+      "inherits": "Debug",
+      "cacheVariables": {
+        "BUILD_TEST": "YES",
+        "BUILD_SAMPLES": "YES"
+      }
+    },
+    {
       "name": "Release",
       "displayName": "Windows x86-64 Release",
       "description": "Build x86-64 Release, VS2019",
@@ -51,6 +61,11 @@
     {
       "name": "Debug",
       "configurePreset": "Debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "DebugAll",
+      "configurePreset": "DebugAll",
       "configuration": "Debug"
     },
     {
