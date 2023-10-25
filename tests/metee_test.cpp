@@ -201,6 +201,35 @@ TEST_P(MeTeeTEST, PROD_MKHI_SetLogCallback)
 	TeeDisconnect(&Handle);
 	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
 }
+/*
+* Blocking read from side thread cancelled by disconnect from the main thread
+*/
+TEST_P(MeTeeTEST, PROD_MKHI_InterruptRead)
+{
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
+	struct MeTeeTESTParams intf = GetParam();
+	TEESTATUS status;
+	std::thread thr;
+
+	status = TestTeeInitGUID(&Handle, intf.client, intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(SUCCESS, status);
+	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+	ASSERT_EQ(SUCCESS, TeeConnect(&Handle));
+
+	thr = std::thread([Handle]() {
+		std::vector <char> MaxResponse;
+		size_t NumberOfBytes = 0;
+		MaxResponse.resize(Handle.maxMsgLen * sizeof(char));
+		EXPECT_EQ(TEE_UNABLE_TO_COMPLETE_OPERATION, TeeRead((PTEEHANDLE) & Handle, &MaxResponse[0], Handle.maxMsgLen, &NumberOfBytes, 0));
+	});
+	thr.detach();
+	std::this_thread::sleep_for(std::chrono::seconds(1));
+
+	TeeDisconnect(&Handle);
+	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+}
 
 /*
 Send GetVersion Command to MKHI with timeout and fd > 1024
