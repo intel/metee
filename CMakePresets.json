@@ -12,7 +12,6 @@
         "strategy": "set"
       },
       "cacheVariables": {
-        "CMAKE_SYSTEM_VERSION": "10.0",
         "BUILD_SHARED_LIBS": "YES"
       }
     },
