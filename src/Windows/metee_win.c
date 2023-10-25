@@ -127,7 +127,7 @@ TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 		ERRPRINT(handle, "Can't allocate memory for internal struct");
 		goto Cleanup;
 	}
-	impl_handle->device_path = NULL;
+	memset(impl_handle, 0, sizeof(*impl_handle));
 
 	switch (device.type) {
 	case TEE_DEVICE_TYPE_NONE:
@@ -163,15 +163,42 @@ TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 		goto Cleanup;
 	}
 
+	// allocate overlapped struct
+	for (size_t i = 0; i < MAX_EVT; i++) {
+		impl_handle->evt[i] = (EVENTHANDLE)MALLOC(sizeof(OVERLAPPED));
+		if (NULL == impl_handle->evt[i]) {
+			status = TEE_UNABLE_TO_COMPLETE_OPERATION;
+			ERRPRINT(handle, "Error in MALLOC, error: %d\n", GetLastError());
+			goto Cleanup;
+		}
+
+		impl_handle->evt[i]->hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+		if (NULL == impl_handle->evt[i]->hEvent) {
+			status = TEE_UNABLE_TO_COMPLETE_OPERATION;
+			ERRPRINT(handle, "Error in CreateEvent, error: %d\n", GetLastError());
+			goto Cleanup;
+		}
+	}
+
 	handle->handle = impl_handle;
+
 	status = TEE_SUCCESS;
 
 Cleanup:
 	if (TEE_SUCCESS != status) {
-		CloseHandle(deviceHandle);
-		if (impl_handle)
+		if (impl_handle) {
+			for (size_t i = 0; i < MAX_EVT; i++) {
+				if (impl_handle->evt[i]) {
+					if (impl_handle->evt[i]->hEvent)
+						CloseHandle(impl_handle->evt[i]->hEvent);
+					FREE(impl_handle->evt[i]);
+				}
+			}
 			free(impl_handle->device_path);
-		free(impl_handle);
+			free(impl_handle);
+		}
+		if (deviceHandle)
+			CloseHandle(deviceHandle);
 		if (handle)
 			handle->handle = NULL;
 	}
@@ -249,7 +276,7 @@ TEESTATUS TEEAPI TeeConnect(OUT PTEEHANDLE handle)
 		}
 	}
 
-	status = SendIOCTL(handle, (DWORD)IOCTL_TEEDRIVER_CONNECT_CLIENT,
+	status = SendIOCTL(handle, impl_handle->evt[METEE_WIN_EVT_IOCTL], (DWORD)IOCTL_TEEDRIVER_CONNECT_CLIENT,
 			   (LPVOID)&impl_handle->guid, sizeof(GUID),
 			   &fwClient, sizeof(FW_CLIENT),
 			   &bytesReturned);
@@ -279,7 +306,6 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void* buffer, IN size_t bu
 {
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
 	TEESTATUS       status;
-	EVENTHANDLE     evt    = NULL;
 	DWORD           bytesRead = 0;
 
 	if (NULL == handle) {
@@ -300,19 +326,17 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void* buffer, IN size_t bu
 		goto Cleanup;
 	}
 
-	status = BeginReadInternal(handle, buffer, (ULONG)bufferSize, &evt);
+	status = BeginReadInternal(handle, buffer, (ULONG)bufferSize, impl_handle->evt[METEE_WIN_EVT_READ]);
 	if (status) {
 		ERRPRINT(handle, "Error in BeginReadInternal, error: %d\n", status);
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
 
-	impl_handle->evt = evt;
-
 	if (timeout == 0)
 		timeout = INFINITE;
 
-	status = EndReadInternal(handle, evt, timeout, &bytesRead);
+	status = EndReadInternal(handle, impl_handle->evt[METEE_WIN_EVT_READ], timeout, &bytesRead);
 	if (status) {
 		ERRPRINT(handle, "Error in EndReadInternal, error: %d\n", status);
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;
@@ -325,8 +349,6 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void* buffer, IN size_t bu
 	status = TEE_SUCCESS;
 
 Cleanup:
-	if (impl_handle)
-		impl_handle->evt = NULL;
 
 	FUNC_EXIT(handle, status);
 
@@ -338,7 +360,6 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 {
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
 	TEESTATUS       status;
-	EVENTHANDLE     evt    = NULL;
 	DWORD           bytesWritten = 0;
 
 	if (NULL == handle) {
@@ -359,19 +380,17 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 		goto Cleanup;
 	}
 
-	status = BeginWriteInternal(handle, (PVOID)buffer, (ULONG)bufferSize, &evt);
+	status = BeginWriteInternal(handle, (PVOID)buffer, (ULONG)bufferSize, impl_handle->evt[METEE_WIN_EVT_WRITE]);
 	if (status) {
 		ERRPRINT(handle, "Error in BeginWrite, error: %d\n", status);
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
 
-	impl_handle->evt = evt;
-
 	if (timeout == 0)
 		timeout = INFINITE;
 
-	status = EndWriteInternal(handle, evt, timeout, &bytesWritten);
+	status = EndWriteInternal(handle, impl_handle->evt[METEE_WIN_EVT_WRITE], timeout, &bytesWritten);
 	if (status) {
 		ERRPRINT(handle, "Error in EndWrite, error: %d\n", status);
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;
@@ -384,8 +403,6 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 	status = TEE_SUCCESS;
 
 Cleanup:
-	if (impl_handle)
-		impl_handle->evt = NULL;
 	FUNC_EXIT(handle, status);
 
 	return status;
@@ -417,7 +434,7 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 		goto Cleanup;
 	}
 
-	status = SendIOCTL(handle, (DWORD)IOCTL_TEEDRIVER_GET_FW_STS,
+	status = SendIOCTL(handle, impl_handle->evt[METEE_WIN_EVT_IOCTL], (DWORD)IOCTL_TEEDRIVER_GET_FW_STS,
 		&fwStsNum, sizeof(DWORD),
 		&fwSts, sizeof(DWORD),
 		&bytesReturned);
@@ -454,7 +471,7 @@ TEESTATUS TEEAPI TeeGetTRC(IN PTEEHANDLE handle, OUT uint32_t* trc_val)
 		goto Cleanup;
 	}
 
-	status = SendIOCTL(handle, (DWORD)IOCTL_TEEDRIVER_GET_TRC,
+	status = SendIOCTL(handle, impl_handle->evt[METEE_WIN_EVT_IOCTL], (DWORD)IOCTL_TEEDRIVER_GET_TRC,
 		NULL, 0,
 		&trc, sizeof(DWORD),
 		&bytesReturned);
@@ -486,14 +503,24 @@ VOID TEEAPI TeeDisconnect(IN PTEEHANDLE handle)
 		goto Cleanup;
 	}
 
-	if (CancelIo(impl_handle->handle)) {
-		ret = WaitForSingleObject(impl_handle->evt, CANCEL_TIMEOUT);
-		if (ret != WAIT_OBJECT_0) {
-			ERRPRINT(handle, "Error in WaitForSingleObject, return: %lu, error: %lu\n",
-				 ret, GetLastError());
+	if (CancelIoEx(impl_handle->handle, NULL)) {
+		HANDLE handles[MAX_EVT];
+		for (size_t i = 0; i < MAX_EVT; i++) {
+			handles[i] = impl_handle->evt[i]->hEvent;
+		}
+		ret = WaitForMultipleObjects(MAX_EVT, handles, TRUE, CANCEL_TIMEOUT);
+		if (ret > (WAIT_OBJECT_0 + MAX_EVT - 1)) {
+			ERRPRINT(handle, "Error in WaitForMultipleObjects, return: %lu, error: %lu\n",
+				ret, GetLastError());
 		}
 	}
-
+	for (size_t i = 0; i < MAX_EVT; i++) {
+		if (impl_handle->evt[i]) {
+			if (impl_handle->evt[i]->hEvent)
+				CloseHandle(impl_handle->evt[i]->hEvent);
+			FREE(impl_handle->evt[i]);
+		}
+	}
 	if (impl_handle->close_on_exit)
 		CloseHandle(impl_handle->handle);
 	free(impl_handle->device_path);
@@ -551,7 +578,8 @@ TEESTATUS TEEAPI GetDriverVersion(IN PTEEHANDLE handle, IN OUT teeDriverVersion_
 		goto Cleanup;
 	}
 
-	status = SendIOCTL(handle, (DWORD)IOCTL_TEEDRIVER_GET_VERSION, NULL, 0,
+	status = SendIOCTL(handle, impl_handle->evt[METEE_WIN_EVT_IOCTL],
+			   (DWORD)IOCTL_TEEDRIVER_GET_VERSION, NULL, 0,
 			   &ver, sizeof(ver), &bytesReturned);
 	if (status) {
 		ERRPRINT(handle, "Error in SendIOCTL, status: %lu\n", status);

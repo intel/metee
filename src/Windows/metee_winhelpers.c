@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2023 Intel Corporation
+ * Copyright (C) 2014-2024 Intel Corporation
  */
 #include <assert.h>
 #include <windows.h>
@@ -42,10 +42,9 @@ void DebugPrint(const char* args, ...)
 **		TEE_INTERNAL_ERROR
 */
 TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation, IN PTEEHANDLE handle,
-		                  IN PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt)
+		                  IN PVOID buffer, IN ULONG bufferSize, OUT EVENTHANDLE evt)
 {
 	TEESTATUS       status;
-	EVENTHANDLE     pOverlapped     = NULL;
 	DWORD           bytesTransferred= 0;
 	BOOLEAN         optSuccesed     = FALSE;
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
@@ -58,31 +57,13 @@ TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation, IN PTEEHANDLE hand
 		goto Cleanup;
 	}
 
-	// allocate overlapped struct
-	pOverlapped = (EVENTHANDLE)MALLOC(sizeof(OVERLAPPED));
-	if (NULL == pOverlapped) {
-		status = TEE_INTERNAL_ERROR;
-		ERRPRINT(handle, "Error in MALLOC, error: %d\n", GetLastError());
-		goto Cleanup;
-	}
-
-	pOverlapped->hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (NULL == pOverlapped->hEvent) {
-		status = TEE_INTERNAL_ERROR;
-		ERRPRINT(handle, "Error in CreateEvent, error: %d\n", GetLastError());
-		goto Cleanup;
-	}
-
-
 	if (operation == ReadOperation) {
-		if (ReadFile(impl_handle->handle, buffer, bufferSize, &bytesTransferred,
-			     (LPOVERLAPPED)pOverlapped)) {
+		if (ReadFile(impl_handle->handle, buffer, bufferSize, &bytesTransferred, evt)) {
 			optSuccesed = TRUE;
 		}
 	}
 	else if (operation == WriteOperation) {
-		if (WriteFile(impl_handle->handle, buffer, bufferSize, &bytesTransferred,
-			      (LPOVERLAPPED)pOverlapped)) {
+		if (WriteFile(impl_handle->handle, buffer, bufferSize, &bytesTransferred, evt)) {
 			optSuccesed = TRUE;
 		}
 	}
@@ -104,17 +85,6 @@ TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation, IN PTEEHANDLE hand
 	}
 
 Cleanup:
-	if (TEE_SUCCESS != status) {
-		if (pOverlapped) {
-			if (pOverlapped->hEvent)
-				CloseHandle(pOverlapped->hEvent);
-			FREE(pOverlapped);
-		}
-	}
-	else {
-		*evt = (EVENTHANDLE)pOverlapped;
-	}
-
 	FUNC_EXIT(handle, status);
 
 	return status;
@@ -126,7 +96,6 @@ TEESTATUS EndOverlapped(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD milli
 {
 	TEESTATUS       status;
 	DWORD           err;
-	EVENTHANDLE     pOverlapped             = evt;
 	DWORD           bytesTransferred        = 0;
 	LPDWORD         pBytesTransferred       = NULL;
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
@@ -159,7 +128,7 @@ TEESTATUS EndOverlapped(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD milli
 	}
 
 	 // last parameter is true b/c if we're here the operation has been completed)
-	if (!GetOverlappedResult(impl_handle->handle, (LPOVERLAPPED)pOverlapped, pBytesTransferred, TRUE)) {
+	if (!GetOverlappedResult(impl_handle->handle, evt, pBytesTransferred, TRUE)) {
 		err = GetLastError();
 		status = Win32ErrorToTee(err);
 		ERRPRINT(handle, "Error in GetOverlappedResult, error: %d\n", err);
@@ -169,11 +138,6 @@ TEESTATUS EndOverlapped(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD milli
 	status = TEE_SUCCESS; //not really needed, but for completeness...
 
 Cleanup:
-	if (pOverlapped) {
-		if (pOverlapped->hEvent)
-			CloseHandle(pOverlapped->hEvent);
-		FREE(pOverlapped);
-	}
 	FUNC_EXIT(handle, status);
 
 	return status;
@@ -195,7 +159,7 @@ TEESTATUS EndReadInternal(IN PTEEHANDLE handle, IN EVENTHANDLE evt, DWORD millis
 }
 
 TEESTATUS BeginReadInternal(IN PTEEHANDLE handle,
-			    IN PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt)
+			    IN PVOID buffer, IN ULONG bufferSize, OUT EVENTHANDLE evt)
 
 {
 	TEESTATUS status;
@@ -210,7 +174,7 @@ TEESTATUS BeginReadInternal(IN PTEEHANDLE handle,
 }
 
 TEESTATUS BeginWriteInternal(IN PTEEHANDLE handle,
-			     IN const PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt)
+			     IN const PVOID buffer, IN ULONG bufferSize, OUT EVENTHANDLE evt)
 {
 	TEESTATUS status;
 
@@ -251,8 +215,8 @@ TEESTATUS EndWriteInternal(IN PTEEHANDLE handle, IN EVENTHANDLE evt, DWORD milli
 **		TEE_INVALID_PARAMETER
 **		TEE_INTERNAL_ERROR
 */
-TEESTATUS GetDevicePath(_In_ PTEEHANDLE handle, _In_ LPCGUID InterfaceGuid,
-			_Out_writes_(pathSize) char *path, _In_ SIZE_T pathSize)
+TEESTATUS GetDevicePath(IN PTEEHANDLE handle, IN LPCGUID InterfaceGuid,
+			OUT char *path, IN SIZE_T pathSize)
 {
 	CONFIGRET     cr;
 	char         *deviceInterfaceList         = NULL;
@@ -326,11 +290,10 @@ Cleanup:
 	return status;
 }
 
-TEESTATUS SendIOCTL(IN PTEEHANDLE handle, IN DWORD ioControlCode,
+TEESTATUS SendIOCTL(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD ioControlCode,
 		    IN LPVOID pInBuffer, IN DWORD inBufferSize,
 		    IN LPVOID pOutBuffer, IN DWORD outBufferSize, OUT LPDWORD pBytesRetuned)
 {
-	OVERLAPPED      overlapped = {0}; // it's OK to put the overlapped in the stack here
 	TEESTATUS       status;
 	DWORD           err;
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
@@ -343,18 +306,10 @@ TEESTATUS SendIOCTL(IN PTEEHANDLE handle, IN DWORD ioControlCode,
 		goto Cleanup;
 	}
 
-	overlapped.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (INVALID_HANDLE_VALUE == overlapped.hEvent) {
-		err = GetLastError();
-		ERRPRINT(handle, "Error in CreateEvent, error: %d\n", err);
-		status = Win32ErrorToTee(err);
-		goto Cleanup;
-	}
-
 	if (!DeviceIoControl(impl_handle->handle, ioControlCode,
 			     pInBuffer, inBufferSize,
 			     pOutBuffer, outBufferSize,
-			     pBytesRetuned, &overlapped)) {
+			     pBytesRetuned, evt)) {
 
 		err = GetLastError();
 		// it's ok to get an error here, because it's overlapped
@@ -366,7 +321,7 @@ TEESTATUS SendIOCTL(IN PTEEHANDLE handle, IN DWORD ioControlCode,
 	}
 
 
-	if (!GetOverlappedResult(impl_handle->handle, &overlapped, pBytesRetuned, TRUE)) {
+	if (!GetOverlappedResult(impl_handle->handle, evt, pBytesRetuned, TRUE)) {
 		err = GetLastError();
 		ERRPRINT(handle, "Error in GetOverlappedResult, error: %d\n", err);
 		status = Win32ErrorToTee(err);
@@ -376,15 +331,13 @@ TEESTATUS SendIOCTL(IN PTEEHANDLE handle, IN DWORD ioControlCode,
 	status = TEE_SUCCESS;
 
 Cleanup:
-	if (overlapped.hEvent)
-		CloseHandle(overlapped.hEvent);
 
 	FUNC_EXIT(handle, status);
 
 	return status;
 }
 
-TEESTATUS Win32ErrorToTee(_In_ DWORD win32Error)
+TEESTATUS Win32ErrorToTee(IN DWORD win32Error)
 {
 	switch (win32Error) {
 	case ERROR_INVALID_HANDLE:
@@ -399,6 +352,8 @@ TEESTATUS Win32ErrorToTee(_In_ DWORD win32Error)
 		return TEE_CLIENT_NOT_FOUND;
 	case ERROR_ACCESS_DENIED:
 		return TEE_PERMISSION_DENIED;
+	case ERROR_OPERATION_ABORTED:
+		return TEE_UNABLE_TO_COMPLETE_OPERATION;
 	default:
 		return TEE_INTERNAL_ERROR;
 	}

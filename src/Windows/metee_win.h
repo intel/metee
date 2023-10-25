@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2023 Intel Corporation
+ * Copyright (C) 2014-2024 Intel Corporation
  */
 #ifndef __TEELIBWIN_H
 #define __TEELIBWIN_H
@@ -24,11 +24,16 @@ enum METEE_CLIENT_STATE
 	METEE_CLIENT_STATE_FAILED
 };
 
+#define METEE_WIN_EVT_IOCTL 0
+#define METEE_WIN_EVT_READ  1
+#define METEE_WIN_EVT_WRITE 2
+#define MAX_EVT 3
+
 struct METEE_WIN_IMPL
 {
 	HANDLE handle;            /**< file descriptor - Handle to the Device File */
 	GUID   guid;              /**< fw client guid */
-	LPOVERLAPPED evt;         /**< event for executing async */
+	LPOVERLAPPED evt[MAX_EVT]; /**< event for executing async */
 	bool close_on_exit;       /**< close handle on exit */
 	enum METEE_CLIENT_STATE state; /**< the client state */
 	char *device_path;        /**< device path */
@@ -73,20 +78,20 @@ typedef struct _OPERATION_CONTEXT
 **********************************************************************/
 TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation,
 				 IN PTEEHANDLE handle, IN PVOID buffer,
-				 IN ULONG bufferSize, OUT PEVENTHANDLE evt);
+				 IN ULONG bufferSize, OUT EVENTHANDLE evt);
 TEESTATUS EndOverlapped(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseconds,
 			OUT OPTIONAL LPDWORD pNumberOfBytesTransferred);
 TEESTATUS EndReadInternal(IN PTEEHANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
 			  OUT OPTIONAL LPDWORD pNumberOfBytesRead);
 TEESTATUS BeginReadInternal(IN PTEEHANDLE handle, IN PVOID buffer, IN ULONG bufferSize,
-			    OUT PEVENTHANDLE evt);
+			    OUT EVENTHANDLE evt);
 TEESTATUS BeginWriteInternal(IN PTEEHANDLE handle,
-			     IN const PVOID buffer, IN ULONG bufferSize, OUT PEVENTHANDLE evt);
+			     IN const PVOID buffer, IN ULONG bufferSize, OUT EVENTHANDLE evt);
 TEESTATUS EndWriteInternal(IN PTEEHANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
 			   OUT OPTIONAL LPDWORD pNumberOfBytesWritten);
-TEESTATUS GetDevicePath(IN PTEEHANDLE handle, _In_ LPCGUID InterfaceGuid,
+TEESTATUS GetDevicePath(_In_ PTEEHANDLE handle, _In_ LPCGUID InterfaceGuid,
 			_Out_writes_(pathSize) char *path, _In_ SIZE_T pathSize);
-TEESTATUS SendIOCTL(IN PTEEHANDLE handle, IN DWORD ioControlCode, IN LPVOID pInBuffer,
+TEESTATUS SendIOCTL(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD ioControlCode, IN LPVOID pInBuffer,
 		    IN DWORD inBufferSize, IN LPVOID pOutBuffer, IN DWORD outBufferSize,
 		    OUT LPDWORD pBytesRetuned);
 TEESTATUS Win32ErrorToTee(_In_ DWORD win32Error);
