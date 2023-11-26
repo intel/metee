@@ -118,7 +118,7 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 
 	FUNC_ENTRY(handle);
 
-        __tee_init_handle(handle);
+	__tee_init_handle(handle);
 	handle->log_level = TEE_DEFAULT_LOG_LEVEL;
 
 	if (device != NULL) {
@@ -569,12 +569,12 @@ uint32_t TEEAPI TeeGetLogLevel(IN const PTEEHANDLE handle)
 
 	if (NULL == handle) {
 		return prev_log_level;
-        }
+	}
 	FUNC_ENTRY(handle);
 
-        prev_log_level = handle->log_level;
+	prev_log_level = handle->log_level;
 
-        FUNC_EXIT(handle, prev_log_level);
+	FUNC_EXIT(handle, prev_log_level);
 
-        return prev_log_level;
+	return prev_log_level;
 }
