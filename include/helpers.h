@@ -76,8 +76,8 @@
 	if (h && h->log_level >= TEE_LOG_LEVEL_ERROR) \
 		ErrorPrint("TEELIB: (%s:%s():%d) " _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);
 
-#define FUNC_ENTRY(h)         ERRPRINT(h, "Entry\n")
-#define FUNC_EXIT(h, status)  ERRPRINT(h, "Exit with status: %d\n", status)
+#define FUNC_ENTRY(h)         DBGPRINT(h, "Entry\n")
+#define FUNC_EXIT(h, status)  DBGPRINT(h, "Exit with status: %d\n", status)
 
 static inline void __tee_init_handle(PTEEHANDLE handle) { memset(handle, 0, sizeof(TEEHANDLE));}
 
