@@ -170,22 +170,22 @@ Set log level
 */
 TEST_P(MeTeeTEST, PROD_MKHI_SetLogLevel)
 {
-        TEEHANDLE Handle = TEEHANDLE_ZERO;
-        struct MeTeeTESTParams intf = GetParam();
-        TEESTATUS status;
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
+	struct MeTeeTESTParams intf = GetParam();
+	TEESTATUS status;
 	uint32_t orig_log_level, prev_log_level, new_log_level;
 
-        status = TestTeeInitGUID(&Handle, intf.client, intf.device);
-        if (status == TEE_DEVICE_NOT_FOUND)
-                GTEST_SKIP();
-        ASSERT_EQ(SUCCESS, status);
-        ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+	status = TestTeeInitGUID(&Handle, intf.client, intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(SUCCESS, status);
+	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
 
-        orig_log_level = TeeGetLogLevel(&Handle);
+	orig_log_level = TeeGetLogLevel(&Handle);
 	prev_log_level = TeeSetLogLevel(&Handle, TEE_LOG_LEVEL_VERBOSE);
 	new_log_level = TeeGetLogLevel(&Handle);
 
-        ASSERT_EQ(orig_log_level, prev_log_level);
+	ASSERT_EQ(orig_log_level, prev_log_level);
 	ASSERT_EQ(new_log_level, TEE_LOG_LEVEL_VERBOSE);
 
 	prev_log_level = TeeSetLogLevel(&Handle, orig_log_level);
@@ -194,6 +194,8 @@ TEST_P(MeTeeTEST, PROD_MKHI_SetLogLevel)
 	new_log_level = TeeGetLogLevel(&Handle);
 	ASSERT_EQ(orig_log_level, new_log_level);
 
+	TeeDisconnect(&Handle);
+	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
 }
 
 void MeTeeTEST_Log(bool is_error, const char* fmt, ...)
