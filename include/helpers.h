@@ -4,6 +4,9 @@
  */
 #ifndef __HELPERS_H
 #define __HELPERS_H
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -67,18 +70,28 @@
 	#define INIT_STATUS -EPERM
 #endif /* _WIN32 */
 
-
 #define DBGPRINT(h, _x_, ...) \
-	if (h && h->log_level >= TEE_LOG_LEVEL_VERBOSE) \
-		DebugPrint("TEELIB: (%s:%s():%d) " _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);
+	if ((h) && (h)->log_level >= TEE_LOG_LEVEL_VERBOSE) { \
+		if ((h)->log_callback) \
+			(h)->log_callback(false, "TEELIB: (%s:%s():%d) " _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
+		else \
+			DebugPrint("TEELIB: (%s:%s():%d) " _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
+	}
 
 #define ERRPRINT(h, _x_, ...) \
-	if (h && h->log_level >= TEE_LOG_LEVEL_ERROR) \
-		ErrorPrint("TEELIB: (%s:%s():%d) " _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__);
+	if ((h) && (h)->log_level >= TEE_LOG_LEVEL_ERROR) { \
+		if ((h)->log_callback) \
+			(h)->log_callback(true, "TEELIB: (%s:%s():%d) " _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
+		else \
+			ErrorPrint("TEELIB: (%s:%s():%d) " _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
+	}
 
 #define FUNC_ENTRY(h)         DBGPRINT(h, "Entry\n")
 #define FUNC_EXIT(h, status)  DBGPRINT(h, "Exit with status: %d\n", status)
 
 static inline void __tee_init_handle(PTEEHANDLE handle) { memset(handle, 0, sizeof(TEEHANDLE));}
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* __HELPERS_H */

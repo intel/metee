@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2021 Intel Corporation
+ * Copyright (C) 2014-2023 Intel Corporation
  */
 /*! \file metee.h
  *  \brief metee library API
@@ -14,6 +14,7 @@ extern "C" {
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 //! @cond suppress_warnings
 #ifdef _WIN32
 	#include <Windows.h>
@@ -69,6 +70,10 @@ enum tee_log_level {
         TEE_LOG_LEVEL_VERBOSE = 2  /**< verbose log prints */
 };
 
+/*! log callback function format
+ */
+typedef void(*TeeLogCallback)(bool is_error, const char* fmt, ...);
+
 /*!
  * Structure to store connection data
  */
@@ -78,6 +83,7 @@ typedef struct _TEEHANDLE {
 	size_t  maxMsgLen;        /**< FW Client Max Message Length */
 	uint8_t protcolVer;       /**< FW Client Protocol FW */
 	enum tee_log_level log_level; /**< Log level */
+	TeeLogCallback log_callback; /**< Log callback */
 } TEEHANDLE;
 
 /*!
@@ -134,6 +140,18 @@ typedef uint16_t TEESTATUS; /**< return status for API functions */
  */
 TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 			 IN OPTIONAL const char *device);
+
+/*! Initializes a TEE connection with log callback
+ *  \param handle A handle to the TEE device. All subsequent calls to the lib's functions
+ *         must be with this handle
+ *  \param guid GUID of the FW client that want to start a session
+ *  \param device optional device path, set NULL to use default
+ *  \param log_level log level to set
+ *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
+ *  \return 0 if successful, otherwise error code
+ */
+TEESTATUS TEEAPI TeeInitWithLog(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+	IN OPTIONAL const char* device, IN uint32_t log_level, IN OPTIONAL TeeLogCallback log_callback);
 
 #ifdef _WIN32
 /*! Initializes a TEE connection
@@ -242,6 +260,14 @@ uint32_t TEEAPI TeeSetLogLevel(IN PTEEHANDLE handle, IN uint32_t log_level);
  *  \return current log level
  */
 uint32_t TEEAPI TeeGetLogLevel(IN const PTEEHANDLE handle);
+
+/*! Set log callback
+ *
+ *  \param handle The handle of the session.
+ *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
+ *  \return 0 if successful, otherwise error code.
+ */
+TEESTATUS TEEAPI TeeSetLogCallback(IN const PTEEHANDLE handle, TeeLogCallback log_callback);
 
 #ifdef __cplusplus
 }

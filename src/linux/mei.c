@@ -52,13 +52,13 @@ static inline void __dump_buffer(const char *buf)
 	}                                                        \
 } while (0)
 
-#define mei_err(_me, fmt, ARGS...) do {                                      \
-	if ((_me)->log_level > MEI_LOG_LEVEL_QUIET) {                        \
-		if ((_me)->log_callback)                                     \
-			(_me)->log_callback(true,"me: error: " fmt, ##ARGS); \
-		else                                                         \
-			__mei_err("me: error: " fmt, ##ARGS);                \
-	}                                                                    \
+#define mei_err(_me, fmt, ARGS...) do {                                       \
+	if ((_me)->log_level > MEI_LOG_LEVEL_QUIET) {                         \
+		if ((_me)->log_callback)                                      \
+			(_me)->log_callback(true, "me: error: " fmt, ##ARGS); \
+		else                                                          \
+			__mei_err("me: error: " fmt, ##ARGS);                 \
+	}                                                                     \
 } while (0)
 
 static inline void __dump_buffer(const char *buf)
@@ -373,6 +373,7 @@ int mei_init_fd(struct mei *me, int fd, const uuid_le *guid,
 	me->device = NULL;
 	mei_deinit(me);
 	me->fd = fd;
+	me->log_callback = NULL;
 
 	me->log_level = verbose ? MEI_LOG_LEVEL_VERBOSE : MEI_LOG_LEVEL_ERROR;
 

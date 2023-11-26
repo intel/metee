@@ -72,29 +72,30 @@ static inline TEESTATUS errno2status_init(int err)
 	}
 }
 
-TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIONAL const char *device)
+TEESTATUS TEEAPI TeeInitWithLog(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+	IN OPTIONAL const char* device,
+	IN uint32_t log_level, IN OPTIONAL TeeLogCallback log_callback)
 {
 	struct mei *me;
 	TEESTATUS  status;
 	int rc;
-#if defined(DEBUG) && !defined(SYSLOG)
-	bool verbose = true;
-#else
-	bool verbose = false;
-#endif // DEBUG and !SYSLOG
+	bool verbose = (log_level == TEE_LOG_LEVEL_VERBOSE);
 
 	if (guid == NULL || handle == NULL) {
 		return TEE_INVALID_PARAMETER;
 	}
 
 	__tee_init_handle(handle);
+	handle->log_level = log_level;
+	handle->log_callback = log_callback;
 	me = malloc(sizeof(struct mei));
 	if (!me) {
 		ERRPRINT(handle, "Cannot alloc mei structure\n");
 		status = TEE_INTERNAL_ERROR;
 		goto End;
 	}
-	rc = mei_init(me, device ? device : MEI_DEFAULT_DEVICE, guid, 0, verbose);
+	rc = mei_init_with_log(me, device ? device : MEI_DEFAULT_DEVICE,
+			       guid, 0, verbose, log_callback);
 	if (rc) {
 		free(me);
 		ERRPRINT(handle, "Cannot init mei, rc = %d\n", rc);
@@ -106,6 +107,12 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid, IN OPTIO
 
 End:
 	return status;
+}
+
+TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+	IN OPTIONAL const char* device)
+{
+	return TeeInitWithLog(handle, guid, device, TEE_DEFAULT_LOG_LEVEL, NULL);
 }
 
 TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
@@ -419,4 +426,30 @@ uint32_t TEEAPI TeeGetLogLevel(IN const PTEEHANDLE handle)
 	FUNC_EXIT(handle, prev_log_level);
 
 	return prev_log_level;
+}
+
+TEESTATUS TEEAPI TeeSetLogCallback(IN const PTEEHANDLE handle, TeeLogCallback log_callback)
+{
+	struct mei *me = to_mei(handle);
+	TEESTATUS status;
+
+	if (!handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	FUNC_ENTRY(handle);
+
+	if (!me) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT(handle, "One of the parameters was illegal");
+		goto Cleanup;
+	}
+
+	handle->log_callback = log_callback;
+	mei_set_log_callback(me, log_callback);
+	status = TEE_SUCCESS;
+
+Cleanup:
+	FUNC_EXIT(handle, status);
+	return status;
 }

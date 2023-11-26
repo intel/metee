@@ -105,8 +105,8 @@ Cleanup:
 /**********************************************************************
  **                          TEE Lib Function                         *
  **********************************************************************/
-TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid,
-			 IN OPTIONAL const char *device)
+TEESTATUS TEEAPI TeeInitWithLog(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+	IN OPTIONAL const char* device, IN uint32_t log_level, IN OPTIONAL TeeLogCallback log_callback)
 {
 	TEESTATUS   status;
 	char        devicePath[MAX_PATH] = {0};
@@ -119,7 +119,8 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 	FUNC_ENTRY(handle);
 
 	__tee_init_handle(handle);
-	handle->log_level = TEE_DEFAULT_LOG_LEVEL;
+	handle->log_level = log_level;
+	handle->log_callback = log_callback;
 
 	if (device != NULL) {
 		devicePathP = device;
@@ -137,6 +138,12 @@ TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 	FUNC_EXIT(handle, status);
 
 	return status;
+}
+
+TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+	IN OPTIONAL const char* device)
+{
+	return TeeInitWithLog(handle, guid, device, TEE_DEFAULT_LOG_LEVEL, NULL);
 }
 
 TEESTATUS TEEAPI TeeInitGUID(IN OUT PTEEHANDLE handle, IN const GUID *guid,
@@ -577,4 +584,29 @@ uint32_t TEEAPI TeeGetLogLevel(IN const PTEEHANDLE handle)
 	FUNC_EXIT(handle, prev_log_level);
 
 	return prev_log_level;
+}
+
+TEESTATUS TEEAPI TeeSetLogCallback(IN const PTEEHANDLE handle, TeeLogCallback log_callback)
+{
+	struct METEE_WIN_IMPL* impl_handle = to_int(handle);
+	TEESTATUS status;
+
+	if (NULL == handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	FUNC_ENTRY(handle);
+
+	if (NULL == impl_handle) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT(handle, "One of the parameters was illegal");
+		goto Cleanup;
+	}
+
+	handle->log_callback = log_callback;
+	status = TEE_SUCCESS;
+
+Cleanup:
+	FUNC_EXIT(handle, status);
+	return status;
 }
