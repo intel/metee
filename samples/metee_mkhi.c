@@ -2,6 +2,7 @@
 /*
  * Copyright (C) 2012-2023 Intel Corporation
  */
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -155,6 +156,18 @@ static bool mk_host_if_connect(struct mk_host_if *acmd)
 	return acmd->initialized;
 }
 
+void mk_host_if_log(bool is_error, const char* fmt, ...)
+{
+#define DEBUG_MSG_LEN 1024
+	char msg[DEBUG_MSG_LEN + 1];
+	va_list varl;
+	va_start(varl, fmt);
+	vsprintf(msg, fmt, varl);
+	va_end(varl);
+
+	fprintf((is_error) ? stderr : stdout, "LIB: %s", msg);
+}
+
 static bool mk_host_if_init(struct mk_host_if *acmd, const GUID *guid,
                             bool reconnect, bool verbose)
 {
@@ -162,7 +175,8 @@ static bool mk_host_if_init(struct mk_host_if *acmd, const GUID *guid,
 	uint32_t log_level;
 	acmd->reconnect = reconnect;
 	acmd->verbose = verbose;
-	status = TeeInit(&acmd->mei_cl, guid, NULL);
+	status = TeeInitWithLog(&acmd->mei_cl, guid, NULL,
+		(verbose) ? TEE_LOG_LEVEL_VERBOSE : TEE_LOG_LEVEL_ERROR, mk_host_if_log);
 	if (!TEE_IS_SUCCESS(status)) {
 		fprintf(stderr, "init failed with status = %d\n", status);
 		return false;
