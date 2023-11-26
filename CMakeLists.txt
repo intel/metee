@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(metee)
 
-option(BUILD_DOCS "Build docs" YES)
+option(BUILD_DOCS "Build docs" NO)
 option(BUILD_TEST "Build self-test" NO)
 option(BUILD_SAMPLES "Build samples" NO)
 option(BUILD_MSVC_RUNTIME_STATIC "Build with static runtime libraries on MSVC"
