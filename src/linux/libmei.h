@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright(c) 2013 - 2020 Intel Corporation. All rights reserved.
+ * Copyright(c) 2013 - 2023 Intel Corporation. All rights reserved.
  *
  * Intel Management Engine Interface (Intel MEI) Library
  */
@@ -27,7 +27,7 @@ extern "C" {
 
 /*! Library API version
  */
-#define LIBMEI_API_VERSION MEI_ENCODE_VERSION(1, 4)
+#define LIBMEI_API_VERSION MEI_ENCODE_VERSION(1, 5)
 
 /*! Get current supported library API version
  *
@@ -56,6 +56,10 @@ enum mei_log_level {
 	MEI_LOG_LEVEL_VERBOSE = 2  /**< verbose log prints */
 };
 
+/*! log callback function format
+ */
+typedef void(*mei_log_callback)(bool is_error, const char* fmt, ...);
+
 /*! Structure to store connection data
  */
 struct mei {
@@ -70,6 +74,7 @@ struct mei {
 	bool close_on_exit;     /**< close handle on deinit */
 	char *device;           /**< device name */
 	uint8_t vtag;           /**< vtag used in communication */
+	mei_log_callback log_callback; /**< Log callback */
 };
 
 /*! Default name of mei device
@@ -123,6 +128,21 @@ void mei_free(struct mei *me);
  */
 int mei_init(struct mei *me, const char *device, const uuid_le *guid,
 		unsigned char req_protocol_version, bool verbose);
+
+/*! Initializes a mei connection with log callback
+ *
+ *  \param me A handle to the mei device. All subsequent calls to the lib's functions
+ *         must be with this handle
+ *  \param device device path, set MEI_DEFAULT_DEVICE to use default
+ *  \param guid GUID of associated mei client
+ *  \param req_protocol_version minimal required protocol version, 0 for any
+ *  \param verbose print verbose output to a console
+ *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
+ *  \return 0 if successful, otherwise error code
+ */
+int mei_init_with_log(struct mei *me, const char *device, const uuid_le *guid,
+		unsigned char req_protocol_version, bool verbose,
+		mei_log_callback log_callback);
 
 /*! Initializes a mei connection
  *
@@ -242,6 +262,14 @@ uint32_t mei_set_log_level(struct mei *me, uint32_t log_level);
  *  \return current log level
  */
 uint32_t mei_get_log_level(const struct mei *me);
+
+/*! Set log callback
+ *
+ *  \param me The mei handle
+ *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
+ *  \return 0 if successful, otherwise error code.
+ */
+uint32_t mei_set_log_callback(struct mei *me, mei_log_callback log_callback);
 
 #ifdef __cplusplus
 }

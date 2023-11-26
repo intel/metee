@@ -39,18 +39,26 @@ static inline void __dump_buffer(const char *buf)
 	#define __mei_err(fmt, ...) syslog(LOG_ERR, fmt, ##__VA_ARGS__)
 #else
 	#include <stdlib.h>
-	#define __mei_msg(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
+	#define __mei_msg(fmt, ...) fprintf(stdout, fmt, ##__VA_ARGS__)
 	#define __mei_err(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
 #endif /* SYSLOG */
 
-#define mei_msg(_me, fmt, ARGS...) do {                \
-	if ((_me)->log_level >= MEI_LOG_LEVEL_VERBOSE) \
-		__mei_msg(fmt, ##ARGS);                \
+#define mei_msg(_me, fmt, ARGS...) do {                          \
+	if ((_me)->log_level >= MEI_LOG_LEVEL_VERBOSE) {         \
+		if ((_me)->log_callback)                         \
+			(_me)->log_callback(false, fmt, ##ARGS); \
+		else                                             \
+			__mei_msg(fmt, ##ARGS);                  \
+	}                                                        \
 } while (0)
 
-#define mei_err(_me, fmt, ARGS...) do {               \
-	if ((_me)->log_level > MEI_LOG_LEVEL_QUIET)   \
-		__mei_err("me: error: " fmt, ##ARGS); \
+#define mei_err(_me, fmt, ARGS...) do {                                      \
+	if ((_me)->log_level > MEI_LOG_LEVEL_QUIET) {                        \
+		if ((_me)->log_callback)                                     \
+			(_me)->log_callback(true,"me: error: " fmt, ##ARGS); \
+		else                                                         \
+			__mei_err("me: error: " fmt, ##ARGS);                \
+	}                                                                    \
 } while (0)
 
 static inline void __dump_buffer(const char *buf)
@@ -263,8 +271,9 @@ static inline int __mei_fwsts(struct mei *me, const char *device,
 	return 0;
 }
 
-int mei_init(struct mei *me, const char *device, const uuid_le *guid,
-		unsigned char req_protocol_version, bool verbose)
+int mei_init_with_log(struct mei *me, const char *device, const uuid_le *guid,
+		      unsigned char req_protocol_version, bool verbose,
+		      mei_log_callback log_callback)
 {
 	int rc;
 
@@ -275,6 +284,7 @@ int mei_init(struct mei *me, const char *device, const uuid_le *guid,
 	me->fd = -1;
 	me->close_on_exit = true;
 	me->device = NULL;
+	me->log_callback = log_callback;
 	mei_deinit(me);
 
 	me->log_level = verbose ? MEI_LOG_LEVEL_VERBOSE : MEI_LOG_LEVEL_ERROR;
@@ -303,6 +313,12 @@ int mei_init(struct mei *me, const char *device, const uuid_le *guid,
 	me->state = MEI_CL_STATE_INITIALIZED;
 
 	return 0;
+}
+
+int mei_init(struct mei *me, const char *device, const uuid_le *guid,
+		unsigned char req_protocol_version, bool verbose)
+{
+	return mei_init_with_log(me, device, guid, req_protocol_version, verbose, NULL);
 }
 
 static int __mei_fd_to_devname(struct mei *me, int fd)
@@ -647,4 +663,15 @@ uint32_t mei_get_log_level(const struct mei *me)
 		return MEI_LOG_LEVEL_ERROR;
 
 	return me->log_level;
+}
+
+uint32_t mei_set_log_callback(struct mei *me, mei_log_callback log_callback)
+{
+	if (!me)
+		return -EINVAL;
+
+	me->log_callback = log_callback;
+	mei_msg(me, "New log callback set\n");
+
+	return 0;
 }
