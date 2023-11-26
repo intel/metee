@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2012-2022 Intel Corporation
+ * Copyright (C) 2012-2023 Intel Corporation
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,13 +14,10 @@
 #define BIT(n) 1 << (n)
 #endif /* BIT */
 
+#include <stdbool.h>
 #ifdef _WIN32
 	typedef SSIZE_T ssize_t;
-	typedef BOOL bool;
-	#define true 1
-	#define false 0
 #else
-#include <stdbool.h>
 #include <unistd.h>
 #endif /* _WIN32 */
 
