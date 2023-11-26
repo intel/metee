@@ -171,6 +171,39 @@ TEST_P(MeTeeTEST, PROD_MKHI_SetLogLevel)
 
 }
 
+void MeTeeTEST_Log(bool is_error, const char* fmt, ...)
+{
+	EXPECT_EQ(is_error, true);
+	EXPECT_STREQ(fmt, "TEELIB: (%s:%s():%d) TestTestTest");
+}
+
+TEST_P(MeTeeTEST, PROD_MKHI_SetLogCallback)
+{
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
+	struct MeTeeTESTParams intf = GetParam();
+	uint32_t prev_log_level;
+	TEESTATUS status;
+
+	status = TestTeeInitGUID(&Handle, intf.client, intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(SUCCESS, status);
+	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+
+	prev_log_level = TeeSetLogLevel(&Handle, TEE_LOG_LEVEL_ERROR);
+	status = TeeSetLogCallback(&Handle, MeTeeTEST_Log);
+	EXPECT_EQ(SUCCESS, status);
+	ERRPRINT(&Handle, "TestTestTest");
+
+	status = TeeSetLogCallback(&Handle, NULL);
+	EXPECT_EQ(SUCCESS, status);
+	ERRPRINT(&Handle, "NotReal");
+	TeeSetLogLevel(&Handle, prev_log_level);
+
+	TeeDisconnect(&Handle);
+	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+}
+
 /*
 Send GetVersion Command to MKHI with timeout and fd > 1024
 1) Open 2000 file descriptors
