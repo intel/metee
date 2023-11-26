@@ -172,7 +172,7 @@ static bool mk_host_if_init(struct mk_host_if *acmd, const GUID *guid,
                             bool reconnect, bool verbose)
 {
 	int status;
-	uint32_t log_level;
+	uint32_t log_level, original_log_level;
 	acmd->reconnect = reconnect;
 	acmd->verbose = verbose;
 	status = TeeInitWithLog(&acmd->mei_cl, guid, NULL,
@@ -181,12 +181,14 @@ static bool mk_host_if_init(struct mk_host_if *acmd, const GUID *guid,
 		fprintf(stderr, "init failed with status = %d\n", status);
 		return false;
 	}
-	log_level = TeeGetLogLevel(&acmd->mei_cl);
-	printf("Original log level: %u\n", log_level);
+	original_log_level = TeeGetLogLevel(&acmd->mei_cl);
+	printf("Original log level: %u\n", original_log_level);
 	log_level = TeeSetLogLevel(&acmd->mei_cl, TEE_LOG_LEVEL_ERROR);
 	printf("Original log level: %u\n", log_level);
 	log_level = TeeGetLogLevel(&acmd->mei_cl);
 	printf("New log level: %u\n", log_level);
+	TeeSetLogLevel(&acmd->mei_cl, original_log_level);
+	printf("Original log level: %u\n", original_log_level);
 	return mk_host_if_connect(acmd);
 }
 
