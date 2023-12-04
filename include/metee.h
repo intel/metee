@@ -65,9 +65,10 @@ extern "C" {
 /*! log level
  */
 enum tee_log_level {
-        TEE_LOG_LEVEL_QUIET = 0,   /**< no log prints */
-        TEE_LOG_LEVEL_ERROR = 1,   /**< error log prints */
-        TEE_LOG_LEVEL_VERBOSE = 2  /**< verbose log prints */
+	TEE_LOG_LEVEL_QUIET = 0,   /**< no log prints */
+	TEE_LOG_LEVEL_ERROR = 1,   /**< error log prints */
+	TEE_LOG_LEVEL_VERBOSE = 2, /**< verbose log prints */
+	TEE_LOG_LEVEL_MAX = 3,     /**< upper sentinel */
 };
 
 /*! log callback function format
@@ -92,7 +93,25 @@ typedef struct _TEEHANDLE {
  */
 typedef TEEHANDLE *PTEEHANDLE;
 
-
+/*! Device address passed to the init function
+ */
+struct tee_device_address {
+	/*! Device address type
+	 */
+	enum {
+		TEE_DEVICE_TYPE_NONE = 0, /**< Select first available device */
+		TEE_DEVICE_TYPE_PATH = 1, /**< Use device by path (char*) */
+		TEE_DEVICE_TYPE_HANDLE = 2, /**< Use device by pre-opend handle */
+		TEE_DEVICE_TYPE_GUID = 3, /**< Select first device by GUID (Windows only) */
+		TEE_DEVICE_TYPE_MAX = 4, /**< upper sentinel */
+	} type;
+	/*! Device address */
+	union {
+		const char* path; /** < Path to device */
+		const GUID* guid; /** Device GUID (Windows only) */
+		TEE_DEVICE_HANDLE handle; /**< Pre-opend handle */
+	} data;
+};
 
 /** ZERO/NULL device handle */
 #define TEEHANDLE_ZERO {0}
@@ -131,6 +150,19 @@ typedef uint16_t TEESTATUS; /**< return status for API functions */
  */
 #define TEE_IS_SUCCESS(Status) (((TEESTATUS)(Status)) == TEE_SUCCESS)
 
+ /*! Initializes a TEE connection
+  *  \param handle A handle to the TEE device. All subsequent calls to the lib's functions
+  *         must be with this handle
+  *  \param guid GUID of the FW client that want to start a session
+  *  \param device device address structure
+  *  \param log_level log level to set (from enum tee_log_level)
+  *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
+  *  \return 0 if successful, otherwise error code
+  */
+TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+	IN const struct tee_device_address device,
+	IN uint32_t log_level, IN OPTIONAL TeeLogCallback log_callback);
+
 /*! Initializes a TEE connection
  *  \param handle A handle to the TEE device. All subsequent calls to the lib's functions
  *         must be with this handle
@@ -140,18 +172,6 @@ typedef uint16_t TEESTATUS; /**< return status for API functions */
  */
 TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 			 IN OPTIONAL const char *device);
-
-/*! Initializes a TEE connection with log callback
- *  \param handle A handle to the TEE device. All subsequent calls to the lib's functions
- *         must be with this handle
- *  \param guid GUID of the FW client that want to start a session
- *  \param device optional device path, set NULL to use default
- *  \param log_level log level to set
- *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
- *  \return 0 if successful, otherwise error code
- */
-TEESTATUS TEEAPI TeeInitWithLog(IN OUT PTEEHANDLE handle, IN const GUID* guid,
-	IN OPTIONAL const char* device, IN uint32_t log_level, IN OPTIONAL TeeLogCallback log_callback);
 
 #ifdef _WIN32
 /*! Initializes a TEE connection

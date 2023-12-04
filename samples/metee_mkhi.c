@@ -173,9 +173,14 @@ static bool mk_host_if_init(struct mk_host_if *acmd, const GUID *guid,
 {
 	int status;
 	uint32_t log_level, original_log_level;
+	struct tee_device_address addr = {
+		.type = TEE_DEVICE_TYPE_NONE,
+		.data.path = NULL
+	};
+
 	acmd->reconnect = reconnect;
 	acmd->verbose = verbose;
-	status = TeeInitWithLog(&acmd->mei_cl, guid, NULL,
+	status = TeeInitFull(&acmd->mei_cl, guid, addr,
 		(verbose) ? TEE_LOG_LEVEL_VERBOSE : TEE_LOG_LEVEL_ERROR, mk_host_if_log);
 	if (!TEE_IS_SUCCESS(status)) {
 		fprintf(stderr, "init failed with status = %d\n", status);

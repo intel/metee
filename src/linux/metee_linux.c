@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2022 Intel Corporation
+ * Copyright (C) 2014-2023 Intel Corporation
  */
 #include <errno.h>
 #include <fcntl.h>
@@ -72,9 +72,9 @@ static inline TEESTATUS errno2status_init(int err)
 	}
 }
 
-TEESTATUS TEEAPI TeeInitWithLog(IN OUT PTEEHANDLE handle, IN const GUID* guid,
-	IN OPTIONAL const char* device,
-	IN uint32_t log_level, IN OPTIONAL TeeLogCallback log_callback)
+TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+			     IN const struct tee_device_address device,
+			     IN uint32_t log_level, IN OPTIONAL TeeLogCallback log_callback)
 {
 	struct mei *me;
 	TEESTATUS  status;
@@ -86,16 +86,70 @@ TEESTATUS TEEAPI TeeInitWithLog(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 	}
 
 	__tee_init_handle(handle);
-	handle->log_level = log_level;
+	handle->log_level = (log_level >= TEE_LOG_LEVEL_MAX) ? TEE_LOG_LEVEL_VERBOSE : log_level;
 	handle->log_callback = log_callback;
+
+	FUNC_ENTRY(handle);
+
+	if (log_level >= TEE_LOG_LEVEL_MAX) {
+		ERRPRINT(handle, "LogLevel %u is too big.\n", log_level);
+		status = TEE_INVALID_PARAMETER;
+		goto End;
+	}
+	switch (device.type) {
+	case TEE_DEVICE_TYPE_NONE:
+		if (device.data.path != NULL) {
+			ERRPRINT(handle, "Path is not NULL.\n");
+			status = TEE_INVALID_PARAMETER;
+			goto End;
+		}
+		break;
+	case TEE_DEVICE_TYPE_PATH:
+		if (device.data.path == NULL) {
+			ERRPRINT(handle, "Path is NULL.\n");
+			status = TEE_INVALID_PARAMETER;
+			goto End;
+		}
+		break;
+	case TEE_DEVICE_TYPE_HANDLE:
+		if (device.data.handle == TEE_INVALID_DEVICE_HANDLE) {
+			ERRPRINT(handle, "Handle is invalid.\n");
+			status = TEE_INVALID_PARAMETER;
+			goto End;
+		}
+		break;
+	case TEE_DEVICE_TYPE_GUID:
+	default:
+		ERRPRINT(handle, "Wrong device type %u.\n", device.type);
+		status = TEE_INVALID_PARAMETER;
+		goto End;
+	}
+
 	me = malloc(sizeof(struct mei));
 	if (!me) {
 		ERRPRINT(handle, "Cannot alloc mei structure\n");
 		status = TEE_INTERNAL_ERROR;
 		goto End;
 	}
-	rc = mei_init_with_log(me, device ? device : MEI_DEFAULT_DEVICE,
-			       guid, 0, verbose, log_callback);
+
+	switch (device.type) {
+	case TEE_DEVICE_TYPE_NONE:
+		rc = mei_init_with_log(me, MEI_DEFAULT_DEVICE,
+			guid, 0, verbose, log_callback);
+		break;
+	case TEE_DEVICE_TYPE_PATH:
+		rc = mei_init_with_log(me, device.data.path,
+			guid, 0, verbose, log_callback);
+		break;
+	case TEE_DEVICE_TYPE_HANDLE:
+		rc = mei_init_fd(me, device.data.handle, guid, 0, verbose);
+		mei_set_log_callback(me, log_callback);
+		mei_set_log_level(me, verbose);
+		break;
+	default:
+		rc = -EFAULT;
+		break;
+	}
 	if (rc) {
 		free(me);
 		ERRPRINT(handle, "Cannot init mei, rc = %d\n", rc);
@@ -112,44 +166,23 @@ End:
 TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 	IN OPTIONAL const char* device)
 {
-	return TeeInitWithLog(handle, guid, device, TEE_DEFAULT_LOG_LEVEL, NULL);
+	struct tee_device_address addr;
+
+	addr.type = (device) ? TEE_DEVICE_TYPE_PATH : TEE_DEVICE_TYPE_NONE;
+	addr.data.path = device;
+
+	return TeeInitFull(handle, guid, addr, TEE_DEFAULT_LOG_LEVEL, NULL);
 }
 
 TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
 			       IN const TEE_DEVICE_HANDLE device_handle)
 {
-	struct mei *me;
-	TEESTATUS  status;
-	int rc;
-#if defined(DEBUG) && !defined(SYSLOG)
-	bool verbose = true;
-#else
-	bool verbose = false;
-#endif // DEBUG and !SYSLOG
+	struct tee_device_address addr;
 
-	if (guid == NULL || handle == NULL) {
-		return TEE_INVALID_PARAMETER;
-	}
+	addr.type = TEE_DEVICE_TYPE_HANDLE;
+	addr.data.handle = device_handle;
 
-	__tee_init_handle(handle);
-	me = malloc(sizeof(struct mei));
-	if (!me) {
-		ERRPRINT(handle, "Cannot alloc mei structure\n");
-		status = TEE_INTERNAL_ERROR;
-		goto End;
-	}
-	rc = mei_init_fd(me, device_handle, guid, 0, verbose);
-	if (rc) {
-		free(me);
-		ERRPRINT(handle, "Cannot init mei, rc = %d\n", rc);
-		status = errno2status_init(rc);
-		goto End;
-	}
-	handle->handle = me;
-	status = TEE_SUCCESS;
-
-End:
-	return status;
+	return TeeInitFull(handle, guid, addr, TEE_DEFAULT_LOG_LEVEL, NULL);
 }
 
 TEESTATUS TEEAPI TeeConnect(IN OUT PTEEHANDLE handle)

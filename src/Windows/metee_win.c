@@ -41,53 +41,131 @@ static TEESTATUS __CreateFile(PTEEHANDLE handle, const char *devicePath, PHANDLE
 	return status;
 }
 
-static TEESTATUS __TeeInit(PTEEHANDLE handle, const GUID *guid, const char *devicePath)
+/**********************************************************************
+ **                          TEE Lib Function                         *
+ **********************************************************************/
+TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+	IN const struct tee_device_address device,
+	IN uint32_t log_level, IN OPTIONAL TeeLogCallback log_callback)
 {
-	TEESTATUS       status;
-	HANDLE          deviceHandle         = INVALID_HANDLE_VALUE;
-	error_status_t  result;
-	struct METEE_WIN_IMPL *impl_handle   = NULL;
+	TEESTATUS status;
+	error_status_t res;
+	char devicePath[MAX_PATH] = {0};
+	const char *devicePathP;
+	HANDLE deviceHandle = INVALID_HANDLE_VALUE;
+	struct METEE_WIN_IMPL* impl_handle = NULL;
+
+	if (NULL == guid || NULL == handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	__tee_init_handle(handle);
+	handle->log_level = (log_level >= TEE_LOG_LEVEL_MAX) ? TEE_LOG_LEVEL_VERBOSE : log_level;
+	handle->log_callback = log_callback;
 
 	FUNC_ENTRY(handle);
 
-	impl_handle = (struct METEE_WIN_IMPL *)malloc(sizeof(*impl_handle));
-	if (NULL == impl_handle) {
+	if (log_level >= TEE_LOG_LEVEL_MAX) {
+		ERRPRINT(handle, "LogLevel %u is too big.\n", log_level);
+		status = TEE_INVALID_PARAMETER;
+		goto Cleanup;
+	}
+
+	switch (device.type) {
+	case TEE_DEVICE_TYPE_NONE:
+		if (device.data.path != NULL) {
+			ERRPRINT(handle, "Path is not NULL.\n");
+			status = TEE_INVALID_PARAMETER;
+			goto Cleanup;
+		}
+		status = GetDevicePath(handle, &GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
+		if (status) {
+			ERRPRINT(handle, "Error in GetDevicePath, error: %d\n", status);
+			goto Cleanup;
+		}
+		devicePathP = devicePath;
+		break;
+	case TEE_DEVICE_TYPE_PATH:
+		if (device.data.path == NULL) {
+			ERRPRINT(handle, "Path is NULL.\n");
+			status = TEE_INVALID_PARAMETER;
+			goto Cleanup;
+		}
+		devicePathP = device.data.path;
+		break;
+	case TEE_DEVICE_TYPE_HANDLE:
+		if (device.data.handle == TEE_INVALID_DEVICE_HANDLE) {
+			ERRPRINT(handle, "Handle is invalid.\n");
+			status = TEE_INVALID_PARAMETER;
+			goto Cleanup;
+		}
+		deviceHandle = device.data.handle;
+		break;
+	case TEE_DEVICE_TYPE_GUID:
+		if (device.data.guid == NULL) {
+			ERRPRINT(handle, "Device GUID is NULL.\n");
+			status = TEE_INVALID_PARAMETER;
+			goto Cleanup;
+		}
+		status = GetDevicePath(handle, device.data.guid, devicePath, MAX_PATH);
+		if (status) {
+			ERRPRINT(handle, "Error in GetDevicePath, error: %d\n", status);
+			goto Cleanup;
+		}
+		devicePathP = devicePath;
+		break;
+	default:
+		ERRPRINT(handle, "Wrong device type %u.\n", device.type);
+		status = TEE_INVALID_PARAMETER;
+		goto Cleanup;
+		break;
+	}
+
+	impl_handle = (struct METEE_WIN_IMPL*)malloc(sizeof(*impl_handle));
+	if (impl_handle == NULL) {
 		status = TEE_INTERNAL_ERROR;
 		ERRPRINT(handle, "Can't allocate memory for internal struct");
 		goto Cleanup;
 	}
-	impl_handle->close_on_exit = true;
+
+	switch (device.type) {
+	case TEE_DEVICE_TYPE_NONE:
+	case TEE_DEVICE_TYPE_PATH:
+	case TEE_DEVICE_TYPE_GUID:
+		status = __CreateFile(handle, devicePath, &deviceHandle);
+		if (status != TEE_SUCCESS) {
+			goto Cleanup;
+		}
+		impl_handle->handle = deviceHandle;
+		impl_handle->close_on_exit = false;
+		impl_handle->device_path = _strdup(devicePath);
+		if (impl_handle->device_path == NULL) {
+			ERRPRINT(handle, "Error in in device path copy\n");
+			status = TEE_UNABLE_TO_COMPLETE_OPERATION;
+			goto Cleanup;
+		}
+		break;
+	case TEE_DEVICE_TYPE_HANDLE:
+		impl_handle->handle = deviceHandle;
+		impl_handle->close_on_exit = false;
+		impl_handle->device_path = NULL;
+		break;
+	default:
+		break;
+	}
+
 	impl_handle->state = METEE_CLIENT_STATE_NONE;
-	impl_handle->device_path = NULL;
+	res = memcpy_s(&impl_handle->guid, sizeof(impl_handle->guid), guid, sizeof(GUID));
+	if (res != 0) {
+		ERRPRINT(handle, "Error in in guid copy, res = %u\n", res);
+		status = TEE_UNABLE_TO_COMPLETE_OPERATION;
+		goto Cleanup;
+	}
 
 	handle->handle = impl_handle;
-
-	status = __CreateFile(handle, devicePath, &deviceHandle);
-	if (status != TEE_SUCCESS) {
-		goto Cleanup;
-	}
-
-	result  = memcpy_s(&impl_handle->guid, sizeof(impl_handle->guid),
-			   guid, sizeof(GUID));
-	if (result != 0) {
-		ERRPRINT(handle, "Error in in guid copy: result %u\n", result);
-		status = TEE_UNABLE_TO_COMPLETE_OPERATION;
-		goto Cleanup;
-	}
-
-	impl_handle->device_path = _strdup(devicePath);
-	if (impl_handle->device_path == NULL) {
-		ERRPRINT(handle, "Error in in device path copy\n");
-		status = TEE_UNABLE_TO_COMPLETE_OPERATION;
-		goto Cleanup;
-	}
-
-	impl_handle->handle = deviceHandle;
-
 	status = TEE_SUCCESS;
 
 Cleanup:
-
 	if (TEE_SUCCESS != status) {
 		CloseHandle(deviceHandle);
 		if (impl_handle)
@@ -98,133 +176,40 @@ Cleanup:
 	}
 
 	FUNC_EXIT(handle, status);
-
-	return status;
-}
-
-/**********************************************************************
- **                          TEE Lib Function                         *
- **********************************************************************/
-TEESTATUS TEEAPI TeeInitWithLog(IN OUT PTEEHANDLE handle, IN const GUID* guid,
-	IN OPTIONAL const char* device, IN uint32_t log_level, IN OPTIONAL TeeLogCallback log_callback)
-{
-	TEESTATUS   status;
-	char        devicePath[MAX_PATH] = {0};
-	const char *devicePathP          = NULL;
-
-	if (NULL == guid || NULL == handle) {
-		return TEE_INVALID_PARAMETER;
-	}
-
-	FUNC_ENTRY(handle);
-
-	__tee_init_handle(handle);
-	handle->log_level = log_level;
-	handle->log_callback = log_callback;
-
-	if (device != NULL) {
-		devicePathP = device;
-	} else {
-		status = GetDevicePath(handle, &GUID_DEVINTERFACE_HECI, devicePath, MAX_PATH);
-		if (status) {
-			ERRPRINT(handle, "Error in GetDevicePath, error: %d\n", status);
-			return status;
-		}
-		devicePathP = devicePath;
-	}
-
-	status = __TeeInit(handle, guid, devicePathP);
-
-	FUNC_EXIT(handle, status);
-
 	return status;
 }
 
 TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 	IN OPTIONAL const char* device)
 {
-	return TeeInitWithLog(handle, guid, device, TEE_DEFAULT_LOG_LEVEL, NULL);
+	struct tee_device_address addr;
+
+	addr.type = (device) ? TEE_DEVICE_TYPE_PATH : TEE_DEVICE_TYPE_NONE;
+	addr.data.path = device;
+
+	return TeeInitFull(handle, guid, addr, TEE_DEFAULT_LOG_LEVEL, NULL);
 }
 
-TEESTATUS TEEAPI TeeInitGUID(IN OUT PTEEHANDLE handle, IN const GUID *guid,
-			     IN OPTIONAL const GUID *device)
+TEESTATUS TEEAPI TeeInitGUID(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+	IN OPTIONAL const GUID* device)
 {
-	TEESTATUS status;
-	char      devicePath[MAX_PATH] = {0};
-	LPCGUID   currentUUID          = NULL;
+	struct tee_device_address addr;
 
-	if (NULL == guid || NULL == handle) {
-		return TEE_INVALID_PARAMETER;
-	}
+	addr.type = (device) ? TEE_DEVICE_TYPE_GUID : TEE_DEVICE_TYPE_NONE;
+	addr.data.guid = device;
 
-	FUNC_ENTRY(handle);
-
-	__tee_init_handle(handle);
-	handle->log_level = TEE_DEFAULT_LOG_LEVEL;
-
-	currentUUID = (device != NULL) ? device : &GUID_DEVINTERFACE_HECI;
-
-	// get device path
-	status = GetDevicePath(handle, currentUUID, devicePath, MAX_PATH);
-	if (status) {
-		ERRPRINT(handle, "Error in GetDevicePath, error: %d\n", status);
-		return status;
-	}
-
-	status = __TeeInit(handle, guid, devicePath);
-
-	FUNC_EXIT(handle, status);
-
-	return status;
+	return TeeInitFull(handle, guid, addr, TEE_DEFAULT_LOG_LEVEL, NULL);
 }
 
-TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID *guid,
-			       IN const TEE_DEVICE_HANDLE device_handle)
+TEESTATUS TEEAPI TeeInitHandle(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+	IN const TEE_DEVICE_HANDLE device_handle)
 {
-	TEESTATUS              status;
-	struct METEE_WIN_IMPL *impl_handle   = NULL;
-	error_status_t         result;
+	struct tee_device_address addr;
 
-	if (NULL == guid || NULL == handle) {
-		return TEE_INVALID_PARAMETER;
-	}
+	addr.type = TEE_DEVICE_TYPE_HANDLE;
+	addr.data.handle = device_handle;
 
-	FUNC_ENTRY(handle);
-
-	__tee_init_handle(handle);
-	handle->log_level = TEE_DEFAULT_LOG_LEVEL;
-
-	impl_handle = (struct METEE_WIN_IMPL *)malloc(sizeof(*impl_handle));
-	if (NULL == impl_handle) {
-		status = TEE_INTERNAL_ERROR;
-		ERRPRINT(handle, "Can't allocate memory for internal struct");
-		goto Cleanup;
-	}
-	impl_handle->close_on_exit = false;
-	impl_handle->device_path = NULL;
-	impl_handle->handle = device_handle;
-	impl_handle->state = METEE_CLIENT_STATE_NONE;
-	result = memcpy_s(&impl_handle->guid, sizeof(impl_handle->guid), guid, sizeof(GUID));
-	if (result != 0) {
-		ERRPRINT(handle, "Error in in guid copy: result %u\n", result);
-		status = TEE_UNABLE_TO_COMPLETE_OPERATION;
-		goto Cleanup;
-	}
-
-	handle->handle = impl_handle;
-
-	status = TEE_SUCCESS;
-
-Cleanup:
-
-	if (TEE_SUCCESS != status) {
-		if (impl_handle)
-			free(impl_handle);
-	}
-
-	FUNC_EXIT(handle, status);
-
-	return status;
+	return TeeInitFull(handle, guid, addr, TEE_DEFAULT_LOG_LEVEL, NULL);
 }
 
 TEESTATUS TEEAPI TeeConnect(OUT PTEEHANDLE handle)
