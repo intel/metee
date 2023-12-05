@@ -37,7 +37,7 @@ static inline int __mei_select(struct mei *me, bool on_read, unsigned long timeo
 	pfd.events = (on_read) ? POLLIN : POLLOUT;
 
 	errno = 0;
-	rv = poll(&pfd, 1, (int)(timeout * MILISEC_IN_SEC));
+	rv = poll(&pfd, 1, (int)timeout);
 	if (rv < 0)
 		return -errno;
 	if (rv == 0)
