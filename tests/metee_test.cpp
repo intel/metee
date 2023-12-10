@@ -485,6 +485,35 @@ TEST_P(MeTeeTEST, PROD_MKHI_GetFWStatus)
 	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
 }
 
+/*
+ * GetTRC API
+ * 1) Receive TRC
+ * 2) Check for bad input
+*/
+TEST_P(MeTeeTEST, PROD_MKHI_GetTRC)
+{
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
+	uint32_t trcVal;
+	struct MeTeeTESTParams intf = GetParam();
+	TEESTATUS status;
+
+	status = TestTeeInitGUID(&Handle, intf.client, intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(TEE_SUCCESS, status);
+	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+
+	EXPECT_THAT(TeeGetTRC(&Handle, &trcVal),
+		    testing::AnyOf(testing::Eq(TEE_SUCCESS), testing::Eq(TEE_NOTSUPPORTED)));
+
+	//Invalid input
+	ASSERT_EQ(TEE_INVALID_PARAMETER, TeeGetTRC(NULL, &trcVal));
+	ASSERT_EQ(TEE_INVALID_PARAMETER, TeeGetTRC(&Handle, NULL));
+
+	TeeDisconnect(&Handle);
+	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+}
+
 TEST_P(MeTeeTEST, PROD_MKHI_DoubleConnect)
 {
 	TEEHANDLE Handle = TEEHANDLE_ZERO;

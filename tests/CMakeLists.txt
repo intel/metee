@@ -52,7 +52,7 @@ if(NOT CONSOLE_OUTPUT)
   target_compile_definitions(${PROJECT_NAME} PRIVATE -DSYSLOG)
 endif()
 
-target_link_libraries(${PROJECT_NAME} metee gtest_main)
+target_link_libraries(${PROJECT_NAME} metee gtest_main gmock_main)
 
 target_include_directories(${PROJECT_NAME}
   PRIVATE ${CMAKE_SOURCE_DIR}/src/Windows

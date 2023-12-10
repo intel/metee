@@ -7,6 +7,7 @@
 #include <chrono>
 #include <thread>
 #include "gtest/gtest.h"
+#include <gmock/gmock.h>
 
 #include "metee.h"
 #include "helpers.h"
