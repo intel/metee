@@ -27,3 +27,10 @@ if(UNIX)
 
   install(TARGETS metee-connect RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif(UNIX)
+
+add_executable(metee-trc metee_trc.c)
+target_link_libraries(metee-trc metee)
+install(TARGETS metee-trc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+if(BUILD_MSVC_RUNTIME_STATIC)
+  target_compile_options(metee-trc PRIVATE /MT$<$<CONFIG:Debug>:d>)
+endif()
