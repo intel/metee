@@ -248,6 +248,14 @@ int mei_notification_get(struct mei *me);
  */
 int mei_fwstatus(struct mei *me, uint32_t fwsts_num, uint32_t *fwsts);
 
+/*! Obtains TRC status of device
+ *
+ *  \param me The mei handle
+ *  \param trc_val TRC value fill
+ *  \return 0 if successful, otherwise error code
+ */
+int mei_gettrc(struct mei *me, uint32_t *trc_val);
+
 /*! Set log level
  *
  *  \param me The mei handle

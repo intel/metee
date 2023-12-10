@@ -269,6 +269,60 @@ static inline int __mei_fwsts(struct mei *me, const char *device,
 	*fwsts = cnv;
 
 	return 0;
+#undef FWSTS_FILENAME_LEN
+#undef FWSTS_LEN
+#undef CONV_BASE
+}
+
+static inline int __mei_gettrc(struct mei *me, const char *device, uint32_t *trc_val)
+{
+#define TRC_FILENAME_LEN 33
+#define TRC_LEN 9
+#define CONV_BASE 16
+	char path[TRC_FILENAME_LEN];
+	int fd;
+	char line[TRC_LEN];
+	unsigned long cnv;
+	ssize_t len;
+
+	if (snprintf(path, TRC_FILENAME_LEN,
+		     "/sys/class/mei/%s/trc", device) < 0)
+		return -EINVAL;
+	path[TRC_FILENAME_LEN - 1] = '\0';
+
+	errno = 0;
+	fd = open(path, O_CLOEXEC, O_RDONLY);
+	if (fd == -1) {
+		me->last_err = errno;
+		return -me->last_err;
+	}
+
+	errno = 0;
+	len = pread(fd, line, TRC_LEN, 0);
+	if (len == -1) {
+		me->last_err = errno;
+		close(fd);
+		return -me->last_err;
+	}
+
+	close(fd);
+	if (len < TRC_LEN) {
+		me->last_err = EPROTO;
+		return -me->last_err;
+	}
+
+	errno = 0;
+	cnv = strtoul(line, NULL, CONV_BASE);
+	if (errno) {
+		me->last_err = errno;
+		return -me->last_err;
+	}
+	*trc_val = cnv;
+
+	return 0;
+#undef TRC_FILENAME_LEN
+#undef TRC_LEN
+#undef CONV_BASE
 }
 
 int mei_init_with_log(struct mei *me, const char *device, const uuid_le *guid,
@@ -633,6 +687,35 @@ int mei_fwstatus(struct mei *me, uint32_t fwsts_num, uint32_t *fwsts)
 	rc = __mei_fwsts(me, device, fwsts_num, fwsts);
 	if (rc < 0) {
 		mei_err(me, "Cannot get FW status [%d]:%s\n",
+			rc, strerror(-rc));
+		return rc;
+	}
+
+	return 0;
+}
+
+int mei_gettrc(struct mei *me, uint32_t *trc_val)
+{
+	char *device;
+	int rc;
+
+	if (!me || !trc_val)
+		return -EINVAL;
+
+	if (me->device) {
+		device = strstr(me->device, MEI_DEFAULT_DEVICE_PREFIX);
+		if (!device) {
+			mei_err(me, "Device does not start with '%s'\n",
+				MEI_DEFAULT_DEVICE_PREFIX);
+			return -EINVAL;
+		}
+		device += strlen(MEI_DEFAULT_DEVICE_PREFIX);
+	} else {
+		device = MEI_DEFAULT_DEVICE_NAME;
+	}
+	rc = __mei_gettrc(me, device, trc_val);
+	if (rc < 0) {
+		mei_err(me, "Cannot get TRC value [%d]:%s\n",
 			rc, strerror(-rc));
 		return rc;
 	}
