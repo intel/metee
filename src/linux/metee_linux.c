@@ -54,6 +54,7 @@ static inline TEESTATUS errno2status(int err)
 		case -ENODEV: return TEE_DISCONNECTED;
 		case -ETIME : return TEE_TIMEOUT;
 		case -EACCES: return TEE_PERMISSION_DENIED;
+		case -EOPNOTSUPP: return TEE_NOTSUPPORTED;
 		default     : return TEE_INTERNAL_ERROR;
 	}
 }
@@ -327,7 +328,7 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 {
 	struct mei *me = to_mei(handle);
 	TEESTATUS status;
-        uint32_t fwsts;
+	uint32_t fwsts;
 	int rc;
 
 	if (!handle) {
@@ -355,6 +356,40 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 	}
 
 	*fwStatus = fwsts;
+	status = TEE_SUCCESS;
+
+End:
+	FUNC_EXIT(handle, status);
+	return status;
+}
+
+TEESTATUS TEEAPI TeeGetTRC(IN PTEEHANDLE handle, OUT uint32_t* trc_val)
+{
+	struct mei* me = to_mei(handle);
+	TEESTATUS status;
+	uint32_t trc;
+	int rc;
+
+	if (!handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	FUNC_ENTRY(handle);
+
+	if (!me || !trc_val) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT(handle, "One of the parameters was illegal");
+		goto End;
+	}
+
+	rc = mei_gettrc(me, &trc);
+	if (rc < 0) {
+		status = errno2status(rc);
+		ERRPRINT(handle, "TRC get failed with status %d %s\n", rc, strerror(-rc));
+		goto End;
+	}
+
+	*trc_val = trc;
 	status = TEE_SUCCESS;
 
 End:

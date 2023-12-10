@@ -235,6 +235,13 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 			     IN uint32_t fwStatusNum, OUT uint32_t *fwStatus);
 
+/*! Retrieves TRC register.
+ *  \param handle The handle of the session.
+ *  \param trc_val The memory to store obtained TRC value.
+ *  \return 0 if successful, otherwise error code.
+ */
+TEESTATUS TEEAPI TeeGetTRC(IN PTEEHANDLE handle, OUT uint32_t* trc_val);
+
 /*! Closes the session to TEE driver
  *  Make sure that you call this function as soon as you are done with the device,
  *  as other clients might be blocked until the session is closed.

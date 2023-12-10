@@ -6,7 +6,6 @@
 #include <windows.h>
 #include <initguid.h>
 #include "helpers.h"
-#include "Public.h"
 #include "metee.h"
 #include "metee_win.h"
 #include <cfgmgr32.h>

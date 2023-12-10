@@ -5,8 +5,8 @@
 #include <assert.h>
 #include <windows.h>
 #include <initguid.h>
+#include "public.h"
 #include "helpers.h"
-#include "Public.h"
 #include "metee.h"
 #include "metee_win.h"
 
@@ -438,6 +438,45 @@ Cleanup:
 	return status;
 }
 
+TEESTATUS TEEAPI TeeGetTRC(IN PTEEHANDLE handle, OUT uint32_t* trc_val)
+{
+	struct METEE_WIN_IMPL* impl_handle = to_int(handle);
+	TEESTATUS status;
+	DWORD bytesReturned = 0;
+	DWORD trc = 0;
+
+	if (NULL == handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	FUNC_ENTRY(handle);
+
+	if (!impl_handle || !trc_val) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT(handle, "One of the parameters was illegal");
+		goto Cleanup;
+	}
+
+	status = SendIOCTL(handle, (DWORD)IOCTL_TEEDRIVER_GET_TRC,
+		NULL, 0,
+		&trc, sizeof(DWORD),
+		&bytesReturned);
+	if (status) {
+		DWORD err = GetLastError();
+		status = Win32ErrorToTee(err);
+		ERRPRINT(handle, "Error in SendIOCTL, error: %lu\n", err);
+		impl_handle->state = METEE_CLIENT_STATE_FAILED;
+		goto Cleanup;
+	}
+
+	*trc_val = trc;
+	status = TEE_SUCCESS;
+
+Cleanup:
+	FUNC_EXIT(handle, status);
+	return status;
+}
+
 VOID TEEAPI TeeDisconnect(IN PTEEHANDLE handle)
 {
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
@@ -517,7 +556,7 @@ TEESTATUS TEEAPI GetDriverVersion(IN PTEEHANDLE handle, IN OUT teeDriverVersion_
 		goto Cleanup;
 	}
 
-	status = SendIOCTL(handle, (DWORD)IOCTL_HECI_GET_VERSION, NULL, 0,
+	status = SendIOCTL(handle, (DWORD)IOCTL_TEEDRIVER_GET_VERSION, NULL, 0,
 			   &ver, sizeof(ver), &bytesReturned);
 	if (status) {
 		DWORD err = GetLastError();
