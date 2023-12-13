@@ -137,7 +137,7 @@ TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 			goto Cleanup;
 		}
 		impl_handle->handle = deviceHandle;
-		impl_handle->close_on_exit = false;
+		impl_handle->close_on_exit = true;
 		impl_handle->device_path = _strdup(devicePath);
 		if (impl_handle->device_path == NULL) {
 			ERRPRINT(handle, "Error in in device path copy\n");
