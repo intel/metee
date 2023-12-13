@@ -425,7 +425,7 @@ TEE_DEVICE_HANDLE TEEAPI TeeGetDeviceHandle(IN PTEEHANDLE handle)
 	}
 
 	if (!me) {
-		ERRPRINT(handle, "One of the parameters was illegal");
+		DBGPRINT(handle, "Internal structure is not initialized\n");
 		return TEE_INVALID_DEVICE_HANDLE;
 	}
 	
