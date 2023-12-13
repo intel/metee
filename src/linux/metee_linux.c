@@ -19,29 +19,47 @@
 #include "helpers.h"
 
 #define MAX_FW_STATUS_NUM 5
+#define CANCEL_PIPES_NUM 2
 
 #define MILISEC_IN_SEC 1000
+
+struct metee_linux_intl {
+	struct mei me;
+	int cancel_pipe[CANCEL_PIPES_NUM];
+};
 
 /* use inline function instead of macro to avoid -Waddress warning in GCC */
 static inline struct mei *to_mei(PTEEHANDLE _h) __attribute__((always_inline));
 static inline struct mei *to_mei(PTEEHANDLE _h)
 {
-	return _h ? (struct mei *)_h->handle : NULL;
+	return _h ? &((struct metee_linux_intl *)_h->handle)->me : NULL;
 }
 
-static inline int __mei_select(struct mei *me, bool on_read, unsigned long timeout)
+/* use inline function instead of macro to avoid -Waddress warning in GCC */
+static inline struct metee_linux_intl *to_intl(PTEEHANDLE _h) __attribute__((always_inline));
+static inline struct metee_linux_intl *to_intl(PTEEHANDLE _h)
+{
+	return _h ? (struct metee_linux_intl *)_h->handle : NULL;
+}
+
+static inline int __mei_select(struct mei *me, int pipe_fd,
+			       bool on_read, unsigned long timeout)
 {
 	int rv;
-	struct pollfd pfd;
-	pfd.fd = me->fd;
-	pfd.events = (on_read) ? POLLIN : POLLOUT;
+	struct pollfd pfd[2];
+	pfd[0].fd = me->fd;
+	pfd[0].events = (on_read) ? POLLIN : POLLOUT;
+	pfd[1].fd = pipe_fd;
+	pfd[1].events = POLLIN;
 
 	errno = 0;
-	rv = poll(&pfd, 1, (int)timeout);
+	rv = poll(pfd, 2, (int)timeout);
 	if (rv < 0)
 		return -errno;
 	if (rv == 0)
 		return -ETIME;
+	if (pfd[1].revents != 0)
+		return -ECANCELED;
 	return 0;
 }
 
@@ -55,6 +73,7 @@ static inline TEESTATUS errno2status(int err)
 		case -ETIME : return TEE_TIMEOUT;
 		case -EACCES: return TEE_PERMISSION_DENIED;
 		case -EOPNOTSUPP: return TEE_NOTSUPPORTED;
+		case -ECANCELED: return TEE_UNABLE_TO_COMPLETE_OPERATION;
 		default     : return TEE_INTERNAL_ERROR;
 	}
 }
@@ -77,7 +96,7 @@ TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 			     IN const struct tee_device_address device,
 			     IN uint32_t log_level, IN OPTIONAL TeeLogCallback log_callback)
 {
-	struct mei *me;
+	struct metee_linux_intl *intl;
 	TEESTATUS  status;
 	int rc;
 	bool verbose = (log_level == TEE_LOG_LEVEL_VERBOSE);
@@ -126,27 +145,27 @@ TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 		goto End;
 	}
 
-	me = malloc(sizeof(struct mei));
-	if (!me) {
-		ERRPRINT(handle, "Cannot alloc mei structure\n");
+	intl = malloc(sizeof(struct metee_linux_intl));
+	if (!intl) {
+		ERRPRINT(handle, "Cannot alloc intl structure\n");
 		status = TEE_INTERNAL_ERROR;
 		goto End;
 	}
 
 	switch (device.type) {
 	case TEE_DEVICE_TYPE_NONE:
-		rc = mei_init_with_log(me, MEI_DEFAULT_DEVICE,
+		rc = mei_init_with_log(&intl->me, MEI_DEFAULT_DEVICE,
 			(uuid_le*)guid, 0, verbose, log_callback);
 		break;
 	case TEE_DEVICE_TYPE_PATH:
-		rc = mei_init_with_log(me, device.data.path,
+		rc = mei_init_with_log(&intl->me, device.data.path,
 			(uuid_le*)guid, 0, verbose, log_callback);
 		break;
 	case TEE_DEVICE_TYPE_HANDLE:
-		rc = mei_init_fd(me, device.data.handle, (uuid_le*)guid, 0, verbose);
+		rc = mei_init_fd(&intl->me, device.data.handle, (uuid_le*)guid, 0, verbose);
 		if (!rc) {
-			mei_set_log_callback(me, log_callback);
-			mei_set_log_level(me, verbose);
+			mei_set_log_callback(&intl->me, log_callback);
+			mei_set_log_level(&intl->me, verbose);
 		}
 		break;
 	default:
@@ -154,12 +173,21 @@ TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 		break;
 	}
 	if (rc) {
-		free(me);
+		free(intl);
 		ERRPRINT(handle, "Cannot init mei, rc = %d\n", rc);
 		status = errno2status_init(rc);
 		goto End;
 	}
-	handle->handle = me;
+	rc = pipe(intl->cancel_pipe);
+	if (rc) {
+		mei_deinit(&intl->me);
+		free(intl);
+		ERRPRINT(handle, "Cannot init mei, rc = %d\n", rc);
+		status = errno2status_init(rc);
+		goto End;
+	}
+	handle->handle = intl;
+
 	status = TEE_SUCCESS;
 
 End:
@@ -227,6 +255,7 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 			 OUT OPTIONAL size_t *pNumOfBytesRead, IN OPTIONAL uint32_t timeout)
 {
 	struct mei *me = to_mei(handle);
+	struct metee_linux_intl *intl = to_intl(handle);
 	TEESTATUS status;
 	ssize_t rc;
 
@@ -250,7 +279,11 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 
 	DBGPRINT(handle, "call read length = %zd\n", bufferSize);
 
-	if (timeout && (rc = __mei_select(me, true, timeout))) {
+	if (!timeout)
+		timeout = -1;
+
+	rc = __mei_select(me, intl->cancel_pipe[1], true, timeout);
+	if (rc) {
 		status = errno2status(rc);
 		ERRPRINT(handle, "select failed with status %zd %s\n",
 				rc, strerror(-rc));
@@ -279,6 +312,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 			  OUT OPTIONAL size_t *numberOfBytesWritten, IN OPTIONAL uint32_t timeout)
 {
 	struct mei *me  =  to_mei(handle);
+	struct metee_linux_intl *intl = to_intl(handle);
 	TEESTATUS status;
 	ssize_t rc;
 
@@ -302,7 +336,11 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 
 	DBGPRINT(handle, "call write length = %zd\n", bufferSize);
 
-	if (timeout && (rc = __mei_select(me, false, timeout))) {
+	if (!timeout)
+		timeout = -1;
+
+	rc = __mei_select(me, intl->cancel_pipe[1], false, timeout);
+	if (rc) {
 		status = errno2status(rc);
 		ERRPRINT(handle, "select failed with status %zd %s\n",
 				rc, strerror(-rc));
@@ -401,15 +439,22 @@ End:
 
 void TEEAPI TeeDisconnect(PTEEHANDLE handle)
 {
-	struct mei *me  =  to_mei(handle);
+	struct metee_linux_intl *intl = to_intl(handle);
+	const char buf[] = "X";
 
 	if (!handle) {
 		return;
 	}
 
 	FUNC_ENTRY(handle);
-	if (me) {
-		mei_free(me);
+	if (intl) {
+		if (write(intl->cancel_pipe[1], buf, sizeof(buf)) < 0) {
+			ERRPRINT(handle, "Pipe write failed\n");
+		}
+		mei_deinit(&intl->me);
+		close(intl->cancel_pipe[0]);
+		close(intl->cancel_pipe[1]);
+		free(intl);
 		handle->handle = NULL;
 	}
 
