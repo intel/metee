@@ -144,8 +144,10 @@ TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 		break;
 	case TEE_DEVICE_TYPE_HANDLE:
 		rc = mei_init_fd(me, device.data.handle, guid, 0, verbose);
-		mei_set_log_callback(me, log_callback);
-		mei_set_log_level(me, verbose);
+		if (!rc) {
+			mei_set_log_callback(me, log_callback);
+			mei_set_log_level(me, verbose);
+		}
 		break;
 	default:
 		rc = -EFAULT;
