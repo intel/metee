@@ -95,7 +95,7 @@ TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation, IN PTEEHANDLE hand
 			ERRPRINT(handle, "Error in ReadFile/Write, error: %d\n", err);
 		}
 		else {
-			ERRPRINT(handle, "Pending in ReadFile/Write");
+			ERRPRINT(handle, "Pending in ReadFile/Write\n");
 			status = TEE_SUCCESS;
 		}
 	}
