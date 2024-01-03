@@ -51,7 +51,7 @@ TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 	TEESTATUS status;
 	error_status_t res;
 	char devicePath[MAX_PATH] = {0};
-	const char *devicePathP;
+	const char *devicePathP  = NULL;
 	HANDLE deviceHandle = INVALID_HANDLE_VALUE;
 	struct METEE_WIN_IMPL* impl_handle = NULL;
 
@@ -127,18 +127,19 @@ TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 		ERRPRINT(handle, "Can't allocate memory for internal struct");
 		goto Cleanup;
 	}
+	impl_handle->device_path = NULL;
 
 	switch (device.type) {
 	case TEE_DEVICE_TYPE_NONE:
 	case TEE_DEVICE_TYPE_PATH:
 	case TEE_DEVICE_TYPE_GUID:
-		status = __CreateFile(handle, devicePath, &deviceHandle);
+		status = __CreateFile(handle, devicePathP, &deviceHandle);
 		if (status != TEE_SUCCESS) {
 			goto Cleanup;
 		}
 		impl_handle->handle = deviceHandle;
 		impl_handle->close_on_exit = true;
-		impl_handle->device_path = _strdup(devicePath);
+		impl_handle->device_path = _strdup(devicePathP);
 		if (impl_handle->device_path == NULL) {
 			ERRPRINT(handle, "Error in in device path copy\n");
 			status = TEE_UNABLE_TO_COMPLETE_OPERATION;
