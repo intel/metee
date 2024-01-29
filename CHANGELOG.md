@@ -1,3 +1,36 @@
+## [4.0.0]
+
+**Note:** Backward compatible API change
+
+### Fixed
+ - Windows: initilaize variables
+ - conan: support higher version of the Linux compilers
+ - linux: fix print in get handle
+ - linux: do not set log if init failed
+ - Windows: fix close on exit
+ - Windows: add missing newline
+ - samples: return log level to original
+ - Linux: fix timeout treatment
+ - tests: disconnect at the end of test
+ - log: demote FUNC_ENTRY/EXIT to debug
+
+### Added
+ - add CONTRIBUTING.md file
+ - add GetTRC API
+ - add init api with all parameters
+ - add option for log callback
+ - git: add full VS gitignore
+ - CMake: add preset for full debug build
+
+### Changed
+ - Linux: pull libmei 1.5.6
+ - samples: use stdbool on windows
+ - windows: replace spaces with tabs
+
+### Removed
+ - CMake: disable doc build by default
+ - CMake: drop system ver requirement
+
 ## [3.2.4]
 
 ### Fixed
