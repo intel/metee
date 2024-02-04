@@ -42,22 +42,8 @@ set_target_properties(${PROJECT_NAME}
              COMPILE_PDB_NAME_DEBUG "${PROJECT_NAME}"
 )
 
-set_target_properties(
-  ${PROJECT_NAME} PROPERTIES PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-)
-
-get_target_property(t_pdb_name ${PROJECT_NAME} COMPILE_PDB_NAME)
-get_target_property(t_pdb_name_debug ${PROJECT_NAME} COMPILE_PDB_NAME_DEBUG)
-get_target_property(t_pdb_output_directory ${PROJECT_NAME} PDB_OUTPUT_DIRECTORY)
-
-string(CONCAT INST_FILES
-  "${t_pdb_output_directory}/"
-  "\${CMAKE_INSTALL_CONFIG_NAME}/"
-  "$<$<CONFIG:Debug>:${t_pdb_name_debug}>"
-  "$<$<NOT:$<CONFIG:Debug>>:${t_pdb_name}>.pdb"
-)
-
-install(
-  FILES ${INST_FILES}
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
+if(${BUILD_SHARED_LIBS})
+  install(FILES $<TARGET_PDB_FILE:${PROJECT_NAME}> DESTINATION ${CMAKE_INSTALL_LIBDIR} OPTIONAL)
+else()
+  install(FILES "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.pdb" DESTINATION ${CMAKE_INSTALL_LIBDIR} OPTIONAL)
+endif()
