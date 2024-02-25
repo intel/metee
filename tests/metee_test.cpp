@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2023 Intel Corporation
+ * Copyright (C) 2014-2024 Intel Corporation
  */
 #include <vector>
 #include <chrono>
@@ -13,8 +13,6 @@ extern "C" {
 #include "public.h"
 #include "metee_win.h"
 }
-#else
-#include <sys/resource.h>
 #endif // WIN32
 
 DEFINE_GUID(GUID_NON_EXISTS_CLIENT,
@@ -213,70 +211,8 @@ Send GetVersion Command to MKHI with timeout and fd > 1024
 5) Check for Valid Resp
 6) Close Connection
 */
-TEST_P(MeTeeTEST, PROD_MKHI_1000HandlesGetVersion)
+TEST_P(MeTee1000OpenTEST, PROD_MKHI_1000HandlesGetVersion)
 {
-#ifdef __linux__
-	struct rlimit limit;
-
-	limit.rlim_cur = 2048;
-	limit.rlim_max = 2048;
-	errno = 0;
-	if (setrlimit(RLIMIT_NOFILE, &limit) != 0)
-		FAIL() << "setrlimit() failed with errno=" << errno;
-#endif // __linux__
-	std::vector<std::thread> v;
-
-	for (int g = 0; g <= 199; g++) {
-		v.push_back(std::thread([g]() {
-			int base = g * 10;
-			int i = 0;
-			std::ofstream file0;
-			std::string name0 = "example_" + std::to_string(base) + ".txt";
-			std::ofstream file1;
-			std::string name1 = "example_" + std::to_string(base + 1) + ".txt";
-			std::ofstream file2;
-			std::string name2 = "example_" + std::to_string(base + 2) + ".txt";
-			std::ofstream file3;
-			std::string name3 = "example_" + std::to_string(base + 3) + ".txt";
-			std::ofstream file4;
-			std::string name4 = "example_" + std::to_string(base + 4) + ".txt";
-			std::ofstream file5;
-			std::string name5 = "example_" + std::to_string(base + 5) + ".txt";
-			std::ofstream file6;
-			std::string name6 = "example_" + std::to_string(base + 6) + ".txt";
-			std::ofstream file7;
-			std::string name7 = "example_" + std::to_string(base + 7) + ".txt";
-			std::ofstream file8;
-			std::string name8 = "example_" + std::to_string(base + 8) + ".txt";
-			std::ofstream file9;
-			std::string name9 = "example_" + std::to_string(base + 9) + ".txt";
-			file0.open(name0);
-			file1.open(name1);
-			file2.open(name2);
-			file3.open(name3);
-			file4.open(name4);
-			file5.open(name5);
-			file6.open(name6);
-			file7.open(name7);
-			file8.open(name8);
-			file9.open(name9);
-			while (i++ < 5) {
-				file0 << "Writing to " << name0 << std::endl;
-				file1 << "Writing to " << name1 << std::endl;
-				file2 << "Writing to " << name2 << std::endl;
-				file3 << "Writing to " << name3 << std::endl;
-				file4 << "Writing to " << name4 << std::endl;
-				file5 << "Writing to " << name5 << std::endl;
-				file6 << "Writing to " << name6 << std::endl;
-				file7 << "Writing to " << name7 << std::endl;
-				file8 << "Writing to " << name8 << std::endl;
-				file9 << "Writing to " << name9 << std::endl;
-				std::this_thread::sleep_for(std::chrono::seconds(5));
-			}
-		}));
-	}
-	std::this_thread::sleep_for(std::chrono::seconds(5));
-
 	TEEHANDLE Handle = TEEHANDLE_ZERO;
 	size_t NumberOfBytes = 0;
 	struct MeTeeTESTParams intf = GetParam();
@@ -305,9 +241,6 @@ TEST_P(MeTeeTEST, PROD_MKHI_1000HandlesGetVersion)
 
 	TeeDisconnect(&Handle);
 	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
-
-	for (std::vector<std::thread>::iterator it = v.begin(); it != v.end(); it++)
-		it->std::thread::join();
 }
 
 /*
@@ -778,5 +711,11 @@ INSTANTIATE_TEST_SUITE_P(MeTeeDataNTESTInstance, MeTeeDataNTEST,
 INSTANTIATE_TEST_SUITE_P(MeTeeFDTESTInstance, MeTeeFDTEST,
 		testing::ValuesIn(interfaces),
 		[](const testing::TestParamInfo<MeTeeFDTEST::ParamType>& info) {
+			return info.param.name;
+		});
+
+INSTANTIATE_TEST_SUITE_P(MeTee1000OpenTESTInstance, MeTee1000OpenTEST,
+		testing::ValuesIn(interfaces),
+		[](const testing::TestParamInfo<MeTee1000OpenTEST::ParamType>& info) {
 			return info.param.name;
 		});
