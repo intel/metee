@@ -254,12 +254,10 @@ TEESTATUS TEEAPI TeeConnect(OUT PTEEHANDLE handle)
 			   &fwClient, sizeof(FW_CLIENT),
 			   &bytesReturned);
 	if (status) {
-		DWORD err = GetLastError();
-		status = Win32ErrorToTee(err);
 		// Connect IOCTL returns invalid handle if client is not found
 		if (status == TEE_INVALID_PARAMETER)
 			status = TEE_CLIENT_NOT_FOUND;
-		ERRPRINT(handle, "Error in SendIOCTL, error: %lu\n", err);
+		ERRPRINT(handle, "Error in SendIOCTL, status: %lu\n", status);
 		goto Cleanup;
 	}
 	impl_handle->state = METEE_CLIENT_STATE_CONNECTED;
@@ -424,9 +422,7 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 		&fwSts, sizeof(DWORD),
 		&bytesReturned);
 	if (status) {
-		DWORD err = GetLastError();
-		status = Win32ErrorToTee(err);
-		ERRPRINT(handle, "Error in SendIOCTL, error: %lu\n", err);
+		ERRPRINT(handle, "Error in SendIOCTL, status: %lu\n", status);
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
@@ -463,9 +459,7 @@ TEESTATUS TEEAPI TeeGetTRC(IN PTEEHANDLE handle, OUT uint32_t* trc_val)
 		&trc, sizeof(DWORD),
 		&bytesReturned);
 	if (status) {
-		DWORD err = GetLastError();
-		status = Win32ErrorToTee(err);
-		ERRPRINT(handle, "Error in SendIOCTL, error: %lu\n", err);
+		ERRPRINT(handle, "Error in SendIOCTL, status: %lu\n", status);
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
@@ -560,9 +554,7 @@ TEESTATUS TEEAPI GetDriverVersion(IN PTEEHANDLE handle, IN OUT teeDriverVersion_
 	status = SendIOCTL(handle, (DWORD)IOCTL_TEEDRIVER_GET_VERSION, NULL, 0,
 			   &ver, sizeof(ver), &bytesReturned);
 	if (status) {
-		DWORD err = GetLastError();
-		status = Win32ErrorToTee(err);
-		ERRPRINT(handle, "Error in SendIOCTL, error: %lu\n", err);
+		ERRPRINT(handle, "Error in SendIOCTL, status: %lu\n", status);
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;
 		goto Cleanup;
 	}
