@@ -21,8 +21,6 @@
 #define MAX_FW_STATUS_NUM 5
 #define CANCEL_PIPES_NUM 2
 
-#define MILISEC_IN_SEC 1000
-
 struct metee_linux_intl {
 	struct mei me;
 	int cancel_pipe[CANCEL_PIPES_NUM];
