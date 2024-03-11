@@ -229,7 +229,7 @@ TEESTATUS TEEAPI TeeConnect(IN OUT PTEEHANDLE handle)
 	FUNC_ENTRY(handle);
 
 	if (!me) {
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		status = TEE_INVALID_PARAMETER;
 		goto End;
 	}
@@ -266,7 +266,7 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 	FUNC_ENTRY(handle);
 
 	if (!me || !buffer || !bufferSize) {
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		status = TEE_INVALID_PARAMETER;
 		goto End;
 	}
@@ -323,7 +323,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 	FUNC_ENTRY(handle);
 
 	if (!me || !buffer || !bufferSize) {
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		status = TEE_INVALID_PARAMETER;
 		goto End;
 	}
@@ -379,12 +379,12 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 
 	if (!me || !fwStatus) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto End;
 	}
 	if (fwStatusNum > MAX_FW_STATUS_NUM) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT(handle, "fwStatusNum should be 0..5");
+		ERRPRINT(handle, "fwStatusNum should be 0..5\n");
 		goto End;
 	}
 
@@ -418,7 +418,7 @@ TEESTATUS TEEAPI TeeGetTRC(IN PTEEHANDLE handle, OUT uint32_t* trc_val)
 
 	if (!me || !trc_val) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto End;
 	}
 
@@ -489,7 +489,7 @@ TEESTATUS TEEAPI GetDriverVersion(IN PTEEHANDLE handle, IN OUT teeDriverVersion_
 	FUNC_ENTRY(handle);
 
 	if (!me || !driverVersion) {
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		status = TEE_INVALID_PARAMETER;
 		goto End;
 	}
@@ -556,7 +556,7 @@ TEESTATUS TEEAPI TeeSetLogCallback(IN const PTEEHANDLE handle, TeeLogCallback lo
 
 	if (!me) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto Cleanup;
 	}
 
