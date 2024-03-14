@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2023 Intel Corporation
+ * Copyright (C) 2014-2024 Intel Corporation
  */
 /*! \file metee.h
  *  \brief metee library API
@@ -33,8 +33,6 @@ extern "C" {
 	#define TEE_DEVICE_HANDLE HANDLE
 	#define TEE_INVALID_DEVICE_HANDLE ((void*)0)
 #else /* _WIN32 */
-	#include <linux/uuid.h>
-
 	#ifndef METEE_DLL
 		#define METEE_DLL_API
 	#else /*! METEE_DLL */
@@ -45,9 +43,20 @@ extern "C" {
 		#endif /* METEE_DLL_EXPORT */
 	#endif /* METEE_DLL */
 	#define TEEAPI METEE_DLL_API
-	#define GUID uuid_le
-	#define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
-		const uuid_le name = UUID_LE(l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8)
+
+	#ifndef GUID_DEFINED
+		#define GUID_DEFINED 1
+		typedef struct _GUID {
+			uint32_t l;
+			uint16_t w1;
+			uint16_t w2;
+			uint8_t  b[8];
+		} GUID;
+		#define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
+			const GUID name \
+				= { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
+	#endif /* GUID_DEFINED */
+
 	#define TEE_DEVICE_HANDLE int
 	#define TEE_INVALID_DEVICE_HANDLE (-1)
 	#ifndef IN

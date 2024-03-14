@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2019 Intel Corporation
+ * Copyright (C) 2014-2024 Intel Corporation
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +19,7 @@
 
 struct params {
 	bool verbose;
-	uuid_le uuid;
+	GUID uuid;
 	int iterations;
 };
 
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
 	int rc;
 
 	p.verbose = false;
-	p.uuid = NULL_UUID_LE;
+	memset(&p.uuid, 0, sizeof(p.uuid));
 	p.iterations = 1;
 
 #ifdef _WIN32

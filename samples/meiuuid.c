@@ -1,15 +1,16 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2019 Intel Corporation
+ * Copyright (C) 2014-2024 Intel Corporation
  */
 #include <stdlib.h>
 #include <stdint.h>
 #include <ctype.h>
 #include <string.h>
 
+#include "metee.h"
 #include "meiuuid.h"
 
-int mei_uuid_parse(const char *str, uuid_le *uuid)
+int mei_uuid_parse(const char *str, GUID *uuid)
 {
 	const char *p = "00000000-0000-0000-0000-000000000000";
 	const size_t len = strlen(p);
@@ -50,7 +51,17 @@ int mei_uuid_parse(const char *str, uuid_le *uuid)
 		e[i] = strtoul(buf, NULL, 16);
 	}
 
-	*uuid = UUID_LE(a, b, c, d[0], d[1], e[0], e[1], e[2], e[3], e[4], e[5]);
+	uuid->l = a;
+	uuid->w1 = b;
+	uuid->w2 = c;
+	uuid->b[0] = d[0];
+	uuid->b[1] = d[1];
+	uuid->b[2] = e[0];
+	uuid->b[3] = e[1];
+	uuid->b[4] = e[2];
+	uuid->b[5] = e[3];
+	uuid->b[6] = e[4];
+	uuid->b[7] = e[5];
 
 	return 0;
 }
