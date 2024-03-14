@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2023 Intel Corporation
+ * Copyright (C) 2014-2024 Intel Corporation
  */
 #include <errno.h>
 #include <fcntl.h>
@@ -136,14 +136,14 @@ TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 	switch (device.type) {
 	case TEE_DEVICE_TYPE_NONE:
 		rc = mei_init_with_log(me, MEI_DEFAULT_DEVICE,
-			guid, 0, verbose, log_callback);
+			(uuid_le*)guid, 0, verbose, log_callback);
 		break;
 	case TEE_DEVICE_TYPE_PATH:
 		rc = mei_init_with_log(me, device.data.path,
-			guid, 0, verbose, log_callback);
+			(uuid_le*)guid, 0, verbose, log_callback);
 		break;
 	case TEE_DEVICE_TYPE_HANDLE:
-		rc = mei_init_fd(me, device.data.handle, guid, 0, verbose);
+		rc = mei_init_fd(me, device.data.handle, (uuid_le*)guid, 0, verbose);
 		if (!rc) {
 			mei_set_log_callback(me, log_callback);
 			mei_set_log_level(me, verbose);
