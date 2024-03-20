@@ -549,9 +549,7 @@ TEST_P(MeTeeNTEST, PROD_N_TestGetDriverVersion)
 	ASSERT_EQ(TEE_SUCCESS, GetDriverVersion(&handle, &ver));
 
 	EXPECT_NE(ver.major, 0);
-	EXPECT_NE(ver.minor, 0);
-	//hotfix may be 0. such as 99.13.0.x
-	EXPECT_NE(ver.build, 0);
+	// All other may be zero
 #else // WIN32
 	ASSERT_EQ(TEE_NOTSUPPORTED, GetDriverVersion(&handle, &ver));
 #endif // WIN32
