@@ -17,7 +17,7 @@
 /*********************************************************************
 **                       Windows Helper Functions                   **
 **********************************************************************/
-void DebugPrint(const char* args, ...)
+void DebugPrintMe(const char* args, ...)
 {
 	char msg[DEBUG_MSG_LEN + 1];
 	va_list varl;
