@@ -32,6 +32,18 @@ extern "C" {
 	#define TEEAPI METEE_DLL_API __stdcall
 	#define TEE_DEVICE_HANDLE HANDLE
 	#define TEE_INVALID_DEVICE_HANDLE ((void*)0)
+
+#elif defined(EFI)
+	#include <Uefi.h>
+	#define TEEAPI 
+	#define TEE_DEVICE_HANDLE void *
+	#define TEE_INVALID_DEVICE_HANDLE ((void*)-1)	
+
+	// when calling TeeInitFull
+	// Set data.handle member of tee_device_address according to type to:
+	// TEE_DEVICE_TYPE_EFI_DEVICE - Number defined by HECI protocol number
+	// TEE_DEVICE_TYPE_EFI_PCI - HECI device memory address
+	
 #else /* _WIN32 */
 	#ifndef METEE_DLL
 		#define METEE_DLL_API
@@ -112,7 +124,9 @@ struct tee_device_address {
 		TEE_DEVICE_TYPE_PATH = 1, /**< Use device by path (char*) */
 		TEE_DEVICE_TYPE_HANDLE = 2, /**< Use device by pre-opend handle */
 		TEE_DEVICE_TYPE_GUID = 3, /**< Select first device by GUID (Windows only) */
-		TEE_DEVICE_TYPE_MAX = 4, /**< upper sentinel */
+		TEE_DEVICE_TYPE_EFI_DEVICE = 4, /**< Use EFI HECI Protocol numbers for the device selection (e.g. 0, 1, 4)(EFI only) */
+		TEE_DEVICE_TYPE_EFI_PCI = 5, /**< Use direct memory pointer to EFI HECI device space (EFI only) */
+		TEE_DEVICE_TYPE_MAX = 6, /**< upper sentinel */
 	} type;
 	/*! Device address */
 	union {
