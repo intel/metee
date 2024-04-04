@@ -8,13 +8,7 @@
 #include <Windows.h>
 #include <stdbool.h>
 #include "metee.h"
-#if (_MSC_PLATFORM_TOOLSET < 140)
-#ifndef _Out_writes_
 
-#define _Out_writes_(x)
-
-#endif
-#endif
 #define CANCEL_TIMEOUT 5000
 
 enum METEE_CLIENT_STATE
@@ -48,30 +42,7 @@ typedef enum _TEE_OPERATION
 {
 	ReadOperation,
 	WriteOperation
-} TEE_OPERATION, *PTEE_OPERATION;
-
-/*
- * This callback function is called when an asynchronous TEE operation is completed.
-
- * @param  status - The operation status. This parameter is 0 is the operation was successful.
- *                  Otherwise it returns a Win32 error value.
- * @param  numberOfBytesTransfered - The number of bytes transferred.
- *                                   If an error occurs, this parameter is zero.
-*/
-typedef
-void
-(*LPTEE_COMPLETION_ROUTINE)(
-	IN    TEESTATUS status,
-	IN    size_t numberOfBytesTransfered
-	);
-
-typedef struct _OPERATION_CONTEXT
-{
-	HANDLE                          handle;
-	LPOVERLAPPED                    pOverlapped;
-	LPTEE_COMPLETION_ROUTINE        completionRoutine;
-} OPERATION_CONTEXT, *POPERATION_CONTEXT;
-
+} TEE_OPERATION;
 
 /*********************************************************************
 **                Windows Helper Functions                          **
@@ -81,20 +52,12 @@ TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation,
 				 IN ULONG bufferSize, OUT EVENTHANDLE evt);
 TEESTATUS EndOverlapped(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseconds,
 			OUT OPTIONAL LPDWORD pNumberOfBytesTransferred);
-TEESTATUS EndReadInternal(IN PTEEHANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
-			  OUT OPTIONAL LPDWORD pNumberOfBytesRead);
-TEESTATUS BeginReadInternal(IN PTEEHANDLE handle, IN PVOID buffer, IN ULONG bufferSize,
-			    OUT EVENTHANDLE evt);
-TEESTATUS BeginWriteInternal(IN PTEEHANDLE handle,
-			     IN const PVOID buffer, IN ULONG bufferSize, OUT EVENTHANDLE evt);
-TEESTATUS EndWriteInternal(IN PTEEHANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
-			   OUT OPTIONAL LPDWORD pNumberOfBytesWritten);
-TEESTATUS GetDevicePath(_In_ PTEEHANDLE handle, _In_ LPCGUID InterfaceGuid,
-			_Out_writes_(pathSize) char *path, _In_ SIZE_T pathSize);
+TEESTATUS GetDevicePath(IN PTEEHANDLE handle, IN LPCGUID InterfaceGuid,
+			OUT char *path, IN SIZE_T pathSize);
 TEESTATUS SendIOCTL(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD ioControlCode, IN LPVOID pInBuffer,
 		    IN DWORD inBufferSize, IN LPVOID pOutBuffer, IN DWORD outBufferSize,
 		    OUT LPDWORD pBytesRetuned);
-TEESTATUS Win32ErrorToTee(_In_ DWORD win32Error);
+TEESTATUS Win32ErrorToTee(IN DWORD win32Error);
 
 static inline struct METEE_WIN_IMPL *to_int(PTEEHANDLE _h)
 {

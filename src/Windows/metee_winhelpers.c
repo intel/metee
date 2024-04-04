@@ -143,64 +143,6 @@ Cleanup:
 	return status;
 }
 
-TEESTATUS EndReadInternal(IN PTEEHANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
-			  OUT OPTIONAL LPDWORD pNumberOfBytesRead)
-
-{
-	TEESTATUS status;
-
-	FUNC_ENTRY(handle);
-
-	status = EndOverlapped(handle, evt, milliseconds, pNumberOfBytesRead);
-
-	FUNC_EXIT(handle, status);
-
-	return status;
-}
-
-TEESTATUS BeginReadInternal(IN PTEEHANDLE handle,
-			    IN PVOID buffer, IN ULONG bufferSize, OUT EVENTHANDLE evt)
-
-{
-	TEESTATUS status;
-
-	FUNC_ENTRY(handle);
-
-	status = BeginOverlappedInternal(ReadOperation ,handle, buffer, bufferSize, evt);
-
-	FUNC_EXIT(handle, status);
-
-	return status;
-}
-
-TEESTATUS BeginWriteInternal(IN PTEEHANDLE handle,
-			     IN const PVOID buffer, IN ULONG bufferSize, OUT EVENTHANDLE evt)
-{
-	TEESTATUS status;
-
-	FUNC_ENTRY(handle);
-
-	status = BeginOverlappedInternal(WriteOperation ,handle, buffer, bufferSize, evt);
-
-	FUNC_EXIT(handle, status);
-
-	return status;
-}
-
-TEESTATUS EndWriteInternal(IN PTEEHANDLE handle, IN EVENTHANDLE evt, DWORD milliseconds,
-			   OUT OPTIONAL LPDWORD pNumberOfBytesWritten)
-{
-	TEESTATUS status;
-
-	FUNC_ENTRY(handle);
-
-	status = EndOverlapped(handle, evt, milliseconds, pNumberOfBytesWritten);
-
-	FUNC_EXIT(handle, status);
-
-	return status;
-}
-
 /*
 **	Return the given Device Path according to it's device GUID
 **
