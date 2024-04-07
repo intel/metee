@@ -1,3 +1,30 @@
+## [4.1.0]
+
+### Fixed
+ - Linux: add newlines to messages
+ - Linux: cancel waiting operation on disconnect
+ - Windows: rewrite overlapped operations
+ - Linux: define GUID in more compatible way
+ - tests: fix GetDriverVersion test
+ - tests: fix crash in failed 1000 handles test
+ - Windows: do not retake last error from ioctl
+ - Windows: demote print to debug
+ - CMake: use PDB path generator expression
+ - Linux: fix timeout and signedness
+
+### Added
+ - README: add thread safety section
+ - tests: add test for interrupted read
+ - CMake: enable several extended compilation warnings
+
+### Changed
+ - Linux: pull libmei 1.6.0
+
+### Removed
+ - Linux: drop unused define
+ - Windows: remove unused layers
+ - Doxygen: disable HTML timestamps
+
 ## [4.0.0]
 
 **Note:** Backward compatible API change
