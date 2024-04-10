@@ -135,6 +135,33 @@ TEST_P(MeTeeTEST, PROD_MKHI_SimpleGetVersion)
 }
 
 /*
+Check too big timeouts on read and write
+*/
+TEST_P(MeTeeTEST, PROD_MKHI_BadTimeout)
+{
+	TEEHANDLE Handle = TEEHANDLE_ZERO;
+	size_t NumberOfBytes = 0;
+	struct MeTeeTESTParams intf = GetParam();
+	char buf[10];
+	TEESTATUS status;
+
+	status = TestTeeInitGUID(&Handle, intf.client, intf.device);
+	if (status == TEE_DEVICE_NOT_FOUND)
+		GTEST_SKIP();
+	ASSERT_EQ(SUCCESS, status);
+	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+	ASSERT_EQ(SUCCESS, TeeConnect(&Handle));
+
+
+	ASSERT_EQ(TEE_INVALID_PARAMETER, TeeWrite(&Handle, buf, 10, &NumberOfBytes, (uint32_t)INT_MAX + 1));
+
+	ASSERT_EQ(TEE_INVALID_PARAMETER, TeeRead(&Handle, buf, 10, &NumberOfBytes, (uint32_t)INT_MAX + 1));
+
+	TeeDisconnect(&Handle);
+	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
+}
+
+/*
 Set log level
 1) Init metee handle
 2) Get log level

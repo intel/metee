@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <libmei.h>
+#include <limits.h>
 #include <linux/mei.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -41,7 +42,7 @@ static inline struct metee_linux_intl *to_intl(PTEEHANDLE _h)
 }
 
 static inline int __mei_select(struct mei *me, int pipe_fd,
-			       bool on_read, unsigned long timeout)
+			       bool on_read, int timeout)
 {
 	int rv;
 	struct pollfd pfd[2];
@@ -51,7 +52,7 @@ static inline int __mei_select(struct mei *me, int pipe_fd,
 	pfd[1].events = POLLIN;
 
 	errno = 0;
-	rv = poll(pfd, 2, (int)timeout);
+	rv = poll(pfd, 2, timeout);
 	if (rv < 0)
 		return -errno;
 	if (rv == 0)
@@ -254,6 +255,7 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 {
 	struct mei *me = to_mei(handle);
 	struct metee_linux_intl *intl = to_intl(handle);
+	int ltimeout;
 	TEESTATUS status;
 	ssize_t rc;
 
@@ -269,6 +271,12 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 		goto End;
 	}
 
+	if (timeout > INT_MAX) {
+		ERRPRINT(handle, "Timeout is too big %u > %d \n", timeout, INT_MAX);
+		status = TEE_INVALID_PARAMETER;
+		goto End;
+	}
+
 	if (me->state != MEI_CL_STATE_CONNECTED) {
 		ERRPRINT(handle, "The client is not connected\n");
 		status = TEE_DISCONNECTED;
@@ -277,10 +285,9 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 
 	DBGPRINT(handle, "call read length = %zd\n", bufferSize);
 
-	if (!timeout)
-		timeout = -1;
+	ltimeout = (timeout) ? (int)timeout : -1;
 
-	rc = __mei_select(me, intl->cancel_pipe[1], true, timeout);
+	rc = __mei_select(me, intl->cancel_pipe[1], true, ltimeout);
 	if (rc) {
 		status = errno2status(rc);
 		ERRPRINT(handle, "select failed with status %zd %s\n",
@@ -299,7 +306,7 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 	status = TEE_SUCCESS;
 	DBGPRINT(handle, "read succeeded with result %zd\n", rc);
 	if (pNumOfBytesRead)
-		*pNumOfBytesRead = rc;
+		*pNumOfBytesRead = (size_t)rc;
 
 End:
 	FUNC_EXIT(handle, status);
@@ -311,6 +318,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 {
 	struct mei *me  =  to_mei(handle);
 	struct metee_linux_intl *intl = to_intl(handle);
+	int ltimeout;
 	TEESTATUS status;
 	ssize_t rc;
 
@@ -326,6 +334,12 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 		goto End;
 	}
 
+	if (timeout > INT_MAX) {
+		ERRPRINT(handle, "Timeout is too big %u > %d \n", timeout, INT_MAX);
+		status = TEE_INVALID_PARAMETER;
+		goto End;
+	}
+
 	if (me->state != MEI_CL_STATE_CONNECTED) {
 		ERRPRINT(handle, "The client is not connected\n");
 		status = TEE_DISCONNECTED;
@@ -334,10 +348,9 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 
 	DBGPRINT(handle, "call write length = %zd\n", bufferSize);
 
-	if (!timeout)
-		timeout = -1;
+	ltimeout = (timeout) ? (int)timeout : -1;
 
-	rc = __mei_select(me, intl->cancel_pipe[1], false, timeout);
+	rc = __mei_select(me, intl->cancel_pipe[1], false, ltimeout);
 	if (rc) {
 		status = errno2status(rc);
 		ERRPRINT(handle, "select failed with status %zd %s\n",
@@ -353,7 +366,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 	}
 
 	if (numberOfBytesWritten)
-		*numberOfBytesWritten = rc;
+		*numberOfBytesWritten = (size_t)rc;
 
 	status = TEE_SUCCESS;
 End:
