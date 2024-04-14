@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright(c) 2013 - 2023 Intel Corporation. All rights reserved.
+ * Copyright(c) 2013 - 2024 Intel Corporation. All rights reserved.
  *
  * Intel Management Engine Interface (Intel MEI) Library
  */
@@ -27,7 +27,7 @@ extern "C" {
 
 /*! Library API version
  */
-#define LIBMEI_API_VERSION MEI_ENCODE_VERSION(1, 5)
+#define LIBMEI_API_VERSION MEI_ENCODE_VERSION(1, 6)
 
 /*! Get current supported library API version
  *
@@ -277,7 +277,7 @@ uint32_t mei_get_log_level(const struct mei *me);
  *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
  *  \return 0 if successful, otherwise error code.
  */
-uint32_t mei_set_log_callback(struct mei *me, mei_log_callback log_callback);
+int mei_set_log_callback(struct mei *me, mei_log_callback log_callback);
 
 #ifdef __cplusplus
 }
