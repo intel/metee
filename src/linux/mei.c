@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright(c) 2013 - 2023 Intel Corporation. All rights reserved.
+ * Copyright(c) 2013 - 2024 Intel Corporation. All rights reserved.
  *
  * Intel Management Engine Interface (Intel MEI) Library
  */
@@ -72,18 +72,13 @@ static void dump_hex_buffer(const unsigned char *buf, size_t len)
 #define LINE_LEN 16
 #define PBUFSZ (sizeof("00") * LINE_LEN)
 	char pbuf[PBUFSZ];
-	int j = 0;
 
-	while (len-- > 0) {
+	pbuf[0]	= '\0';
+
+	for (size_t j = 0; (j < PBUFSZ) && (len > 0); len--, j += sizeof("00"))
 		snprintf(&pbuf[j], PBUFSZ - j, "%02X ", *buf++);
-		j += 3;
-		if (j == PBUFSZ) {
-			__dump_buffer(pbuf);
-			j = 0;
-		}
-	}
-	if (j)
-		__dump_buffer(pbuf);
+
+	__dump_buffer(pbuf);
 #undef PBUFSZ
 #undef LINE_LEN
 }
@@ -580,7 +575,7 @@ ssize_t mei_recv_msg(struct mei *me, unsigned char *buffer, size_t len)
 		goto out;
 	}
 	mei_msg(me, "read succeeded with result %zd\n", rc);
-	mei_dump_hex_buffer(me, buffer, rc);
+	mei_dump_hex_buffer(me, buffer, (size_t)rc);
 out:
 	return rc;
 }
@@ -749,7 +744,7 @@ uint32_t mei_get_log_level(const struct mei *me)
 	return me->log_level;
 }
 
-uint32_t mei_set_log_callback(struct mei *me, mei_log_callback log_callback)
+int mei_set_log_callback(struct mei *me, mei_log_callback log_callback)
 {
 	if (!me)
 		return -EINVAL;
