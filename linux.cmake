@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2014-2022 Intel Corporation
+# Copyright (C) 2014-2024 Intel Corporation
 set(TEE_SOURCES src/linux/metee_linux.c src/linux/mei.c)
 
 add_library(${PROJECT_NAME} ${TEE_SOURCES})
@@ -18,11 +18,40 @@ if(NOT HAVE_VTAG)
 endif()
 
 # More warnings and warning-as-error
+set(COMPILE_OPTIONS
+  -Wall -Werror)
+include(CheckCCompilerFlag)
+check_c_compiler_flag(-Wshadow WARNING_SHADOW)
+if(WARNING_SHADOW)
+  set(COMPILE_OPTIONS ${COMPILE_OPTIONS} -Wshadow)
+endif()
+check_c_compiler_flag(-Wnull-dereference WARNING_NULL_DEREFERENCE)
+if(WARNING_NULL_DEREFERENCE)
+  set(COMPILE_OPTIONS ${COMPILE_OPTIONS} -Wnull-dereference)
+endif()
+check_c_compiler_flag(-Wfloat-conversion WARNING_FLOAT_CONVERSION)
+if(WARNING_FLOAT_CONVERSION)
+  set(COMPILE_OPTIONS ${COMPILE_OPTIONS} -Wfloat-conversion)
+endif()
+check_c_compiler_flag(-Wsign-conversion WARNING_SIGN_CONVERSION)
+if(WARNING_SIGN_CONVERSION)
+  set(COMPILE_OPTIONS ${COMPILE_OPTIONS} -Wsign-conversion)
+endif()
+check_c_compiler_flag(-Wstringop-truncation WARNING_STRINGOP_TRUNCATION)
+if(WARNING_STRINGOP_TRUNCATION)
+  set(COMPILE_OPTIONS ${COMPILE_OPTIONS} -Wstringop-truncation)
+endif()
+check_c_compiler_flag(-Wjump-misses-init WARNING_JUMP_MISSES_INIT)
+if(WARNING_JUMP_MISSES_INIT)
+  set(COMPILE_OPTIONS ${COMPILE_OPTIONS} -Wjump-misses-init)
+endif()
+check_c_compiler_flag(-Wunsuffixed-float-constants WARNING_UNSUFFIXED_FLOAT_CONSTANTS)
+if(WARNING_UNSUFFIXED_FLOAT_CONSTANTS)
+  set(COMPILE_OPTIONS ${COMPILE_OPTIONS} -Wunsuffixed-float-constants)
+endif()
 target_compile_options(
   ${PROJECT_NAME}
-  PRIVATE -Wall -Werror
-
-)
+  PRIVATE ${COMPILE_OPTIONS})
 # Security options
 target_compile_options(
   ${PROJECT_NAME}
