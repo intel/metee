@@ -320,6 +320,12 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void* buffer, IN size_t bu
 		goto Cleanup;
 	}
 
+	if (timeout > INT_MAX) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT(handle, "Timeout is too big %u > %d \n", timeout, INT_MAX);
+		goto Cleanup;
+	}
+
 	if (impl_handle->state != METEE_CLIENT_STATE_CONNECTED) {
 		status = TEE_DISCONNECTED;
 		ERRPRINT(handle, "The client is not connected\n");
@@ -371,6 +377,12 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 	if (NULL == impl_handle || NULL == buffer || 0 == bufferSize) {
 		status = TEE_INVALID_PARAMETER;
 		ERRPRINT(handle, "One of the parameters was illegal");
+		goto Cleanup;
+	}
+
+	if (timeout > INT_MAX) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT(handle, "Timeout is too big %u > %d \n", timeout, INT_MAX);
 		goto Cleanup;
 	}
 
