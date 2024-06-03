@@ -1,5 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2014-2023 Intel Corporation
+# Copyright (C) 2014-2024 Intel Corporation
+
+if(BUILD_MSVC_RUNTIME_STATIC)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
 
 set(TEE_SOURCES
     src/Windows/metee_win.c
@@ -7,10 +11,6 @@ set(TEE_SOURCES
 )
 
 add_library(${PROJECT_NAME} ${TEE_SOURCES})
-
-if(BUILD_MSVC_RUNTIME_STATIC)
-  target_compile_options(${PROJECT_NAME} PRIVATE /MT$<$<CONFIG:Debug>:d>)
-endif()
 
 target_link_libraries(${PROJECT_NAME} CfgMgr32.lib)
 target_compile_definitions(${PROJECT_NAME} PRIVATE
