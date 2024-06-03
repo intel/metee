@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2014-2020 Intel Corporation
-cmake_minimum_required(VERSION 3.5)
+# Copyright (C) 2014-2024 Intel Corporation
+cmake_minimum_required(VERSION 3.15)
+cmake_policy(SET CMP0091 NEW)
 project(metee)
 
 option(BUILD_DOCS "Build docs" NO)

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2014-2020 Intel Corporation
-cmake_minimum_required(VERSION 3.5)
+# Copyright (C) 2014-2024 Intel Corporation
+cmake_minimum_required(VERSION 3.15)
 project(metee_test)
 
 set(CMAKE_CXX_STANDARD 11)
