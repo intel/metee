@@ -62,7 +62,7 @@ static inline int __mei_select(struct mei *me, int pipe_fd,
 	return 0;
 }
 
-static inline TEESTATUS errno2status(int err)
+static inline TEESTATUS errno2status(ssize_t err)
 {
 	switch (err) {
 		case 0      : return TEE_SUCCESS;
@@ -77,7 +77,7 @@ static inline TEESTATUS errno2status(int err)
 	}
 }
 
-static inline TEESTATUS errno2status_init(int err)
+static inline TEESTATUS errno2status_init(ssize_t err)
 {
 	switch (err) {
 		case 0      : return TEE_SUCCESS;
