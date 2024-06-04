@@ -375,6 +375,7 @@ static int __mei_fd_to_devname(struct mei *me, int fd)
 	char name[PATH_MAX];
 	char proc[PATH_MAX];
 	int ret;
+	ssize_t sret;
 
 	ret = snprintf(proc, PATH_MAX, "/proc/self/fd/%d", fd);
 	if (ret < 0) {
@@ -387,20 +388,20 @@ static int __mei_fd_to_devname(struct mei *me, int fd)
 	}
 
 	errno = 0;
-	ret = readlink(proc, name, PATH_MAX);
-	if (ret == -1) {
+	sret = readlink(proc, name, PATH_MAX);
+	if (sret == -1) {
 		mei_err(me, "Cannot obtain device name %d\n", errno);
 		return -errno;
 	}
-	if (ret == PATH_MAX) {
+	if (sret == PATH_MAX) {
 		mei_err(me, "Cannot obtain device name, too long\n");
 		return -ENAMETOOLONG;
 	}
-	if (ret < 0 || ret > PATH_MAX) {
-		mei_err(me, "Cannot obtain device name %d\n", ret);
+	if (sret < 0 || sret > PATH_MAX) {
+		mei_err(me, "Cannot obtain device name %zd\n", sret);
 		return -EFAULT;
 	}
-	name[ret] = '\0';
+	name[sret] = '\0';
 
 	me->device = strdup(name);
 	if (!me->device)
