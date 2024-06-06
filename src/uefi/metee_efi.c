@@ -131,6 +131,19 @@ TeeInitFull(
 
 	switch (device.type)
 	{
+	case TEE_DEVICE_TYPE_NONE:
+#define DEFAULT_UEFI_HECI_DEVICE 0
+		if (device.data.handle != DEFAULT_UEFI_HECI_DEVICE) {
+			ERRPRINT(handle, "Handle is set.\n");
+			status = TEE_INVALID_PARAMETER;
+			goto Cleanup;
+		}
+		status = TeeInitFullTypeEfiDevice(handle, guid, DEFAULT_UEFI_HECI_DEVICE, &handle->handle);
+		if (TEE_SUCCESS != status)
+		{
+			goto Cleanup;
+		}
+		break;
 	case TEE_DEVICE_TYPE_EFI_DEVICE:
 		status = TeeInitFullTypeEfiDevice(handle, guid, (UINT32)((UINT64)device.data.handle & 0xFFFFFFFF), &handle->handle);
 		if (TEE_SUCCESS != status)
