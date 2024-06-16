@@ -384,7 +384,34 @@ End:
 TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 				 IN uint32_t fwStatusNum, OUT uint32_t *fwStatus)
 {
-	return TEE_NOTSUPPORTED;
+	TEESTATUS status;
+	EFI_STATUS efi_status;
+	struct METEE_EFI_IMPL *impl_handle = to_int(handle);
+	if (NULL == handle)
+	{
+		return TEE_INVALID_PARAMETER;
+	}
+	if (NULL == fwStatus)
+	{
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT(handle, "One of the parameters was illegal\n");
+		goto End;
+	}
+
+	FUNC_ENTRY(handle);
+
+	efi_status = HeciFwStatus(impl_handle, fwStatusNum, fwStatus);
+
+	if (EFI_ERROR(efi_status))
+	{
+		status = TEE_INTERNAL_ERROR;
+		goto End;
+	}
+	status = TEE_SUCCESS;
+
+End:
+	FUNC_EXIT(handle, status);
+	return status;
 }
 
 /*! Retrieves TRC register.
@@ -394,7 +421,34 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
  */
 TEESTATUS TEEAPI TeeGetTRC(IN PTEEHANDLE handle, OUT uint32_t *trc_val)
 {
-	return TEE_NOTSUPPORTED;
+	TEESTATUS status;
+	EFI_STATUS efi_status;
+	struct METEE_EFI_IMPL *impl_handle = to_int(handle);
+	if (NULL == handle)
+	{
+		return TEE_INVALID_PARAMETER;
+	}
+	if (NULL == trc_val)
+	{
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT(handle, "One of the parameters was illegal\n");
+		goto End;
+	}
+
+	FUNC_ENTRY(handle);
+
+	efi_status = HeciGetTrc(impl_handle, trc_val);
+
+	if (EFI_ERROR(efi_status))
+	{
+		status = TEE_INTERNAL_ERROR;
+		goto End;
+	}
+	status = TEE_SUCCESS;
+
+End:
+	FUNC_EXIT(handle, status);
+	return status;
 }
 
 /*! Closes the session to TEE driver

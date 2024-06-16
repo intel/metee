@@ -7,8 +7,12 @@
 #include <Library/UefiLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/PciSegmentLib.h>
+#include <Library/BaseLib.h>
 
 #include <Library/UefiBootServicesTableLib.h>
+
+#include <IndustryStandard/Pci22.h>
 
 #include "metee.h"
 #include "metee_efi.h"
@@ -111,6 +115,175 @@ heciReset(
 
 	return status;
 }
+
+
+///
+/// The default PCH PCI segment and bus number
+///
+#define DEFAULT_PCI_SEGMENT_NUMBER_PCH  0
+#define DEFAULT_PCI_BUS_NUMBER_PCH      0
+
+//
+// CSME HECI #1
+//
+#define PCI_DEVICE_NUMBER_PCH_HECI1                   22
+#define PCI_FUNCTION_NUMBER_PCH_HECI1                 0
+
+
+/**
+  Get CSME Bus Number
+
+  @retval UINT8   CSME Bus Number
+**/
+UINT8
+MeGetBusNumber (
+  VOID
+  )
+{
+  return DEFAULT_PCI_BUS_NUMBER_PCH;
+}
+
+/**
+  Get HECI controller address that can be passed to the PCI Segment Library functions.
+
+  @param[in] HeciFunc              HECI device function to be accessed.
+
+  @retval HECI controller address in PCI Segment Library representation
+**/
+static
+UINT64
+MeHeciPciCfgBase (
+  IN UINT32   HeciFunc
+  )
+{
+  return PCI_SEGMENT_LIB_ADDRESS (
+           DEFAULT_PCI_SEGMENT_NUMBER_PCH,
+           MeGetBusNumber (),
+           PCI_DEVICE_NUMBER_PCH_HECI1,
+           HeciFunc,
+           0
+           );
+}
+
+
+
+
+EFI_STATUS
+HeciFwStatus(
+    IN struct METEE_EFI_IMPL *Handle,
+    IN UINT32 fwStatusNum,
+    OUT UINT32 *fwStatus)
+{
+
+  UINT32        MeFirmwareStatus;
+  EFI_STATUS status = EFI_UNSUPPORTED;
+
+#define R_ME_HFS                           0x40
+#define R_ME_HFS_2                         0x48
+#define R_ME_HFS_3                         0x60
+#define R_ME_HFS_4                         0x64
+#define R_ME_HFS_5                         0x68
+#define R_ME_HFS_6                         0x6C
+
+  UINT32 ind2Status[] = {R_ME_HFS, R_ME_HFS_2, R_ME_HFS_3, R_ME_HFS_4, R_ME_HFS_5, R_ME_HFS_6};
+
+  FUNC_ENTRY(Handle->TeeHandle);
+
+  if (fwStatusNum >= sizeof(ind2Status)/sizeof(ind2Status[0])) {
+	status = EFI_INVALID_PARAMETER;
+	goto End;
+  }
+
+  *fwStatus = PciSegmentRead32 (MeHeciPciCfgBase (Handle->HeciDevice) + ind2Status[fwStatusNum]);
+  status = EFI_SUCCESS;
+End:
+	FUNC_EXIT(Handle->TeeHandle, status);
+	return status;
+
+}
+
+
+
+/**
+  This function provides a standard way to verify the HECI cmd and MBAR regs
+  in its PCI cfg space are setup properly and that the local mHeciContext
+  variable matches this info.
+
+  @param[in] HeciDev              HECI device to be accessed.
+
+  @retval HeciMemBar              HECI Memory BAR.
+                                  0 - invalid BAR value returned.
+**/
+UINTN
+CheckAndFixHeciForAccess (
+  IN struct METEE_EFI_IMPL *Handle
+  )
+{
+  UINT64 HeciBaseAddress;
+  UINT64 MemBar;
+
+#define B_PCI_BAR_MEMORY_TYPE_MASK                (BIT1 | BIT2)
+#define B_PCI_BAR_MEMORY_TYPE_64                  BIT2  
+
+  ///
+  /// Check if HECI MBAR has changed
+  ///
+  HeciBaseAddress = MeHeciPciCfgBase (Handle->HeciDevice);
+  ///
+  /// Check for HECI PCI device availability
+  ///
+  if (PciSegmentRead16 (HeciBaseAddress + PCI_DEVICE_ID_OFFSET) == 0xFFFF) {
+	DBGPRINT(Handle->TeeHandle, "HECI%d is not enabled in this phase\n", Handle->HeciDevice);
+    return 0;
+  }
+
+  MemBar = PciSegmentRead32 (HeciBaseAddress + PCI_BASE_ADDRESSREG_OFFSET) & 0xFFFFFFF0;
+  if ((PciSegmentRead32 (HeciBaseAddress + PCI_BASE_ADDRESSREG_OFFSET) & B_PCI_BAR_MEMORY_TYPE_MASK) == B_PCI_BAR_MEMORY_TYPE_64) {
+    MemBar += LShiftU64((UINT64)PciSegmentRead32 (HeciBaseAddress + (PCI_BASE_ADDRESSREG_OFFSET + 4)), 32);
+  }
+
+  if (MemBar == 0) {
+    DBGPRINT(Handle->TeeHandle, "MMIO Bar for HECI%d isn't programmed in this phase\n", Handle->HeciDevice);
+    return 0;
+  }
+  ///
+  /// Enable HECI MSE
+  ///
+  PciSegmentOr8 (HeciBaseAddress + PCI_COMMAND_OFFSET, EFI_PCI_COMMAND_MEMORY_SPACE);
+
+  return (UINTN)MemBar;
+}
+
+
+EFI_STATUS
+HeciGetTrc(
+    IN struct METEE_EFI_IMPL *Handle,
+    OUT UINT32 *trcVal)
+{
+
+	EFI_STATUS status = EFI_UNSUPPORTED;
+	UINT64  HeciMemBar = 0;
+
+#define ME_TRC		0x30
+
+	FUNC_ENTRY(Handle->TeeHandle);
+  	HeciMemBar = CheckAndFixHeciForAccess (Handle);
+	DBGPRINT(Handle->TeeHandle, "HECI MEM BAR %p\n", HeciMemBar);
+	if (HeciMemBar == 0) {
+		DBGPRINT(Handle->TeeHandle, "CheckAndFixHeciForAccess failed\n");
+		return EFI_DEVICE_ERROR;
+	}
+
+	*trcVal = MmioRead32 (HeciMemBar + ME_TRC);
+  
+  	status = EFI_SUCCESS;
+End:
+	FUNC_EXIT(Handle->TeeHandle, status);
+	return status;
+
+}
+
+
 
 EFI_STATUS
 HeciUninitialize(

@@ -28,6 +28,17 @@ HeciSendMessage(
     IN UINT32 timeout);
 
 EFI_STATUS
+HeciFwStatus(
+    IN struct METEE_EFI_IMPL *Handle,
+    IN UINT32 fwStatusNum,
+    OUT UINT32 *fwStatus);
+
+EFI_STATUS
+HeciGetTrc(
+    IN struct METEE_EFI_IMPL *Handle,
+    OUT UINT32 *trcVal);    
+
+EFI_STATUS
 HeciUninitialize(
     IN struct METEE_EFI_IMPL *Handle);
 
