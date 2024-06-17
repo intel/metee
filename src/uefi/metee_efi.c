@@ -73,7 +73,8 @@ TeeInitFullTypeEfiDevice(
 		goto Cleanup;
 	}
 	efi_impl->TeeHandle = handle;
-	efi_impl->HeciDevice = heci_device;
+	efi_impl->HeciDeviceFunction = heci_device;
+	efi_impl->HeciDeviceBus = -1;
 	efi_impl->ClientGuid = *guid;
 	efi_impl->State = METEE_CLIENT_STATE_NONE;
 	efi_impl->HeciProtocol = heci_protocol;
