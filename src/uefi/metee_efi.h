@@ -327,11 +327,12 @@ struct _TEEHANDLE;
 struct METEE_EFI_IMPL
 {
     struct _TEEHANDLE *TeeHandle;
-    UINT32 HeciDevice;                           /** HECI device number */
     GUID ClientGuid;                             /** Client GUID */
     enum METEE_CLIENT_STATE State;               /** The client state */
     HECI_CLIENT_CONNECTION HeciClientConnection; /** HECI EFI Connection information */
     HECI_PROTOCOL *HeciProtocol;                 /** BIOS HECI Protocol implementation */
+    UINT32 HeciDeviceBus;                        /** HECI device Bdf */
+    UINT32 HeciDeviceFunction;                   /** HECI device bdF */
 };
 
 #endif // METEE_EFI_H_
