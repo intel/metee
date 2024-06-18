@@ -144,14 +144,14 @@ HeciUninitialize(
 	status = heciSendMsg(Handle, (UINT32 *)&disconnectMsg, (UINT32)sizeof(disconnectMsg), (UINT8)BIOS_FIXED_HOST_ADDR, (UINT8)HECI_HBM_MSG_ADDR);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "####Failed to send HBM_CLIENT_DISCONNECT_REQUEST. Status: %r\n", status);
+		DBGPRINT(Handle->TeeHandle, "####Failed to send HBM_CLIENT_DISCONNECT_REQUEST. Status: %d\n", status);
 		goto End;
 	}
 
 	status = heciReadMsg(Handle, BLOCKING, (UINT32 *)&disconnectMsgReply, sizeof(disconnectMsgReply), &msgReplyLen);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "####HeciUninitialize failed with ReadMsg, Status: %r.\n", status);
+		DBGPRINT(Handle->TeeHandle, "####HeciUninitialize failed with ReadMsg, Status: %d.\n", status);
 		goto End;
 	}
 	DBGPRINT(Handle->TeeHandle, "#### disconnectMsgReply Command %02X , Status: %02X.\n", disconnectMsgReply.Command, disconnectMsgReply.Status);
@@ -209,7 +209,7 @@ heciFwToHostFlowControl(
 	status = heciReadMsg(Handle, BLOCKING, (UINT32 *)&flowCtrlMsg, sizeof(HBM_FLOW_CONTROL), &msgLen);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "#####Flow control: wait for FW failed with status: %r.\n", status);
+		DBGPRINT(Handle->TeeHandle, "#####Flow control: wait for FW failed with status: %d.\n", status);
 		goto End;
 	}
  
@@ -254,7 +254,7 @@ heciHostToSecFlowControl(
 	status = heciSendMsg(Handle, (UINT32 *)&flowCtrlMsg, sizeof(flowCtrlMsg), BIOS_FIXED_HOST_ADDR, HECI_HBM_MSG_ADDR);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "#####Flow control: send to FW failed with status: %r.\n", status);
+		DBGPRINT(Handle->TeeHandle, "#####Flow control: send to FW failed with status: %d.\n", status);
 		goto End;
 	}
 
@@ -291,7 +291,7 @@ HeciConnectClient(
 	status = heciReset(Handle);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "Failed to send HECI reset. Status: %r\n", status); 
+		DBGPRINT(Handle->TeeHandle, "Failed to send HECI reset. Status: %d\n", status); 
 		status = EFI_DEVICE_ERROR;
 		goto End;
 	}
@@ -313,7 +313,7 @@ HeciConnectClient(
 		status = heciReadMsg(Handle, BLOCKING, (UINT32 *)&enumMsgReply, sizeof(HBM_HOST_ENUMERATION_RESPONSE), &msgReplyLen);
 		if (EFI_ERROR(status))
 		{
-			DBGPRINT(Handle->TeeHandle, "Failed to read HBM_HOST_ENUMERATION_REQUEST. Status: %r\n", status);
+			DBGPRINT(Handle->TeeHandle, "Failed to read HBM_HOST_ENUMERATION_REQUEST. Status: %d\n", status);
 			if (EFI_TIMEOUT == status)
 			{
 				continue;
@@ -326,7 +326,7 @@ HeciConnectClient(
 
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "Failed to read HBM_HOST_ENUMERATION_REQUEST. Status: %r.\n", status);
+		DBGPRINT(Handle->TeeHandle, "Failed to read HBM_HOST_ENUMERATION_REQUEST. Status: %d.\n", status);
 		goto End;
 	}
 
@@ -353,7 +353,7 @@ HeciConnectClient(
 		status = heciSendMsg(Handle, (UINT32 *)&propMsg, sizeof(propMsg), BIOS_FIXED_HOST_ADDR, HECI_HBM_MSG_ADDR);
 		if (EFI_ERROR(status))
 		{
-			DBGPRINT(Handle->TeeHandle, "Failed to send HBM_CLIENT_PROP_MSG. Status: %r\n", status);
+			DBGPRINT(Handle->TeeHandle, "Failed to send HBM_CLIENT_PROP_MSG. Status: %d\n", status);
 			goto End;
 		}
 
@@ -361,7 +361,7 @@ HeciConnectClient(
 		status = heciReadMsg(Handle, BLOCKING, (UINT32 *)&propMsgReply, sizeof(HBM_CLIENT_PROP_MSG_REPLY), &msgReplyLen);
 		if (EFI_ERROR(status))
 		{
-			DBGPRINT(Handle->TeeHandle, "heciReadMsg failed to read HBM_CLIENT_PROP_MSG response. Status: %r\n", status);
+			DBGPRINT(Handle->TeeHandle, "heciReadMsg failed to read HBM_CLIENT_PROP_MSG response. Status: %d\n", status);
 			goto End;
 		}
 
@@ -448,14 +448,14 @@ HeciConnectClient(
 	status = heciSendMsg(Handle, (UINT32 *)&connectMsg, sizeof(connectMsg), BIOS_FIXED_HOST_ADDR, HECI_HBM_MSG_ADDR);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "Connect Send failed with status: %r.\n", status);
+		DBGPRINT(Handle->TeeHandle, "Connect Send failed with status: %d.\n", status);
 		goto End;
 	}
 
 	status = heciReadMsg(Handle, BLOCKING, (UINT32 *)&connectMsgReply, sizeof(HBM_CLIENT_CONNECT_RESPONSE), &msgReplyLen);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "Connect Recv failed with status: %r.\n", status);
+		DBGPRINT(Handle->TeeHandle, "Connect Recv failed with status: %d.\n", status);
 		goto End;
 	}
 
@@ -521,7 +521,7 @@ HeciSendMessage(
 	status = heciHostToSecFlowControl(Handle, client, secAddress);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "heciHostToSecFlowControl Failed. Status: %r", status);
+		DBGPRINT(Handle->TeeHandle, "heciHostToSecFlowControl Failed. Status: %d", status);
 		goto End;
 	}
 
@@ -532,7 +532,7 @@ HeciSendMessage(
 	status = heciSendMsg(Handle, (UINT32*)buffer, bufferLength, hostAddress, secAddress);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "SendMessage: failed to send message. Status: %r.", status);
+		DBGPRINT(Handle->TeeHandle, "SendMessage: failed to send message. Status: %d.", status);
 		goto End;
 	}
 	*BytesWritten = bufferLength;
@@ -597,7 +597,7 @@ HeciReceiveMessage(
 	status = heciReadMsg(Handle, BLOCKING, (UINT32 *)Buffer, BufferSize, &bytes_read);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "\nReadMsg: first reply read failed. bytesRead: %d. Status: %r\n", bytes_read, status);
+		DBGPRINT(Handle->TeeHandle, "\nReadMsg: first reply read failed. bytesRead: %d. Status: %d\n", bytes_read, status);
 		goto End;
 	}
 
@@ -614,7 +614,7 @@ HeciReceiveMessage(
 		status = heciReadMsg(Handle, BLOCKING, (UINT32 *)Buffer, BufferSize, &bytes_read);
 		if (EFI_ERROR(status))
 		{
-			DBGPRINT(Handle->TeeHandle, "heciReadMsg. Status: %r\n");
+			DBGPRINT(Handle->TeeHandle, "heciReadMsg. Status: %d\n");
 			if (EFI_TIMEOUT == status)
 			{
 				DBGPRINT(Handle->TeeHandle, "Detected EFI_TIMEOUT.\n");
@@ -626,7 +626,7 @@ HeciReceiveMessage(
 
 			if (EFI_ERROR(status))
 			{
-				DBGPRINT(Handle->TeeHandle, "Retry failed. Status: %r\n", status);
+				DBGPRINT(Handle->TeeHandle, "Retry failed. Status: %d\n", status);
 				goto End;
 			}
 		}
@@ -645,7 +645,7 @@ HeciReceiveMessage(
 	{
 		DBGPRINT(Handle->TeeHandle, "HeciDevice: %d, IsFixed: %d\n", Handle->HeciDevice, client->properties.IsFixed);
 		status = heciFwToHostFlowControl(Handle, client);
-		DBGPRINT(Handle->TeeHandle, "heciFwToHostFlowControl. Status: %r\n");
+		DBGPRINT(Handle->TeeHandle, "heciFwToHostFlowControl. Status: %d\n");
 		goto End;
 	}
 
