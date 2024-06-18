@@ -19,7 +19,8 @@ extern "C" {
 	#else
 		#define TEE_DEFAULT_LOG_LEVEL TEE_LOG_LEVEL_QUIET
 	#endif
-	#define DEBUG_PRINT_ME_PREFFIX "TEELIB: (%s:%s():%d) "
+	#define DEBUG_PRINT_ME_PREFIX_EXTERNAL "TEELIB: (%s:%s():%d) "
+	#define DEBUG_PRINT_ME_PREFIX_INTERNAL "TEELIB: (%s:%s():%d) "
 
 	#define MALLOC(X)   HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, X)
 	#define FREE(X)     {if(X) { HeapFree(GetProcessHeap(), 0, X); X = NULL ; } }
@@ -32,11 +33,13 @@ extern "C" {
 	#define IS_HANDLE_INVALID(h) (NULL == h || 0 == h->handle || INVALID_HANDLE_VALUE == h->handle)
 	#define INIT_STATUS TEE_INTERNAL_ERROR
 #elif defined(EFI)	
-	#define DEBUG_PRINT_ME_PREFFIX "TEELIB: (%a:%a():%d) "
+	#define DEBUG_PRINT_ME_PREFIX_INTERNAL "TEELIB: (%a:%a():%d) "
+	#define DEBUG_PRINT_ME_PREFIX_EXTERNAL "TEELIB: (%s:%s():%d) "
 	#define DebugPrintMe(fmt, ...)	AsciiPrint(fmt, ##__VA_ARGS__)
 	#define ErrorPrintMe(fmt, ...)	AsciiPrint(fmt, ##__VA_ARGS__)
 #else
-	#define DEBUG_PRINT_ME_PREFFIX "TEELIB: (%s:%s():%d) "
+	#define DEBUG_PRINT_ME_PREFIX_INTERNAL "TEELIB: (%s:%s():%d) "
+	#define DEBUG_PRINT_ME_PREFIX_EXTERNAL "TEELIB: (%s:%s():%d) "
 	#ifdef ANDROID
 		// For debugging
 		//#define LOG_NDEBUG 0
@@ -79,17 +82,17 @@ extern "C" {
 #define DBGPRINT(h, _x_, ...) \
 	if ((h) && (h)->log_level >= TEE_LOG_LEVEL_VERBOSE) { \
 		if ((h)->log_callback) \
-			(h)->log_callback(false, DEBUG_PRINT_ME_PREFFIX _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
+			(h)->log_callback(false, DEBUG_PRINT_ME_PREFIX_EXTERNAL _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
 		else \
-			DebugPrintMe(DEBUG_PRINT_ME_PREFFIX _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
+			DebugPrintMe(DEBUG_PRINT_ME_PREFIX_INTERNAL _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
 	}
 
 #define ERRPRINT(h, _x_, ...) \
 	if ((h) && (h)->log_level >= TEE_LOG_LEVEL_ERROR) { \
 		if ((h)->log_callback) \
-			(h)->log_callback(true, DEBUG_PRINT_ME_PREFFIX _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
+			(h)->log_callback(true, DEBUG_PRINT_ME_PREFIX_EXTERNAL _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
 		else \
-			ErrorPrintMe(DEBUG_PRINT_ME_PREFFIX _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
+			ErrorPrintMe(DEBUG_PRINT_ME_PREFIX_INTERNAL _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
 	}
 
 #define FUNC_ENTRY(h)         DBGPRINT(h, "Entry\n")
