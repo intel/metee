@@ -5,25 +5,14 @@
 #ifndef HECI_PCI_UTILS_H_
 #define HECI_PCI_UTILS_H_
 
-#include "metee_efi.h"
-#include "heci_efi.h"
+struct METEE_EFI_IMPL;
 
-/**
-  Get HECI Bus Number
-
-  Heuristic says that HECI device should be located at the same bus as LPC Controller
-
-  @retval UINT8 HECI Bus Number
-**/
-
-UINT8
-LocateHeciDeviceBus(
-	IN struct METEE_EFI_IMPL *Handle);
+#include <Uefi.h>
 
 /**
   Get HECI controller address that can be passed to the PCI Segment Library functions.
 
-  @param[in] HeciFunc              HECI device function to be accessed.
+  @param[in] Handle  The HECI Handle to be accessed.
 
   @retval HECI controller address in PCI Segment Library representation
 **/
@@ -33,15 +22,14 @@ HeciPciCfgBase(
 
 /**
   This function provides a standard way to verify the HECI cmd and MBAR regs
-  in its PCI cfg space are setup properly and that the local mHeciContext
-  variable matches this info.
+  in its PCI cfg space are setup properly.
 
-  @param[in] HeciDev              HECI device to be accessed.
+  @param[in] Handle  The HECI Handle to be accessed.
 
-  @retval HeciMemBar              HECI Memory BAR.
-								  0 - invalid BAR value returned.
+  @retval HeciMemBar HECI Memory BAR. 
+          0 - invalid BAR value returned.
 **/
-UINTN
+UINT64
 CheckAndFixHeciForAccess(
 	IN struct METEE_EFI_IMPL *Handle);
 
