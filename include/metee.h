@@ -40,9 +40,7 @@ extern "C" {
 	#define TEE_INVALID_DEVICE_HANDLE ((void*)-1)	
 
 	// when calling TeeInitFull
-	// Set data.handle member of tee_device_address according to type to:
-	// TEE_DEVICE_TYPE_EFI_DEVICE - Number defined by HECI protocol number
-	// TEE_DEVICE_TYPE_EFI_PCI - HECI device memory address
+	// TEE_DEVICE_TYPE_BDF - HECI device Bus Device Function
 	
 #else /* _WIN32 */
 	#ifndef METEE_DLL
@@ -124,15 +122,29 @@ struct tee_device_address {
 		TEE_DEVICE_TYPE_PATH = 1, /**< Use device by path (char*) */
 		TEE_DEVICE_TYPE_HANDLE = 2, /**< Use device by pre-opend handle */
 		TEE_DEVICE_TYPE_GUID = 3, /**< Select first device by GUID (Windows only) */
-		TEE_DEVICE_TYPE_EFI_DEVICE = 4, /**< Use EFI HECI Protocol numbers for the device selection (e.g. 0, 1, 4)(EFI only) */
-		TEE_DEVICE_TYPE_EFI_PCI = 5, /**< Use direct memory pointer to EFI HECI device space (EFI only) */
-		TEE_DEVICE_TYPE_MAX = 6, /**< upper sentinel */
+		TEE_DEVICE_TYPE_BDF = 4, /**< Use BDF to work with HECI, EFI only */
+		TEE_DEVICE_TYPE_MAX = 5, /**< upper sentinel */
 	} type;
+
 	/*! Device address */
 	union {
 		const char* path; /** < Path to device */
 		const GUID* guid; /** Device GUID (Windows only) */
 		TEE_DEVICE_HANDLE handle; /**< Pre-opend handle */
+		struct {
+			struct {
+				uint32_t segment;                     /** HECI device Segment */
+				uint32_t bus;                         /** HECI device Bus */
+				uint32_t device;                      /** HECI device Device */
+				uint32_t function;                    /** HECI device Function */
+			} value;
+			/*! Specify HW layout: HECI, FWSTS registers locations  */			
+			enum  { 
+				HECI_DEVICE_KIND_PCH, 
+				HECI_DEVICE_KIND_GFX_GSC, 
+				HECI_DEVICE_KIND_GFX_CSC, 
+			} kind;									/** HECI device kind */
+		} bdf;
 	} data;
 };
 

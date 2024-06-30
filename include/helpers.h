@@ -99,6 +99,7 @@ extern "C" {
 #define FUNC_EXIT(h, status)  DBGPRINT(h, "Exit with status: %d\n", status)
 
 #ifdef EFI
+#include <Library/BaseMemoryLib.h>
 static inline void __tee_init_handle(PTEEHANDLE handle) { SetMem(handle, sizeof(TEEHANDLE), 0);}
 #else /* _WIN32, LINUX */
 static inline void __tee_init_handle(PTEEHANDLE handle) { memset(handle, 0, sizeof(TEEHANDLE));}

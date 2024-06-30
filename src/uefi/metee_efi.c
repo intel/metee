@@ -4,20 +4,14 @@
  */
 #include <Uefi.h>
 #include <Library/UefiLib.h>
-#include <Library/DebugLib.h>
+#include <Library/BaseLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/PrintLib.h>
 
-//
-// Boot and Runtime Services
-//
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
 
-//
-// Shell Library
-//
 
 #include "metee.h"
 #include "metee_efi.h"
@@ -30,42 +24,101 @@ static inline struct METEE_EFI_IMPL *to_int(PTEEHANDLE _h)
 	return _h ? (struct METEE_EFI_IMPL *)_h->handle : NULL;
 }
 
-/*! Initializes TEE_DEVICE_TYPE_EFI_DEVICE connection specific properties
+static 
+TEESTATUS
+SetHwInfo(
+	IN const struct tee_device_address * device,
+	OUT struct METEE_EFI_IMPL * Handle
+)  
+{
+	struct HECI_HW * input = NULL;
+
+#define DEFAULT_OFFSET_H_CB_WW  0x0
+#define DEFAULT_OFFSET_H_CSR  0x4
+#define DEFAULT_OFFSET_ME_CB_RW  0x8
+#define DEFAULT_OFFSET_ME_CSR_HA  0xC
+#define ME_TRC 0x30
+
+	TEESTATUS status = TEE_INVALID_PARAMETER;
+	FUNC_ENTRY(Handle->TeeHandle);
+	switch (device->data.bdf.kind) {
+		case HECI_DEVICE_KIND_PCH:
+			struct HECI_HW pch = {
+				{ /* Bdf */
+					device->data.bdf.value.segment,
+					device->data.bdf.value.bus,
+					device->data.bdf.value.device,
+					device->data.bdf.value.function
+				}, 
+				{ /* RegisterOffset */
+					DEFAULT_OFFSET_H_CB_WW, DEFAULT_OFFSET_H_CSR,
+					DEFAULT_OFFSET_ME_CB_RW, DEFAULT_OFFSET_ME_CSR_HA,
+					0x0
+				},
+				{ /* FwStatus */
+					{0x40, 0x48, 0x60, 0x64, 0x68, 0x6C}, TRUE
+				},
+				ME_TRC, 
+			};
+			input = &pch;
+			DBGPRINT(Handle->TeeHandle, "******** HECI_DEVICE_KIND_PCH\n");
+		break;
+		case HECI_DEVICE_KIND_GFX_GSC:
+			struct HECI_HW gsc = {
+				{ /* Bdf */
+					device->data.bdf.value.segment,
+					device->data.bdf.value.bus,
+					device->data.bdf.value.device,
+					device->data.bdf.value.function
+				}, 
+				{ /* RegisterOffset */
+					DEFAULT_OFFSET_H_CB_WW, DEFAULT_OFFSET_H_CSR,
+					DEFAULT_OFFSET_ME_CB_RW, DEFAULT_OFFSET_ME_CSR_HA,
+					0x374000
+				},
+				{ /* FwStatus */
+					{0xC40, 0xC48, 0xC60, 0xC64, 0xC68, 0xC6C}, FALSE
+				},
+				0x0,
+			};
+			input = &gsc;
+			DBGPRINT(Handle->TeeHandle, "******** HECI_DEVICE_KIND_GFX_GSC\n");
+		break;
+		default:
+			DBGPRINT(Handle->TeeHandle, "******** Unsupported device kind %d\n", device->data.bdf.kind);
+			status = TEE_INVALID_PARAMETER;
+			goto End;
+	}
+	Handle->Hw = *input;
+	status = TEE_SUCCESS;
+End:
+	FUNC_EXIT(Handle->TeeHandle, status);
+	return 0;
+}
+
+
+/*! Initializes TEE_DEVICE_TYPE_BDF connection specific properties
  *  \param handle A handle to the TEE device. All subsequent calls to the lib's functions
  *         must be with this handle
  *  \param guid GUID of the FW client that want to start a session
- *  \param heci_device EFI HECI protocol device number
+ *  \param device HECI device Bus Device Function
  *  \param impl_handle pointer to place where to store internal handle pointer
  *  \return 0 if successful, otherwise error code
  */
-static TEESTATUS
+static 
+TEESTATUS
 TeeInitFullTypeEfiDevice(
 	IN OUT PTEEHANDLE handle,
 	IN const GUID *guid,
-	IN UINT32 heci_device,
+	IN const struct tee_device_address * device,
 	OUT void **impl_handle)
 {
 	TEESTATUS status = TEE_INTERNAL_ERROR;
-	EFI_STATUS efi_status = EFI_UNSUPPORTED;
-	HECI_PROTOCOL *heci_protocol = NULL;
-
-	/// HECI protocol provided for DXE phase
-	/// This protocol provides an interface to communicate with Intel ME subsystem via HECI
-	EFI_GUID heci_protocol_guid = {0x3c7bc880, 0x41f8, 0x4869, {0xae, 0xfc, 0x87, 0x0a, 0x3e, 0xd2, 0x82, 0x99}};
-
 	struct METEE_EFI_IMPL *efi_impl = NULL;
 
 	FUNC_ENTRY(handle);
 
-	efi_status = gBS->LocateProtocol(&heci_protocol_guid, NULL, (void **)&heci_protocol);
-	if (EFI_ERROR(efi_status))
-	{
-		ERRPRINT(handle, "Could not locate HECI BIOS protocol %u.\n", efi_status);
-		status = TEE_DEVICE_NOT_FOUND;
-		goto Cleanup;
-	}
-
-	efi_impl = (struct METEE_EFI_IMPL *)AllocateZeroPool(sizeof(*impl_handle));
+	efi_impl = (struct METEE_EFI_IMPL *)AllocateZeroPool(sizeof(struct METEE_EFI_IMPL));
 	if (efi_impl == NULL)
 	{
 		status = TEE_INTERNAL_ERROR;
@@ -73,11 +126,9 @@ TeeInitFullTypeEfiDevice(
 		goto Cleanup;
 	}
 	efi_impl->TeeHandle = handle;
-	efi_impl->HeciDeviceFunction = heci_device;
-	efi_impl->HeciDeviceBus = -1;
 	efi_impl->ClientGuid = *guid;
 	efi_impl->State = METEE_CLIENT_STATE_NONE;
-	efi_impl->HeciProtocol = heci_protocol;
+	SetHwInfo(device, efi_impl);
 
 	*impl_handle = efi_impl;
 	status = TEE_SUCCESS;
@@ -133,20 +184,34 @@ TeeInitFull(
 	switch (device.type)
 	{
 	case TEE_DEVICE_TYPE_NONE:
-#define DEFAULT_UEFI_HECI_DEVICE 0
-		if (device.data.handle != DEFAULT_UEFI_HECI_DEVICE) {
-			ERRPRINT(handle, "Handle is set.\n");
+
+		if (
+			device.data.bdf.value.segment != 0 || 
+			device.data.bdf.value.bus != 0 ||
+			device.data.bdf.value.device != 0 ||
+			device.data.bdf.value.function != 0
+		) {
+			ERRPRINT(handle, "BDF is set.\n");
 			status = TEE_INVALID_PARAMETER;
 			goto Cleanup;
 		}
-		status = TeeInitFullTypeEfiDevice(handle, guid, DEFAULT_UEFI_HECI_DEVICE, &handle->handle);
+		struct tee_device_address default_device = device;
+		// CSME HECI by default
+#define PCI_DEVICE_NUMBER_PCH_HECI1 22
+		default_device.data.bdf.kind = HECI_DEVICE_KIND_PCH;
+		default_device.data.bdf.value.segment = 0;
+		default_device.data.bdf.value.bus = 0;
+		default_device.data.bdf.value.device = PCI_DEVICE_NUMBER_PCH_HECI1;
+		default_device.data.bdf.value.function = 0;
+		
+		status = TeeInitFullTypeEfiDevice(handle, guid, &default_device, &handle->handle);
 		if (TEE_SUCCESS != status)
 		{
 			goto Cleanup;
 		}
 		break;
-	case TEE_DEVICE_TYPE_EFI_DEVICE:
-		status = TeeInitFullTypeEfiDevice(handle, guid, (UINT32)((UINT64)device.data.handle & 0xFFFFFFFF), &handle->handle);
+	case TEE_DEVICE_TYPE_BDF:
+		status = TeeInitFullTypeEfiDevice(handle, guid, &device, &handle->handle);
 		if (TEE_SUCCESS != status)
 		{
 			goto Cleanup;
@@ -392,15 +457,18 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 	{
 		return TEE_INVALID_PARAMETER;
 	}
+	FUNC_ENTRY(handle);
 	if (NULL == fwStatus)
 	{
 		status = TEE_INVALID_PARAMETER;
 		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto End;
 	}
-
-	FUNC_ENTRY(handle);
-
+	if (fwStatusNum >= HECI_FW_STS_COUNT)
+	{
+		status = TEE_INVALID_PARAMETER;
+		goto End;
+	}
 	efi_status = HeciFwStatus(impl_handle, fwStatusNum, fwStatus);
 
 	if (EFI_ERROR(efi_status))
@@ -429,14 +497,19 @@ TEESTATUS TEEAPI TeeGetTRC(IN PTEEHANDLE handle, OUT uint32_t *trc_val)
 	{
 		return TEE_INVALID_PARAMETER;
 	}
+
+	FUNC_ENTRY(handle);
 	if (NULL == trc_val)
 	{
 		status = TEE_INVALID_PARAMETER;
 		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto End;
 	}
-
-	FUNC_ENTRY(handle);
+	
+	if (impl_handle->Hw.TrcOffset == 0x0) {
+		status = TEE_NOTSUPPORTED;
+		goto End;
+	}
 
 	efi_status = HeciGetTrc(impl_handle, trc_val);
 
