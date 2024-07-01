@@ -25,3 +25,7 @@ endif(UNIX)
 add_executable(metee-trc metee_trc.c)
 target_link_libraries(metee-trc metee)
 install(TARGETS metee-trc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+add_executable(metee-basic metee_basic.c)
+target_link_libraries(metee-basic metee)
+install(TARGETS metee-basic RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
