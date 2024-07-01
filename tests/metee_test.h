@@ -91,41 +91,6 @@ public:
 	GEN_GET_FW_VERSION MkhiRequest;
 };
 
-class MeTeeNTEST : public ::testing::TestWithParam<struct MeTeeTESTParams> {
-public:
-	MeTeeNTEST() {
-		// initialization code here
-	}
-
-	void SetUp() {
-#ifdef _DEBUG
-		printf("Enter ProdTests SetUp\n");
-#endif
-		MkhiRequest.Header.Fields.Command = GEN_GET_FW_VERSION_CMD;
-		MkhiRequest.Header.Fields.GroupId = MKHI_GEN_GROUP_ID;
-		MkhiRequest.Header.Fields.IsResponse = 0;
-#ifdef _DEBUG
-		printf("Exit ProdTests SetUp\n");
-#endif
-	}
-
-	void TearDown() {
-#ifdef _DEBUG
-		printf("Enter ProdTests TearDown\n");
-#endif
-
-		std::this_thread::sleep_for(std::chrono::milliseconds(100)); //Is it helping?
-#ifdef _DEBUG
-		printf("Exit ProdTests TearDown\n");
-#endif
-	}
-
-	~MeTeeNTEST() {
-		// cleanup any pending stuff, but no exceptions allowed
-	}
-	GEN_GET_FW_VERSION MkhiRequest;
-};
-
 class MeTeeFDTEST : public ::testing::TestWithParam<struct MeTeeTESTParams> {
 public:
 	MeTeeFDTEST() : deviceHandle(TEE_INVALID_DEVICE_HANDLE) {
@@ -155,6 +120,42 @@ private:
 	void CloseMEI();
 public:
 	TEE_DEVICE_HANDLE deviceHandle;
+};
+
+class MeTeeOpenTEST : public ::testing::TestWithParam<struct MeTeeTESTParams> {
+public:
+	MeTeeOpenTEST() {
+		// initialization code here
+		__tee_init_handle(&_handle);
+	}
+
+	void SetUp() {
+		struct MeTeeTESTParams intf = GetParam();
+		TEESTATUS status;
+
+		_handle.handle = NULL;
+
+		status = TestTeeInitGUID(&_handle, intf.client, intf.device);
+		if (status == TEE_DEVICE_NOT_FOUND)
+			GTEST_SKIP();
+		ASSERT_EQ(TEE_SUCCESS, status);
+		ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&_handle));
+		MkhiRequest.Header.Fields.Command = GEN_GET_FW_VERSION_CMD;
+		MkhiRequest.Header.Fields.GroupId = MKHI_GEN_GROUP_ID;
+		MkhiRequest.Header.Fields.IsResponse = 0;
+	}
+
+	void TearDown() {
+		TeeDisconnect(&_handle);
+		//Is this helping?
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+
+	~MeTeeOpenTEST() {
+		// cleanup any pending stuff, but no exceptions allowed
+	}
+	TEEHANDLE _handle;
+	GEN_GET_FW_VERSION MkhiRequest;
 };
 
 class MeTeeDataNTEST : public ::testing::TestWithParam<struct MeTeeTESTParams> {
