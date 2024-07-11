@@ -14,6 +14,7 @@ DEFINE_GUID(MEI_MKHIF, 0x8e6a6715, 0x9abc, 0x4043,
     0x88, 0xef, 0x9e, 0x39, 0xc6, 0xf6, 0x3e, 0xf);
 
 #define MKHI_TIMEOUT 10000
+#define CONNECT_RETRIES 3
 
 #pragma pack(1)
 struct mkhi_msg_hdr {
@@ -60,7 +61,7 @@ int main(int argc, char* argv[])
 		.type = TEE_DEVICE_TYPE_NONE,
 		.data.path = NULL
 	};
-	bool retry = false;
+	int retry = CONNECT_RETRIES;
 	size_t written = 0;
 	struct mkhi_fwver_req req;
 	uint8_t *read_buf = NULL;
@@ -72,26 +73,24 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-retry:
-	status = TeeConnect(&handle);
+	while (retry--) {
+		status = TeeConnect(&handle);
+		if (status != TEE_BUSY &&
+			status != TEE_UNABLE_TO_COMPLETE_OPERATION) /* windows return this error on busy */
+			break;
+		fprintf(stderr, "Client is busy, retrying\n");
+#ifdef WIN32
+		Sleep(2000);
+#else
+		sleep(2);
+#endif /* WIN32 */
+	}
 	switch (status) {
 	case TEE_SUCCESS:
 		break;
 	case TEE_CLIENT_NOT_FOUND:
 		fprintf(stderr, "TeeConnect failed with status = %u (Client not found)\n", status);
 		goto out;
-	case TEE_UNABLE_TO_COMPLETE_OPERATION: /* windows return this error on busy */
-	case TEE_BUSY:
-		if (!retry) {
-			retry = true;
-			fprintf(stderr, "Client is busy, retrying\n");
-#ifdef WIN32
-			Sleep(2000);
-#else
-			sleep(2);
-#endif /* WIN32 */
-			goto retry;
-		}
 	default:
 		fprintf(stderr, "TeeConnect failed with status = %u\n", status);
 		goto out;
