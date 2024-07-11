@@ -26,6 +26,8 @@
 
 std::string GetErrorString(unsigned long LastError);
 
+TEESTATUS ConnectRetry(PTEEHANDLE handle);
+
 //Print Expected and Ectual in Hex.
 namespace testing {
 	namespace internal {
@@ -179,7 +181,7 @@ public:
 			GTEST_SKIP();
 		ASSERT_EQ(TEE_SUCCESS, status);
 		ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&_handle));
-		ASSERT_EQ(TEE_SUCCESS, TeeConnect(&_handle));
+		ASSERT_EQ(TEE_SUCCESS, ConnectRetry(&_handle));
 		MkhiRequest.Header.Fields.Command = GEN_GET_FW_VERSION_CMD;
 		MkhiRequest.Header.Fields.GroupId = MKHI_GEN_GROUP_ID;
 		MkhiRequest.Header.Fields.IsResponse = 0;
