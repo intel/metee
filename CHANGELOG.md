@@ -1,3 +1,22 @@
+## [4.2.0]
+
+**Note:** ABI breakage in this version, struct tee_device_address was expanded
+
+### Fixed
+ - tests: make tests robust
+ - Linux: fix variable type
+ - Windows: init read/write timeout to INT_MAX
+ - tests: add connect retries
+
+### Added
+ - samples: add basic sample
+ - UEFI: initial implementation
+ - CMake: Windows: add static build
+
+### Changed
+ - Linux: pull libmei 1.6.1
+ - CMake: minimum CMake to 3.15 and fix static build
+
 ## [4.1.0]
 
 ### Fixed
