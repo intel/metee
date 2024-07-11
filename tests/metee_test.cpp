@@ -18,6 +18,7 @@ extern "C" {
 DEFINE_GUID(GUID_NON_EXISTS_CLIENT,
 	0x85eb8fa6, 0xbdd, 0x4d01, 0xbe, 0xc4, 0xa5, 0x97, 0x43, 0x4e, 0xd7, 0x62);
 
+#define CONNECT_RETRIES 3
 
 void TEEAPI CompletionRoutine(TEESTATUS status, size_t numberOfBytesTransfered)
 {
@@ -93,6 +94,22 @@ void MeTeeFDTEST::CloseMEI()
 	close(deviceHandle);
 }
 #endif // WIN32
+
+TEESTATUS ConnectRetry(PTEEHANDLE handle)
+{
+	TEESTATUS status;
+	int retry = CONNECT_RETRIES;
+
+	while (retry--) {
+		status = TeeConnect(handle);
+		if (status != TEE_BUSY &&
+		    status != TEE_UNABLE_TO_COMPLETE_OPERATION) /* windows return this error on busy */
+			break;
+		printf("Client is busy, retrying\n");
+		std::this_thread::sleep_for(std::chrono::seconds(2));
+	}
+	return status;
+}
 
 /*
 Send GetVersion Command to HCI / MKHI
@@ -220,7 +237,7 @@ TEST_P(MeTee1000OpenTEST, PROD_MKHI_1000HandlesGetVersion)
 		GTEST_SKIP();
 	ASSERT_EQ(SUCCESS, status);
 	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
-	ASSERT_EQ(SUCCESS, TeeConnect(&Handle));
+	ASSERT_EQ(SUCCESS, ConnectRetry(&Handle));
 
 
 	MaxResponse.resize(Handle.maxMsgLen*sizeof(char));
@@ -366,8 +383,8 @@ TEST_P(MeTeeOpenTEST, PROD_MKHI_GetTRC)
 
 TEST_P(MeTeeOpenTEST, PROD_MKHI_DoubleConnect)
 {
-	ASSERT_EQ(SUCCESS, TeeConnect(&_handle));
-	ASSERT_EQ(TEE_INTERNAL_ERROR, TeeConnect(&_handle));
+	ASSERT_EQ(SUCCESS, ConnectRetry(&_handle));
+	ASSERT_EQ(TEE_INTERNAL_ERROR, ConnectRetry(&_handle));
 }
 
 TEST_P(MeTeeOpenTEST, PROD_MKHI_WriteReadNoConnect)
@@ -400,7 +417,7 @@ TEST_P(MeTeeTEST, PROD_N_TestConnectToNonExistsUuid)
 		GTEST_SKIP();
 	ASSERT_EQ(TEE_SUCCESS, status);
 
-	ASSERT_EQ(TEE_CLIENT_NOT_FOUND, TeeConnect(&handle));
+	ASSERT_EQ(TEE_CLIENT_NOT_FOUND, ConnectRetry(&handle));
 
 	TeeDisconnect(&handle);
 	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&handle));
@@ -426,7 +443,7 @@ TEST_P(MeTeeTEST, PROD_N_TestLongClientPath)
 		GTEST_SKIP();
 	ASSERT_EQ(TEE_SUCCESS, status);
 
-	ASSERT_EQ(TEE_CLIENT_NOT_FOUND, TeeConnect(&handle));
+	ASSERT_EQ(TEE_CLIENT_NOT_FOUND, ConnectRetry(&handle));
 }
 
 TEST_P(MeTeeOpenTEST, PROD_N_TestGetDriverVersion)
@@ -527,7 +544,7 @@ TEST_P(MeTeeFDTEST, PROD_MKHI_SimpleGetVersion)
 	status = TeeInitHandle(&Handle, intf.client, deviceHandle);
 	ASSERT_EQ(SUCCESS, status);
 	ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&Handle));
-	ASSERT_EQ(SUCCESS, TeeConnect(&Handle));
+	ASSERT_EQ(SUCCESS, ConnectRetry(&Handle));
 
 
 	MaxResponse.resize(Handle.maxMsgLen*sizeof(char));
