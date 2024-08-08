@@ -51,7 +51,7 @@ typedef union
 		  This is the logical address of the Intel ME client of the message. This address is assigned
 		  during ME firmware initialization.
 		**/
-		UINT32 MeAddress : 8;
+		UINT32 FwAddress : 8;
 		/**
 		  This is the logical address of the Host client of the message. This address is assigned
 		  when the host client registers itself with the Host MEI driver.
@@ -412,7 +412,7 @@ HeciPacketRead(
 }
 
 /**
-  Reads a message from CSME through HECI.
+  Reads a message from FW through HECI.
 
   @param[in] Handle        		  The HECI Handle to be accessed.
   @param[in] Blocking             Used to determine if the read is BLOCKING or NON_BLOCKING.
@@ -424,7 +424,7 @@ HeciPacketRead(
   @retval EFI_DEVICE_ERROR        Failed to initialize HECI
   @retval EFI_NOT_READY           HECI is not ready for communication
   @retval EFI_TIMEOUT             Failed to receive a full message on time
-  @retval EFI_NO_RESPONSE         No response from CSME
+  @retval EFI_NO_RESPONSE         No response from FW
   @retval EFI_BUFFER_TOO_SMALL    The caller's buffer was not large enough
 **/
 EFI_STATUS
@@ -444,6 +444,7 @@ HeciReceive(
 	UINT32 ReadTimeout;
 	UINT32 InitTimeout;
 	UINT32 InputLength;
+	BOOLEAN FirstPacket = TRUE;
 
 	InputLength = *Length;
 
@@ -480,9 +481,8 @@ HeciReceive(
 		//
 		// Return as CB will be empty after reset and FW will not put any data
 		//
-		ResetHeciInterface(Handle);
-		EFIPRINT(Handle->TeeHandle, "ResetHeciInterface\n");
-		status = EFI_NOT_READY;
+		EFIPRINT(Handle->TeeHandle, "FW Not Ready\n");
+		status = EFI_ABORTED;
 		goto End;
 	}
 
@@ -504,6 +504,13 @@ HeciReceive(
 		{
 			EFIPRINT(Handle->TeeHandle, "Got msg: Status %d, Data %08X\n", status, PacketHeader.Data);
 		};
+		if (FirstPacket) 
+		{
+			
+			EFIPRINT(Handle->TeeHandle, "HeciReceive: Host Client Id: %d FW Client Id: %d\n", 
+				PacketHeader.Fields.HostAddress, PacketHeader.Fields.FwAddress);
+			FirstPacket = FALSE;
+		}
 		///
 		/// If timeout occurred we need to reset the interface to clear the data that could possibly come later.
 		/// Also buffer overflow and transaction errors will require a reset.
@@ -513,7 +520,9 @@ HeciReceive(
 		{
 			if (status != EFI_NO_RESPONSE)
 			{
-				ResetHeciInterface(Handle);
+				EFIPRINT(Handle->TeeHandle, "FW Not Ready\n");
+				status = EFI_ABORTED;
+				goto End;
 			}
 			*Length = TotalLength;
 			if (!(status == EFI_NO_RESPONSE && Blocking == NON_BLOCKING))
@@ -644,7 +653,7 @@ HeciPacketWrite(
   @param[in] Message              Pointer to the message data to be sent.
   @param[in] Length               Length of the message in bytes.
   @param[in] HostAddress          The address of the host processor.
-  @param[in] MeAddress            Address of the FW subsystem the message is being sent to.
+  @param[in] FwAddress            Address of the FW subsystem the message is being sent to.
 
   @retval EFI_SUCCESS             One message packet sent.
   @retval EFI_DEVICE_ERROR        Failed to initialize HECI
@@ -659,7 +668,7 @@ HeciSend(
 	IN UINT32 *Message,
 	IN UINT32 Length,
 	IN UINT8 HostAddress,
-	IN UINT8 MeAddress)
+	IN UINT8 FwAddress)
 {
 	EFI_STATUS status = EFI_UNSUPPORTED;
 	HECI_MESSAGE_HEADER MessageHeader;
@@ -668,6 +677,8 @@ HeciSend(
 	UINT32 SendLength;
 	UINT32 BytesLeft;
 	UINT64 HeciMemBar;
+
+	EFIPRINT(Handle->TeeHandle, "HeciSend: Host Client Id: %d FW Client Id: %d\n", HostAddress, FwAddress);
 
 	///
 	/// Make sure that HECI device BAR is correct and device is enabled.
@@ -685,17 +696,9 @@ HeciSend(
 	///
 	if (!IsMeReady(Handle, HeciMemBar, HECI_INIT_TIMEOUT))
 	{
-		///
-		/// If reset successful, continue as the interface should be healthy now
-		///
-		status = ResetHeciInterface(Handle);
-		if (EFI_ERROR(status))
-		{
-			EFIPRINT(Handle->TeeHandle, "ResetHeciInterface error = %d\n",
-				status);
-			status = EFI_NOT_READY;
-			goto End;
-		}
+		EFIPRINT(Handle->TeeHandle, "FW Not Ready\n");
+		status = EFI_ABORTED;
+		goto End;
 	}
 	///
 	/// Set up memory mapped registers
@@ -711,7 +714,7 @@ HeciSend(
 	/// Prepare message header
 	///
 	MessageHeader.Data = 0;
-	MessageHeader.Fields.MeAddress = MeAddress;
+	MessageHeader.Fields.FwAddress = FwAddress;
 	MessageHeader.Fields.HostAddress = HostAddress;
 
 	BytesLeft = Length;
@@ -742,8 +745,8 @@ HeciSend(
 		status = HeciPacketWrite(Handle, HeciMemBar, &MessageHeader, (UINT32 *)((UINTN)Message + (Length - BytesLeft)));
 		if (EFI_ERROR(status))
 		{
-			ResetHeciInterface(Handle);
-			EFIPRINT(Handle->TeeHandle, "HeciPacketWrite error: %d\n", status);
+			EFIPRINT(Handle->TeeHandle, "FW Not Ready\n");
+			status = EFI_ABORTED;
 			goto End;
 		}
 		///

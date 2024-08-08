@@ -397,7 +397,11 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 
 	if (EFI_ERROR(efi_status))
 	{
-		status = TEE_INTERNAL_ERROR;
+		if (efi_status == EFI_MEDIA_CHANGED) {
+			status = TEE_DISCONNECTED;
+		} else {
+			status = TEE_INTERNAL_ERROR;
+		}
 		goto End;
 	}
 
@@ -458,7 +462,11 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 
 	if (EFI_ERROR(efi_status))
 	{
-		status = TEE_INTERNAL_ERROR;
+		if (efi_status == EFI_MEDIA_CHANGED) {
+			status = TEE_DISCONNECTED;
+		} else {
+			status = TEE_INTERNAL_ERROR;
+		}
 		goto End;
 	}
 
