@@ -21,7 +21,6 @@
 #include "heci_core.h"
 
 #define BIOS_FIXED_HOST_ADDR 0
-#define POLICY_CONNECTED_HOST_ADDR 1
 
 #define HECI_HBM_MSG_ADDR 0x00
 
@@ -52,6 +51,70 @@ typedef struct _HBM_CLIENT_PROP_MSG_REPLY
 
 #pragma pack()
 
+#define TEE_MAX_FW_CLIENTS 256
+
+struct HeciDeviceLibrary {
+	struct HECI_HW_BDF Key;
+	struct STATE {
+		BOOLEAN IsValid;
+		UINT32 ResetGeneration;							/** Link Reset counter for given device */
+		UINT8 HostClientIds[TEE_MAX_FW_CLIENTS];
+		struct {
+			HECI_CLIENT_PROPERTIES ClientProperties;
+			BOOLEAN IsValid;
+		} Clients[TEE_MAX_FW_CLIENTS];					/** Available clients for given device */
+		
+	} State;
+};
+
+#define CONF_HECI_MAX_HECI_DEVICES_IN_THE_SYSTEM 4 
+
+#define HECI_DEVICE_UNINITIALIZED 0xFFFFFFFF
+
+static struct HeciDeviceLibrary gHeciDeviceLibrary[CONF_HECI_MAX_HECI_DEVICES_IN_THE_SYSTEM] = {
+	{{ HECI_DEVICE_UNINITIALIZED, HECI_DEVICE_UNINITIALIZED, HECI_DEVICE_UNINITIALIZED, HECI_DEVICE_UNINITIALIZED}, {0, 0}},
+	{{ HECI_DEVICE_UNINITIALIZED, HECI_DEVICE_UNINITIALIZED, HECI_DEVICE_UNINITIALIZED, HECI_DEVICE_UNINITIALIZED}, {0, 0}},
+	{{ HECI_DEVICE_UNINITIALIZED, HECI_DEVICE_UNINITIALIZED, HECI_DEVICE_UNINITIALIZED, HECI_DEVICE_UNINITIALIZED}, {0, 0}},
+	{{ HECI_DEVICE_UNINITIALIZED, HECI_DEVICE_UNINITIALIZED, HECI_DEVICE_UNINITIALIZED, HECI_DEVICE_UNINITIALIZED}, {0, 0}},
+};
+
+static
+struct HeciDeviceLibrary *
+GetHeciLibrary(
+	IN struct HECI_HW_BDF * Key
+	)
+{
+	UINT32 ind = 0;
+	/* Find existing */
+	for (; ind<CONF_HECI_MAX_HECI_DEVICES_IN_THE_SYSTEM; ++ind) {
+		if (Key->Segment == gHeciDeviceLibrary[ind].Key.Segment &&
+			Key->Bus == gHeciDeviceLibrary[ind].Key.Bus &&
+			Key->Device == gHeciDeviceLibrary[ind].Key.Device &&
+			Key->Function == gHeciDeviceLibrary[ind].Key.Function
+		) {
+			return &gHeciDeviceLibrary[ind];
+		}
+	}
+	/*  Allocate new slot */
+	for (ind=0; ind<CONF_HECI_MAX_HECI_DEVICES_IN_THE_SYSTEM; ++ind) {
+		if (HECI_DEVICE_UNINITIALIZED == gHeciDeviceLibrary[ind].Key.Segment &&
+			HECI_DEVICE_UNINITIALIZED == gHeciDeviceLibrary[ind].Key.Bus &&
+			HECI_DEVICE_UNINITIALIZED == gHeciDeviceLibrary[ind].Key.Device &&
+			HECI_DEVICE_UNINITIALIZED == gHeciDeviceLibrary[ind].Key.Function
+		) {
+			gHeciDeviceLibrary[ind].Key = *Key;
+			gHeciDeviceLibrary[ind].State.ResetGeneration = 0;
+			gHeciDeviceLibrary[ind].State.IsValid = 0;
+
+			SetMem(gHeciDeviceLibrary[ind].State.HostClientIds, sizeof(gHeciDeviceLibrary[ind].State.HostClientIds), 0x0);
+			SetMem(gHeciDeviceLibrary[ind].State.Clients, sizeof(gHeciDeviceLibrary[ind].State.Clients), 0x0);
+
+			return &gHeciDeviceLibrary[ind];
+		}
+	}
+	return NULL;
+}
+
 static EFI_STATUS
 heciReadMsg(
 	IN struct METEE_EFI_IMPL *Handle,
@@ -61,6 +124,7 @@ heciReadMsg(
 	OUT UINT32 *BytesRead)
 {
 	EFI_STATUS status = EFI_UNSUPPORTED;
+	struct HeciDeviceLibrary * lib = NULL;
 	UINT32 length = MessageBodyLenBytes;
 
 	FUNC_ENTRY(Handle->TeeHandle);
@@ -73,6 +137,21 @@ heciReadMsg(
 	else
 	{
 		*BytesRead = length;
+	}
+	if (status == EFI_ABORTED) 
+	{
+		lib = GetHeciLibrary(&Handle->Hw.Bdf);
+		if (lib == NULL)
+		{
+			DBGPRINT(Handle->TeeHandle, "Library not found\n");
+			status = EFI_OUT_OF_RESOURCES;
+		} 
+		else 
+		{
+			lib->State.IsValid = FALSE;
+			Handle->HeciClientConnection.connected = FALSE;
+			status = EFI_MEDIA_CHANGED;
+		}
 	}
 
 	FUNC_EXIT(Handle->TeeHandle, status);
@@ -88,13 +167,28 @@ heciSendMsg(
 	IN UINT8 MeAddress)
 {
 	EFI_STATUS status = EFI_UNSUPPORTED;
+	struct HeciDeviceLibrary * lib = NULL;
 
 	FUNC_ENTRY(Handle->TeeHandle);
 
 	status = HeciSend(Handle, Message, Length, HostAddress, MeAddress);
+	if (status == EFI_ABORTED) 
+	{
+		lib = GetHeciLibrary(&Handle->Hw.Bdf);
+		if (lib == NULL)
+		{
+			DBGPRINT(Handle->TeeHandle, "Library not found\n");
+			status = EFI_OUT_OF_RESOURCES;
+		}
+		else 
+		{
+			lib->State.IsValid = FALSE;
+			Handle->HeciClientConnection.connected = FALSE;
+			status = EFI_MEDIA_CHANGED;
+		}
+	}
 
 	FUNC_EXIT(Handle->TeeHandle, status);
-
 	return status;
 }
 
@@ -109,7 +203,6 @@ heciReset(
 	status = ResetHeciInterface(Handle);
 
 	FUNC_EXIT(Handle->TeeHandle, status);
-
 	return status;
 }
 
@@ -186,12 +279,13 @@ HeciUninitialize(
 	HBM_CLIENT_DISCONNECT_RESPONSE disconnectMsgReply;
 	UINT32 msgReplyLen = 0;
 	HECI_CLIENT_CONNECTION *client = &Handle->HeciClientConnection;
+	struct HeciDeviceLibrary * lib = NULL;
 
 	FUNC_ENTRY(Handle->TeeHandle);
 
 	DBGPRINT(Handle->TeeHandle, "####Heci Uninitialize ####\n");
 
-	if (client->properties.IsFixed)
+	if (client->properties.FixedAddress != 0)
 	{
 		DBGPRINT(Handle->TeeHandle, "######CONNECTION CLOSED SUCCESSFULLY######: Fixed client\n");
 		status = EFI_SUCCESS;
@@ -203,16 +297,23 @@ HeciUninitialize(
 
 	disconnectMsg.Command = CLIENT_DISCONNECT_REQ_CMD;
 	disconnectMsg.MEAddress = client->properties.Address;
-	disconnectMsg.HostAddress = BIOS_FIXED_HOST_ADDR + 1;
+	disconnectMsg.HostAddress = client->HostClientId;
 
-	DBGPRINT(Handle->TeeHandle, "####Prior to Heci-SendMsg: Command: %02X, MEAddress: %02X, HostAddress: %X\n", disconnectMsg.Command, disconnectMsg.MEAddress, disconnectMsg.HostAddress);
+	lib = GetHeciLibrary(&Handle->Hw.Bdf);
+	if (lib != NULL)
+	{
+		DBGPRINT(Handle->TeeHandle, "Release Host Client Id: %d\n", client->HostClientId);
+		lib->State.HostClientIds[client->HostClientId] = 0;
+	}
+
+	DBGPRINT(Handle->TeeHandle, "####Prior to Heci-SendMsg: Command: %02X, Host Client Id: %d, FW Client Id: %d\n", 
+			disconnectMsg.Command, disconnectMsg.HostAddress, disconnectMsg.MEAddress);
 	status = heciSendMsg(Handle, (UINT32 *)&disconnectMsg, (UINT32)sizeof(disconnectMsg), (UINT8)BIOS_FIXED_HOST_ADDR, (UINT8)HECI_HBM_MSG_ADDR);
 	if (EFI_ERROR(status))
 	{
 		DBGPRINT(Handle->TeeHandle, "####Failed to send HBM_CLIENT_DISCONNECT_REQUEST. Status: %d\n", status);
 		goto End;
 	}
-
 	status = heciReadMsg(Handle, BLOCKING, (UINT32 *)&disconnectMsgReply, sizeof(disconnectMsgReply), &msgReplyLen);
 	if (EFI_ERROR(status))
 	{
@@ -232,11 +333,11 @@ HeciUninitialize(
 		status = EFI_PROTOCOL_ERROR;
 		goto End;
 	}
-
 	DBGPRINT(Handle->TeeHandle, "####SUCCESSFULLY DISCONNECT FROM INTERFACE####\n");
 	status = EFI_SUCCESS;
 End:
-	client->initialized = FALSE;
+	client->connected = FALSE;
+	client->HostClientId = 0;
 	FUNC_EXIT(Handle->TeeHandle, status);
 	return status;
 }
@@ -260,7 +361,7 @@ heciFwToHostFlowControl(
 		goto End;
 	}
 
-	if (1 == client->properties.IsFixed)
+	if (client->properties.FixedAddress != 0)
 	{
 		DBGPRINT(Handle->TeeHandle, "####Fixed: Exiting FW to Host flow control####\n");
 		status = EFI_SUCCESS;
@@ -302,7 +403,7 @@ heciHostToSecFlowControl(
 		goto End;
 	}
 
-	if (1 == client->properties.IsFixed)
+	if (client->properties.FixedAddress != 0)
 	{
 		DBGPRINT(Handle->TeeHandle, "####Fixed: Exiting Host to Sec flow control####\n");
 		status = EFI_SUCCESS;
@@ -313,7 +414,7 @@ heciHostToSecFlowControl(
 
 	SetMem(&flowCtrlMsg, sizeof(flowCtrlMsg), 0x0);
 	flowCtrlMsg.Command = FLOW_CONTROL_CMD;
-	flowCtrlMsg.HostAddress = BIOS_FIXED_HOST_ADDR + 1;
+	flowCtrlMsg.HostAddress = client->HostClientId;
 	flowCtrlMsg.MEAddress = secAddress;
 
 	status = heciSendMsg(Handle, (UINT32 *)&flowCtrlMsg, sizeof(flowCtrlMsg), BIOS_FIXED_HOST_ADDR, HECI_HBM_MSG_ADDR);
@@ -329,29 +430,27 @@ End:
 	return status;
 }
 
+static
 EFI_STATUS
-HeciConnectClient(
-	IN struct METEE_EFI_IMPL *Handle)
+HeciDeviceEnumerateClients(
+	IN struct METEE_EFI_IMPL *Handle, 
+	IN OUT struct HeciDeviceLibrary * HeciLib
+	)
 {
 	EFI_STATUS status = EFI_UNSUPPORTED;
 	HBM_HOST_ENUMERATION_REQUEST enumMsg;
 	HBM_HOST_ENUMERATION_RESPONSE enumMsgReply;
 	HBM_CLIENT_PROP_MSG propMsg;
 	HBM_CLIENT_PROP_MSG_REPLY propMsgReply;
-	HBM_CLIENT_CONNECT_REQUEST connectMsg;
-	HBM_CLIENT_CONNECT_RESPONSE connectMsgReply;
 	UINT32 msgReplyLen = 0;
-	HECI_CLIENT_CONNECTION *client = &Handle->HeciClientConnection;
-
-	FUNC_ENTRY(Handle->TeeHandle);
-
-	if (client->initialized)
+	
+	if (HeciLib->State.IsValid)
 	{
-		HeciUninitialize(Handle);
+		status = EFI_SUCCESS;
+		goto End;
 	}
-
-	client->properties.IsFixed = 0;
-	client->properties.Address = 0;
+	// will make all open handles invalid
+	HeciLib->State.ResetGeneration += 1;
 
 	status = heciReset(Handle);
 	if (EFI_ERROR(status))
@@ -360,6 +459,8 @@ HeciConnectClient(
 		status = EFI_DEVICE_ERROR;
 		goto End;
 	}
+	SetMem(HeciLib->State.HostClientIds, sizeof(HeciLib->State.HostClientIds), 0x0);
+	SetMem(HeciLib->State.Clients, sizeof(HeciLib->State.Clients), 0x0);
 
 	SetMem(&enumMsg, sizeof(enumMsg), 0x0);
 	SetMem(&enumMsgReply, sizeof(enumMsgReply), 0x0);
@@ -404,14 +505,13 @@ HeciConnectClient(
 	}
 
 #define TEE_CLIENTS_IS_CLIENT_EXIST(bitmap, inx) ((bitmap[inx / 8] & (1 << (inx % 8))) != 0)
-#define TEE_MAX_FW_CLIENTS 256
+
 
 	SetMem(&propMsg, sizeof(propMsg), 0x0);
 	propMsg.Command = HOST_CLIENT_PROPERTIES_REQ_CMD;
 
 	for (UINT16 enumIdx = 1; enumIdx < TEE_MAX_FW_CLIENTS; ++enumIdx)
 	{
-		DBGPRINT(Handle->TeeHandle, "Client[%d]\n", enumIdx);
 		if (!TEE_CLIENTS_IS_CLIENT_EXIST(enumMsgReply.ValidAddresses, enumIdx))
 		{
 			continue;
@@ -444,6 +544,14 @@ HeciConnectClient(
 			DBGPRINT(Handle->TeeHandle, "propMsgReply.Status: %d\n", propMsgReply.Status);
 			continue;
 		}
+		HeciLib->State.Clients[enumIdx].IsValid = TRUE;
+		HeciLib->State.Clients[enumIdx].ClientProperties.ProtocolName = propMsgReply.ProtocolName;
+		HeciLib->State.Clients[enumIdx].ClientProperties.ProtocolVersion = propMsgReply.ProtocolVersion;
+		HeciLib->State.Clients[enumIdx].ClientProperties.Address = propMsgReply.Address;
+		HeciLib->State.Clients[enumIdx].ClientProperties.SingleReceiveBuffer = propMsgReply.SingleRecvBuffer;
+		HeciLib->State.Clients[enumIdx].ClientProperties.MaxMessageLength = propMsgReply.MaxMessageLength;
+		HeciLib->State.Clients[enumIdx].ClientProperties.FixedAddress = propMsgReply.FixedAddress;
+		HeciLib->State.Clients[enumIdx].ClientProperties.MaxNumberOfConnections = propMsgReply.MaximumConnections;
 
 		DBGPRINT(Handle->TeeHandle,
 				 "####:%u - Guid:%08x-%04x-%04x-%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x.\n",
@@ -459,60 +567,118 @@ HeciConnectClient(
 				 propMsgReply.ProtocolName.Data4[5],
 				 propMsgReply.ProtocolName.Data4[6],
 				 propMsgReply.ProtocolName.Data4[7]);
+	}
+	HeciLib->State.IsValid = TRUE;
+	status = EFI_SUCCESS;
+End:
+	FUNC_EXIT(Handle->TeeHandle, status);
+	return status;
+}
 
-		if (CompareMem(&Handle->ClientGuid, &propMsgReply.ProtocolName, sizeof(GUID)) == 0)
+
+
+EFI_STATUS
+HeciConnectClient(
+	IN struct METEE_EFI_IMPL *Handle)
+{
+	EFI_STATUS status = EFI_UNSUPPORTED;
+	HBM_CLIENT_CONNECT_REQUEST connectMsg;
+	HBM_CLIENT_CONNECT_RESPONSE connectMsgReply;
+	UINT32 msgReplyLen;
+	UINT32 ind;
+	UINT32 host_client_id;
+	HECI_CLIENT_CONNECTION *client = &Handle->HeciClientConnection;
+	struct HeciDeviceLibrary * lib = NULL;
+
+	FUNC_ENTRY(Handle->TeeHandle);
+
+	if (client->connected) 
+	{
+		DBGPRINT(Handle->TeeHandle, "Already connected\n");
+		// TODO check Win impl
+		status = EFI_UNSUPPORTED;
+		goto End;
+	}
+
+	lib = GetHeciLibrary(&Handle->Hw.Bdf);
+	if (lib == NULL)
+	{
+		DBGPRINT(Handle->TeeHandle, "Increase CONF_HECI_MAX_HECI_DEVICES_IN_THE_SYSTEM value\n");
+		status = EFI_OUT_OF_RESOURCES;
+		goto End;
+	}
+
+	status = HeciDeviceEnumerateClients(Handle, lib);
+	if (EFI_ERROR(status))
+	{
+		DBGPRINT(Handle->TeeHandle, "Could not HeciDeviceEnumerateClients, Status: %d\n", status);
+		status = EFI_DEVICE_ERROR;
+		goto End;
+	}
+
+	SetMem(&client->properties, sizeof(client->properties), 0x0);
+
+	for (ind=0; ind<TEE_MAX_FW_CLIENTS; ++ind) 
+	{
+		if (CompareMem(&Handle->ClientGuid, &lib->State.Clients[ind].ClientProperties.ProtocolName, sizeof(GUID)) == 0)
 		{
 			DBGPRINT(Handle->TeeHandle, "#### Match\n");
+			DBGPRINT(Handle->TeeHandle,
+			 "Ind: %d , Address: %u, ProtocolVersion: %u, MaximumConnections: %u, FixedAddress: %u, SingleRecvBuffer: %u, MaxMessageLength: %u.\n",
+			 ind,
+			 lib->State.Clients[ind].ClientProperties.Address,
+			 lib->State.Clients[ind].ClientProperties.ProtocolVersion,
+			 lib->State.Clients[ind].ClientProperties.MaxNumberOfConnections,
+			 lib->State.Clients[ind].ClientProperties.FixedAddress,
+			 lib->State.Clients[ind].ClientProperties.SingleReceiveBuffer,
+			 lib->State.Clients[ind].ClientProperties.MaxMessageLength);
 
-			client->properties.Address = propMsgReply.Address;
-			client->properties.MaxMessageLength = propMsgReply.MaxMessageLength;
 			break;
 		}
 	}
 
-	if (client->properties.Address == 0)
+	if (ind == TEE_MAX_FW_CLIENTS)
 	{
-		DBGPRINT(Handle->TeeHandle, "Failed to retrieve FW address.\n");
+		DBGPRINT(Handle->TeeHandle, "FW client not found\n");
 		status = EFI_NOT_FOUND;
 		goto End;
 	}
 
-	DBGPRINT(Handle->TeeHandle, "####Connection property#####\n");
-	DBGPRINT(Handle->TeeHandle,
-			 "Address: %u, ProtocolVersion: %u, MaximumConnections: %u, FixedAddress: %u, SingleRecvBuffer: %u, MaxMessageLength: %u.\n",
-			 propMsgReply.Address,
-			 propMsgReply.ProtocolVersion,
-			 propMsgReply.MaximumConnections,
-			 propMsgReply.FixedAddress,
-			 propMsgReply.SingleRecvBuffer,
-			 propMsgReply.MaxMessageLength);
-
-	// copy the Property Message Reply results to client->properties
-	client->properties.ProtocolName = propMsgReply.ProtocolName;
-	client->properties.ProtocolVersion = propMsgReply.ProtocolVersion;
-	client->properties.MaxNumberOfConnections = propMsgReply.MaximumConnections;
-	client->properties.Address = propMsgReply.Address;
-	client->properties.SingleReceiveBuffer = propMsgReply.SingleRecvBuffer;
-	client->properties.MaxMessageLength = propMsgReply.MaxMessageLength;
-
-	if (propMsgReply.FixedAddress != 0)
+	if (lib->State.Clients[ind].ClientProperties.FixedAddress != 0)
 	{
-		client->properties.Address = propMsgReply.FixedAddress;
-		client->properties.IsFixed = 1;
-		client->initialized = TRUE;
+		client->properties = lib->State.Clients[ind].ClientProperties;
+		client->properties.Address = lib->State.Clients[ind].ClientProperties.FixedAddress;
+		//client->properties.IsFixed = 1;
+		client->connected = TRUE;
 		DBGPRINT(Handle->TeeHandle, "######CONNECTION SETUP SUCCESSFULLY######\n");
 		status = EFI_SUCCESS;
 		goto End;
 	}
 
-	// Now try to connect to the heci interface.
+	/* find first available Host Client Id */
+	for (host_client_id=1; host_client_id<TEE_MAX_FW_CLIENTS; ++host_client_id) 
+	{		
+		if (lib->State.HostClientIds[host_client_id] == 0) 
+		{
+			DBGPRINT(Handle->TeeHandle, "Host Client Id: %d\n", host_client_id);
+			break;
+		}
+	}
+	if (host_client_id == TEE_MAX_FW_CLIENTS) 
+	{
+		DBGPRINT(Handle->TeeHandle, "Max client count reached\n", status);
+		status = EFI_DEVICE_ERROR;
+		goto End;
+	}
+
+	/* Now try to connect to the heci interface. */
 
 	SetMem(&connectMsg, sizeof(connectMsg), 0x0);
 	SetMem(&connectMsgReply, sizeof(connectMsgReply), 0x0);
 
 	connectMsg.Command = CLIENT_CONNECT_REQ_CMD;
-	connectMsg.MEAddress = client->properties.Address;
-	connectMsg.HostAddress = BIOS_FIXED_HOST_ADDR + 1;
+	connectMsg.MEAddress = lib->State.Clients[ind].ClientProperties.Address;
+	connectMsg.HostAddress = (UINT8)host_client_id;
 
 	EFIPRINT(Handle->TeeHandle, "Before CLIENT_CONNECT_REQ_CMD\n");
 	status = heciSendMsg(Handle, (UINT32 *)&connectMsg, sizeof(connectMsg), BIOS_FIXED_HOST_ADDR, HECI_HBM_MSG_ADDR);
@@ -535,7 +701,7 @@ HeciConnectClient(
 		goto End;
 	}
 
-	DBGPRINT(Handle->TeeHandle, "Connect message reply status: %d\n", connectMsgReply.Command);
+	DBGPRINT(Handle->TeeHandle, "Connect message reply status: %d\n", connectMsgReply.Status);
 
 	if ((CCS_SUCCESS == connectMsgReply.Status) || (CCS_ALREADY_STARTED == connectMsgReply.Status))
 	{
@@ -543,7 +709,7 @@ HeciConnectClient(
 	}
 	else
 	{
-		DBGPRINT(Handle->TeeHandle, "####Failed to setup connection. Aborted with connectMsgReply.Status: %u.\n", connectMsgReply.Status);
+		DBGPRINT(Handle->TeeHandle, "####Failed to setup connection.\n");
 		status = EFI_PROTOCOL_ERROR;
 		goto End;
 	}
@@ -553,8 +719,14 @@ HeciConnectClient(
 	{
 		goto End;
 	}
+	lib->State.HostClientIds[host_client_id] = 1;
+	client->properties = lib->State.Clients[ind].ClientProperties;
+	client->connected = TRUE;
+	client->ResetGeneration = lib->State.ResetGeneration;
+	client->HostClientId = (UINT8)host_client_id;
+	DBGPRINT(Handle->TeeHandle, "Connection established: Host Client Id: %d, FW Client Id: %d\n", 
+				client->HostClientId, lib->State.Clients[ind].ClientProperties.Address);
 
-	client->initialized = TRUE;
 End:
 	FUNC_EXIT(Handle->TeeHandle, status);
 	return status;
@@ -569,8 +741,9 @@ HeciSendMessage(
 	IN UINT32 timeout)
 {
 	EFI_STATUS status = EFI_UNSUPPORTED;
-	UINT8 secAddress = 0;
+	UINT8 fwAddress = 0;
 	UINT8 hostAddress = 0;
+	struct HeciDeviceLibrary * lib = NULL;
 	HECI_CLIENT_CONNECTION *client = &Handle->HeciClientConnection;
 
 	FUNC_ENTRY(Handle->TeeHandle);
@@ -586,21 +759,48 @@ HeciSendMessage(
 		status = EFI_BUFFER_TOO_SMALL;
 		goto End;
 	}
+	if (client->connected == FALSE) 
+	{
+		DBGPRINT(Handle->TeeHandle, "Handle is not connected\n");
+		status = EFI_MEDIA_CHANGED;
+		goto End;
+	}
 
-	secAddress = client->properties.Address;
-	status = heciHostToSecFlowControl(Handle, client, secAddress);
+	lib = GetHeciLibrary(&Handle->Hw.Bdf);
+	if (lib == NULL)
+	{
+		DBGPRINT(Handle->TeeHandle, "Library not found\n");
+		status = EFI_OUT_OF_RESOURCES;
+		goto End;
+	}
+	if (lib->State.IsValid == FALSE) 
+	{
+		DBGPRINT(Handle->TeeHandle, "Library is invalid, LR required, Handle will become invalid\n");
+		Handle->HeciClientConnection.connected = FALSE;
+		status = EFI_MEDIA_CHANGED;
+		goto End;
+	}
+	if (Handle->HeciClientConnection.ResetGeneration != lib->State.ResetGeneration) {
+		DBGPRINT(Handle->TeeHandle, "Handle is invalid, %d %d\n", Handle->HeciClientConnection.ResetGeneration, lib->State.ResetGeneration);
+		Handle->HeciClientConnection.connected = FALSE;
+		status = EFI_MEDIA_CHANGED;
+		goto End;
+	}
+
+	fwAddress = client->properties.Address;
+	status = heciHostToSecFlowControl(Handle, client, fwAddress);
 	if (EFI_ERROR(status))
 	{
 		DBGPRINT(Handle->TeeHandle, "heciHostToSecFlowControl Failed. Status: %d", status);
 		goto End;
 	}
 
-	// Fixed Address expects HostAddress to be 0 while Connected Address requires a 1.
-	hostAddress = (client->properties.IsFixed) ? BIOS_FIXED_HOST_ADDR : POLICY_CONNECTED_HOST_ADDR;
+	// Fixed Address expects HostAddress to be 0 
+	hostAddress = (client->properties.FixedAddress != 0) ? BIOS_FIXED_HOST_ADDR : client->HostClientId;
 
-	EFIPRINT(Handle->TeeHandle, "bufferLength: %d, hostAddress: 0x%02X, secAddress: 0x%02X\n",
-			bufferLength, hostAddress, secAddress);
-	status = heciSendMsg(Handle, (UINT32 *)buffer, bufferLength, hostAddress, secAddress);
+	EFIPRINT(Handle->TeeHandle, "bufferLength: %d, Host Client Id: %d, FW Client Id: %d\n",
+			bufferLength, hostAddress, fwAddress);
+	status = heciSendMsg(Handle, (UINT32 *)buffer, bufferLength, hostAddress, fwAddress);
 	if (EFI_ERROR(status))
 	{
 		DBGPRINT(Handle->TeeHandle, "SendMessage: failed to send message. Status: %d.", status);
@@ -641,6 +841,13 @@ HeciReceiveMessage(
 		goto End;
 	}
 
+	if (client->connected == FALSE) 
+	{
+		DBGPRINT(Handle->TeeHandle, "Handle is not connected\n");
+		status = EFI_MEDIA_CHANGED;
+		goto End;
+	}
+
 	DBGPRINT(Handle->TeeHandle, "\nprintout client properties\n");
 	DBGPRINT(Handle->TeeHandle,
 			 "properties.guid:%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x\n",
@@ -660,9 +867,8 @@ HeciReceiveMessage(
 	DBGPRINT(Handle->TeeHandle, "properties.Address: %d\n", client->properties.Address);
 	DBGPRINT(Handle->TeeHandle, "properties.SingleReceiveBuffer: %x\n", client->properties.SingleReceiveBuffer);
 	DBGPRINT(Handle->TeeHandle, "properties.MaxMessageLength: %d\n", client->properties.MaxMessageLength);
-	DBGPRINT(Handle->TeeHandle, "properties.IsFixed: %d\n", client->properties.IsFixed);
+	DBGPRINT(Handle->TeeHandle, "properties.FixedAddress: %d\n", client->properties.FixedAddress);
 	DBGPRINT(Handle->TeeHandle, "handle: %x\n", client->handle);
-	DBGPRINT(Handle->TeeHandle, "initialized: %d\n", client->initialized);
 
 	SetMem(Buffer, BufferSize, 0x0);
 	status = heciReadMsg(Handle, BLOCKING, (UINT32 *)Buffer, BufferSize, &bytes_read);
@@ -714,7 +920,7 @@ HeciReceiveMessage(
 #define HECI1_DEVICE 0
 	if (HECI1_DEVICE == Handle->Hw.Bdf.Function)
 	{
-		EFIPRINT(Handle->TeeHandle, "IsFixed: %d\n", client->properties.IsFixed);
+		EFIPRINT(Handle->TeeHandle, "FixedAddress: %d\n", client->properties.FixedAddress);
 		status = heciFwToHostFlowControl(Handle, client);
 		DBGPRINT(Handle->TeeHandle, "heciFwToHostFlowControl. Status: %d\n");
 		goto End;

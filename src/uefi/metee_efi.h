@@ -140,15 +140,16 @@ typedef struct _HECI_CLIENT_PROPERTIES
     UINT8 Address;
     UINT8 SingleReceiveBuffer;
     UINT32 MaxMessageLength;
-    UINT8 IsFixed;
+    UINT8 FixedAddress;
 } HECI_CLIENT_PROPERTIES;
 
 typedef struct _HECI_CLIENT_CONNECTION
 {
     HECI_CLIENT_PROPERTIES properties;
+    UINT32 ResetGeneration;				/** Should match device Link Reset */
     UINT32 handle;
-    UINT32 initialized;
-    UINT8 has_fc;
+    BOOLEAN connected;
+    UINT8 HostClientId;
 } HECI_CLIENT_CONNECTION;
 
 #pragma pack()
@@ -156,13 +157,15 @@ typedef struct _HECI_CLIENT_CONNECTION
 
 #define HECI_FW_STS_COUNT 6
 
+struct HECI_HW_BDF {
+    UINT32 Segment;                     /** HECI device Segment */
+    UINT32 Bus;                         /** HECI device Bus */
+    UINT32 Device;                      /** HECI device Device */
+    UINT32 Function;                    /** HECI device Function */
+};
+
 struct HECI_HW {
-    struct BDF {
-        UINT32 Segment;                     /** HECI device Segment */
-        UINT32 Bus;                         /** HECI device Bus */
-        UINT32 Device;                      /** HECI device Device */
-        UINT32 Function;                    /** HECI device Function */
-    } Bdf;
+    struct HECI_HW_BDF Bdf;
     struct RegisterOffset {
         UINT32 H_CB_WW;                     /** Host Circular Buffer Write Window */
         UINT32 H_CSR;                       /** Host Control Status */
