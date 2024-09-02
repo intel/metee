@@ -1,3 +1,9 @@
+## [4.2.1]
+
+### Fixed
+ - EFI: fix open multiple connections to the different clients
+ - Linux: import libmei 1.6.3: fix for traffic dump in release mode and build on 32bit Linux.
+
 ## [4.2.0]
 
 **Note:** ABI breakage in this version, struct tee_device_address was expanded
