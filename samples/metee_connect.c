@@ -41,7 +41,12 @@ static int work(struct params *p)
 	if (status != TEE_SUCCESS)
 		goto out;
 
-	rsz = cl.maxMsgLen;
+	rsz = TeeGetMaxMsgLen(&cl);
+	if (rsz == 0)
+	{
+		fprintf(stderr, "client reproted zero MTU.\n");
+		goto out;
+	}
 	buf = (unsigned char *)malloc(rsz);
 	if (buf == NULL)
 		goto out;
