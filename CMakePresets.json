@@ -69,6 +69,16 @@
       }
     },
     {
+      "name": "Release32",
+      "displayName": "Windows x86 Release",
+      "description": "Build x86 Release, VS2019",
+      "inherits": "base32",
+      "binaryDir": "${sourceDir}/Release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
       "name": "Release64",
       "displayName": "Windows x86-64 Release",
       "description": "Build x86-64 Release, VS2019",
@@ -105,6 +115,11 @@
     {
       "name": "Release32Static",
       "configurePreset": "Release32Static",
+      "configuration": "Release"
+    },
+    {
+      "name": "Release32",
+      "configurePreset": "Release32",
       "configuration": "Release"
     },
     {
