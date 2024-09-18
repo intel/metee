@@ -694,3 +694,21 @@ Cleanup:
 	FUNC_EXIT(handle, status);
 	return status;
 }
+
+uint32_t TEEAPI TeeGetMaxMsgLen(IN const PTEEHANDLE handle)
+{
+	if (NULL == handle)
+	{
+		return 0;
+	}
+	return (uint32_t)handle->maxMsgLen;
+}
+
+uint8_t TEEAPI TeeGetProtocolVer(IN const PTEEHANDLE handle)
+{
+	if (NULL == handle)
+	{
+		return 0;
+	}
+	return handle->protcolVer;
+}

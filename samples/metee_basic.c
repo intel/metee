@@ -96,6 +96,12 @@ int main(int argc, char* argv[])
 		goto out;
 	}
 
+	if (TeeGetMaxMsgLen(&handle) == 0)
+	{
+		fprintf(stderr, "Client reported zero MTU. Aborting.\n");
+		goto out;
+	}
+
 	/* Write */
 	req.header.data = 0; /* Reset */
 	req.header.GroupId = 0xFF; /* MKHI */
@@ -115,14 +121,14 @@ int main(int argc, char* argv[])
 	}
 
 	/* Read */
-	read_buf = (uint8_t*)malloc(handle.maxMsgLen);
+	read_buf = (uint8_t*)malloc(TeeGetMaxMsgLen(&handle));
 	if (!read_buf) {
 		fprintf(stderr, "malloc failed\n");
 		status = TEE_INTERNAL_ERROR;
 		goto out;
 	}
 
-	status = TeeRead(&handle, read_buf, handle.maxMsgLen, &written, MKHI_TIMEOUT);
+	status = TeeRead(&handle, read_buf, TeeGetMaxMsgLen(&handle), &written, MKHI_TIMEOUT);
 	if (!TEE_IS_SUCCESS(status)) {
 		fprintf(stderr, "TeeWrite failed with status = %u\n", status);
 		goto out;

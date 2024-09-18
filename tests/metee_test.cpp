@@ -125,16 +125,26 @@ TEST_P(MeTeeDataNTEST, PROD_MKHI_SimpleGetVersion)
 	std::vector <char> MaxResponse;
 	GEN_GET_FW_VERSION_ACK* pResponseMessage; //max length for this client is 2048
 
-	MaxResponse.resize(_handle.maxMsgLen*sizeof(char));
+	MaxResponse.resize(TeeGetMaxMsgLen(&_handle) * sizeof(char));
 	ASSERT_EQ(SUCCESS, TeeWrite(&_handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), &NumberOfBytes, 0));
 	ASSERT_EQ(sizeof(GEN_GET_FW_VERSION), NumberOfBytes);
 
-	ASSERT_EQ(SUCCESS, TeeRead(&_handle, &MaxResponse[0], _handle.maxMsgLen, &NumberOfBytes, 0));
+	ASSERT_EQ(SUCCESS, TeeRead(&_handle, &MaxResponse[0], TeeGetMaxMsgLen(&_handle), &NumberOfBytes, 0));
 	pResponseMessage = (GEN_GET_FW_VERSION_ACK*)(&MaxResponse[0]);
 
 	ASSERT_EQ(SUCCESS, pResponseMessage->Header.Fields.Result);
 	EXPECT_NE(0, pResponseMessage->Data.FWVersion.CodeMajor);
 	EXPECT_NE(0, pResponseMessage->Data.FWVersion.CodeBuildNo);
+}
+
+TEST_P(MeTeeDataNTEST, PROD_MKHI_GetMaxMsgLen)
+{
+	ASSERT_NE(0, TeeGetMaxMsgLen(&_handle));
+}
+
+TEST_P(MeTeeDataNTEST, PROD_MKHI_GetProtocolVer)
+{
+	TeeGetProtocolVer(&_handle);
 }
 
 /*
@@ -196,6 +206,17 @@ TEST_P(MeTeeOpenTEST, PROD_MKHI_SetLogCallback)
 	ERRPRINT(&_handle, "NotReal");
 	TeeSetLogLevel(&_handle, prev_log_level);
 }
+
+TEST_P(MeTeeOpenTEST, PROD_MKHI_GetMaxMsgLen)
+{
+	ASSERT_EQ(0, TeeGetMaxMsgLen(&_handle));
+}
+
+TEST_P(MeTeeOpenTEST, PROD_MKHI_GetProtocolVer)
+{
+	ASSERT_EQ(0, TeeGetProtocolVer(&_handle));
+}
+
 /*
 * Blocking read from side thread cancelled by disconnect from the main thread
 */
@@ -207,8 +228,8 @@ TEST_P(MeTeeDataNTEST, PROD_MKHI_InterruptRead)
 	thr = std::thread([Handle]() {
 		std::vector <char> MaxResponse;
 		size_t NumberOfBytes = 0;
-		MaxResponse.resize(Handle.maxMsgLen * sizeof(char));
-		EXPECT_EQ(TEE_UNABLE_TO_COMPLETE_OPERATION, TeeRead((PTEEHANDLE) &Handle, &MaxResponse[0], Handle.maxMsgLen, &NumberOfBytes, 0));
+		MaxResponse.resize(TeeGetMaxMsgLen((PTEEHANDLE) &Handle) * sizeof(char));
+		EXPECT_EQ(TEE_UNABLE_TO_COMPLETE_OPERATION, TeeRead((PTEEHANDLE) &Handle, &MaxResponse[0], TeeGetMaxMsgLen((PTEEHANDLE)&Handle), &NumberOfBytes, 0));
 	});
 	thr.detach();
 	std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -240,11 +261,11 @@ TEST_P(MeTee1000OpenTEST, PROD_MKHI_1000HandlesGetVersion)
 	ASSERT_EQ(SUCCESS, ConnectRetry(&Handle));
 
 
-	MaxResponse.resize(Handle.maxMsgLen*sizeof(char));
+	MaxResponse.resize(TeeGetMaxMsgLen(&Handle) * sizeof(char));
 	ASSERT_EQ(SUCCESS, TeeWrite(&Handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), &NumberOfBytes, 1000));
 	ASSERT_EQ(sizeof(GEN_GET_FW_VERSION), NumberOfBytes);
 
-	ASSERT_EQ(SUCCESS, TeeRead(&Handle, &MaxResponse[0], Handle.maxMsgLen, &NumberOfBytes, 1000));
+	ASSERT_EQ(SUCCESS, TeeRead(&Handle, &MaxResponse[0], TeeGetMaxMsgLen(&Handle), &NumberOfBytes, 1000));
 	pResponseMessage = (GEN_GET_FW_VERSION_ACK*)(&MaxResponse[0]);
 
 	ASSERT_EQ(SUCCESS, pResponseMessage->Header.Fields.Result);
@@ -269,12 +290,12 @@ TEST_P(MeTeeDataNTEST, PROD_MKHI_SimpleGetVersionStress)
 	std::vector <char> MaxResponse;
 	GEN_GET_FW_VERSION_ACK* pResponseMessage; //max length for this client is 2048
 
-	MaxResponse.resize(_handle.maxMsgLen * sizeof(char));
+	MaxResponse.resize(TeeGetMaxMsgLen(&_handle) * sizeof(char));
 	for (unsigned int i = 0; i < 1000; i++) {
 		ASSERT_EQ(SUCCESS, TeeWrite(&_handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), &NumberOfBytes, 0));
 		ASSERT_EQ(sizeof(GEN_GET_FW_VERSION), NumberOfBytes);
 
-		ASSERT_EQ(SUCCESS, TeeRead(&_handle, &MaxResponse[0], _handle.maxMsgLen, &NumberOfBytes, 0));
+		ASSERT_EQ(SUCCESS, TeeRead(&_handle, &MaxResponse[0], TeeGetMaxMsgLen(&_handle), &NumberOfBytes, 0));
 		pResponseMessage = (GEN_GET_FW_VERSION_ACK*)(&MaxResponse[0]);
 
 		ASSERT_EQ(SUCCESS, pResponseMessage->Header.Fields.Result);
@@ -306,10 +327,10 @@ TEST_P(MeTeeDataNTEST, PROD_MKHI_SimpleGetVersionNULLReturn)
 	std::vector <char> MaxResponse;
 	GEN_GET_FW_VERSION_ACK* pResponseMessage; //max length for this client is 2048
 
-	MaxResponse.resize(_handle.maxMsgLen*sizeof(char));
+	MaxResponse.resize(TeeGetMaxMsgLen(&_handle) * sizeof(char));
 	ASSERT_EQ(SUCCESS, TeeWrite(&_handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), NULL, 0));
 
-	ASSERT_EQ(SUCCESS, TeeRead(&_handle, &MaxResponse[0], _handle.maxMsgLen, NULL, 0));
+	ASSERT_EQ(SUCCESS, TeeRead(&_handle, &MaxResponse[0], TeeGetMaxMsgLen(&_handle), NULL, 0));
 	pResponseMessage = (GEN_GET_FW_VERSION_ACK*)(&MaxResponse[0]);
 
 	ASSERT_EQ(SUCCESS, pResponseMessage->Header.Fields.Result);
@@ -328,9 +349,9 @@ TEST_P(MeTeeDataNTEST, PROD_MKHI_TimeoutGetVersion)
 	size_t NumberOfBytes = 0;
 	std::vector <char> MaxResponse;
 
-	MaxResponse.resize(_handle.maxMsgLen*sizeof(char));
+	MaxResponse.resize(TeeGetMaxMsgLen(&_handle) * sizeof(char));
 
-	EXPECT_EQ(TEE_TIMEOUT, TeeRead(&_handle, &MaxResponse[0], _handle.maxMsgLen, &NumberOfBytes, 1000));
+	EXPECT_EQ(TEE_TIMEOUT, TeeRead(&_handle, &MaxResponse[0], TeeGetMaxMsgLen(&_handle), &NumberOfBytes, 1000));
 }
 
 /*
@@ -510,7 +531,7 @@ TEST_P(MeTeeDataNTEST, PROD_N_TestFWUZeroBufferSizeWrite)
 TEST_P(MeTeeDataNTEST, PROD_N_TestFWUBiggerThenMtuWrite)
 {
 	size_t numOfBytes = 0;
-	std::vector<unsigned char> buf(_handle.maxMsgLen + 10);
+	std::vector<unsigned char> buf(TeeGetMaxMsgLen(&_handle) + 10);
 
 	ASSERT_EQ(TEE_INTERNAL_ERROR, TeeWrite(&_handle, &buf[0], buf.size(), &numOfBytes, 0));
 }
@@ -547,11 +568,11 @@ TEST_P(MeTeeFDTEST, PROD_MKHI_SimpleGetVersion)
 	ASSERT_EQ(SUCCESS, ConnectRetry(&Handle));
 
 
-	MaxResponse.resize(Handle.maxMsgLen*sizeof(char));
+	MaxResponse.resize(TeeGetMaxMsgLen(&Handle) * sizeof(char));
 	ASSERT_EQ(SUCCESS, TeeWrite(&Handle, &MkhiRequest, sizeof(GEN_GET_FW_VERSION), &NumberOfBytes, 0));
 	ASSERT_EQ(sizeof(GEN_GET_FW_VERSION), NumberOfBytes);
 
-	ASSERT_EQ(SUCCESS, TeeRead(&Handle, &MaxResponse[0], Handle.maxMsgLen, &NumberOfBytes, 0));
+	ASSERT_EQ(SUCCESS, TeeRead(&Handle, &MaxResponse[0], TeeGetMaxMsgLen(&Handle), &NumberOfBytes, 0));
 	pResponseMessage = (GEN_GET_FW_VERSION_ACK*)(&MaxResponse[0]);
 
 	ASSERT_EQ(SUCCESS, pResponseMessage->Header.Fields.Result);

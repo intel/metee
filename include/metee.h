@@ -331,6 +331,22 @@ uint32_t TEEAPI TeeGetLogLevel(IN const PTEEHANDLE handle);
  */
 TEESTATUS TEEAPI TeeSetLogCallback(IN const PTEEHANDLE handle, TeeLogCallback log_callback);
 
+/*! Retrieve client maximum message length (MTU)
+ *
+ *  \param handle The handle of the session.
+ *  \return client maximum message length.
+ *          If client never connected, will return zero.
+ */
+uint32_t TEEAPI TeeGetMaxMsgLen(IN const PTEEHANDLE handle);
+
+/*! Retrieve client protocol version
+ *
+ *  \param handle The handle of the session.
+ *  \return client protocol version.
+ *          If client never connected, will return zero.
+ */
+uint8_t TEEAPI TeeGetProtocolVer(IN const PTEEHANDLE handle);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2020-2023 Intel Corporation
+ * Copyright (C) 2020-2024 Intel Corporation
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -158,7 +158,13 @@ static uint32_t mk_host_if_call(struct mk_host_if *acmd,
 	struct gsc_fwu_heci_response *msg_hdr;
 	int count = 0;
 
-	in_buf_sz = (unsigned int)acmd->mei_cl.maxMsgLen;
+	in_buf_sz = TeeGetMaxMsgLen(&acmd->mei_cl);
+	if (in_buf_sz == 0)
+	{
+		if (acmd->verbose)
+			fprintf(stderr, "mkhif: client reproted zero MTU.\n");
+		return GSC_FWU_STATUS_FAILURE;
+	}
 	*read_buf = (uint8_t *)malloc(in_buf_sz);
 	if (*read_buf == NULL)
 		return GSC_FWU_STATUS_FAILURE;
