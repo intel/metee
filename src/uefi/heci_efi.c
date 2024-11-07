@@ -285,6 +285,13 @@ HeciUninitialize(
 
 	DBGPRINT(Handle->TeeHandle, "####Heci Uninitialize ####\n");
 
+	lib = GetHeciLibrary(&Handle->Hw.Bdf);
+	if (lib != NULL)
+	{
+		DBGPRINT(Handle->TeeHandle, "Release Host Client Id: %d\n", client->HostClientId);
+		lib->State.HostClientIds[client->HostClientId] = 0;
+	}
+
 	if (client->properties.FixedAddress != 0)
 	{
 		DBGPRINT(Handle->TeeHandle, "######CONNECTION CLOSED SUCCESSFULLY######: Fixed client\n");
@@ -298,13 +305,6 @@ HeciUninitialize(
 	disconnectMsg.Command = CLIENT_DISCONNECT_REQ_CMD;
 	disconnectMsg.MEAddress = client->properties.Address;
 	disconnectMsg.HostAddress = client->HostClientId;
-
-	lib = GetHeciLibrary(&Handle->Hw.Bdf);
-	if (lib != NULL)
-	{
-		DBGPRINT(Handle->TeeHandle, "Release Host Client Id: %d\n", client->HostClientId);
-		lib->State.HostClientIds[client->HostClientId] = 0;
-	}
 
 	DBGPRINT(Handle->TeeHandle, "####Prior to Heci-SendMsg: Command: %02X, Host Client Id: %d, FW Client Id: %d\n", 
 			disconnectMsg.Command, disconnectMsg.HostAddress, disconnectMsg.MEAddress);
@@ -443,6 +443,8 @@ HeciDeviceEnumerateClients(
 	HBM_CLIENT_PROP_MSG propMsg;
 	HBM_CLIENT_PROP_MSG_REPLY propMsgReply;
 	UINT32 msgReplyLen = 0;
+
+	FUNC_ENTRY(Handle->TeeHandle);
 	
 	if (HeciLib->State.IsValid)
 	{
@@ -644,17 +646,6 @@ HeciConnectClient(
 		goto End;
 	}
 
-	if (lib->State.Clients[ind].ClientProperties.FixedAddress != 0)
-	{
-		client->properties = lib->State.Clients[ind].ClientProperties;
-		client->properties.Address = lib->State.Clients[ind].ClientProperties.FixedAddress;
-		//client->properties.IsFixed = 1;
-		client->connected = TRUE;
-		DBGPRINT(Handle->TeeHandle, "######CONNECTION SETUP SUCCESSFULLY######\n");
-		status = EFI_SUCCESS;
-		goto End;
-	}
-
 	/* find first available Host Client Id */
 	for (host_client_id=1; host_client_id<TEE_MAX_FW_CLIENTS; ++host_client_id) 
 	{		
@@ -669,6 +660,14 @@ HeciConnectClient(
 		DBGPRINT(Handle->TeeHandle, "Max client count reached\n", status);
 		status = EFI_DEVICE_ERROR;
 		goto End;
+	}
+
+	if (lib->State.Clients[ind].ClientProperties.FixedAddress != 0)
+	{
+		DBGPRINT(Handle->TeeHandle, "######Fixed client######\n");
+		client->properties.Address = lib->State.Clients[ind].ClientProperties.FixedAddress;
+		status = EFI_SUCCESS;
+		goto Connected;
 	}
 
 	/* Now try to connect to the heci interface. */
@@ -719,6 +718,8 @@ HeciConnectClient(
 	{
 		goto End;
 	}
+
+Connected:	
 	lib->State.HostClientIds[host_client_id] = 1;
 	client->properties = lib->State.Clients[ind].ClientProperties;
 	client->connected = TRUE;
