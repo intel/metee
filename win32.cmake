@@ -8,6 +8,7 @@ endif()
 set(TEE_SOURCES
     src/Windows/metee_win.c
     src/Windows/metee_winhelpers.c
+    ${PROJECT_BINARY_DIR}/metee.rc
 )
 
 add_library(${PROJECT_NAME} ${TEE_SOURCES})
@@ -21,6 +22,11 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 if(NOT CONSOLE_OUTPUT)
   target_compile_definitions(${PROJECT_NAME} PRIVATE -DSYSLOG)
 endif()
+
+configure_file (
+    "${PROJECT_SOURCE_DIR}/src/Windows/metee.rc.in"
+    "${PROJECT_BINARY_DIR}/metee.rc"
+)
 
 # Secure compile flags
 target_compile_options(${PROJECT_NAME}
