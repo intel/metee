@@ -15,14 +15,14 @@ option(CONSOLE_OUTPUT "Push debug and error output to console (instead of syslog
 
 include(GNUInstallDirs)
 
+set(LICENSE Apache)
+include(version.cmake)
+
 if(WIN32)
   include(win32.cmake)
 else(WIN32)
   include(linux.cmake)
 endif(WIN32)
-
-set(LICENSE Apache)
-include(version.cmake)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER include/metee.h)
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${TEE_VERSION_STRING})
