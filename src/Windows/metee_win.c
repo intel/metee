@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2023 Intel Corporation
+ * Copyright (C) 2014-2024 Intel Corporation
  */
 #include <assert.h>
 #include <windows.h>
@@ -27,10 +27,19 @@ static TEESTATUS __CreateFile(PTEEHANDLE handle, const char *devicePath, PHANDLE
 	if (*deviceHandle == INVALID_HANDLE_VALUE) {
 		DWORD err = GetLastError();
 		ERRPRINT(handle, "Error in CreateFile, error: %lu\n", err);
-		if (err == ERROR_FILE_NOT_FOUND || err == ERROR_PATH_NOT_FOUND)
+		switch (err)
+		{
+		case ERROR_FILE_NOT_FOUND:
+		case ERROR_PATH_NOT_FOUND:
 			status = TEE_DEVICE_NOT_FOUND;
-		else
+			break;
+		case ERROR_ACCESS_DENIED:
+			status = TEE_PERMISSION_DENIED;
+			break;
+		default:
 			status = TEE_DEVICE_NOT_READY;
+			break;
+		}
 	}
 	else {
 		status = TEE_SUCCESS;
