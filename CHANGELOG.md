@@ -1,3 +1,14 @@
+## [4.3.0]
+
+### Fixed
+ - Windows: process access denied on open
+ - UEFI: Add driver logic for fixed clients
+
+### Added
+ - Windows: add resource
+ - cmake: add 32 bit release preset
+ - add getters for maxMsgLen and prtocolVer
+
 ## [4.2.1]
 
 ### Fixed
