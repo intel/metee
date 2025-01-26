@@ -1,10 +1,14 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2024 Intel Corporation
+ * Copyright (C) 2014-2025 Intel Corporation
  */
 #include <assert.h>
 #include <windows.h>
 #include <initguid.h>
+#include <winioctl.h>
+#include <malloc.h>
+#include <limits.h>
+
 #include "public.h"
 #include "helpers.h"
 #include "metee.h"
@@ -58,7 +62,7 @@ TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 	IN uint32_t log_level, IN OPTIONAL TeeLogCallback log_callback)
 {
 	TEESTATUS status;
-	error_status_t res;
+	errno_t res;
 	char devicePath[MAX_PATH] = {0};
 	const char *devicePathP  = NULL;
 	HANDLE deviceHandle = INVALID_HANDLE_VALUE;
