@@ -1,3 +1,11 @@
+## [4.3.1]
+
+### Fixed
+ - Windows: fix asan build
+
+### Changed
+ - doc: update Doxygen template
+
 ## [4.3.0]
 
 ### Fixed
