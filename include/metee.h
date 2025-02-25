@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2024 Intel Corporation
+ * Copyright (C) 2014-2025 Intel Corporation
  */
 /*! \file metee.h
  *  \brief metee library API
@@ -346,6 +346,16 @@ uint32_t TEEAPI TeeGetMaxMsgLen(IN const PTEEHANDLE handle);
  *          If client never connected, will return zero.
  */
 uint8_t TEEAPI TeeGetProtocolVer(IN const PTEEHANDLE handle);
+
+
+/*! Obtains kind of the TEE device 
+ *  \param handle The handle of the session.
+ *  \param kind Buffer to fill with device kind null terminated string, may be NULL.
+ *  \param kindSize Pointer to kind buffer size in bytes, updated to number of bytes filled in buffer, including null character, on out.
+ *          If buffer is NULL, required size is returned anyway.
+ *  \return 0 if successful, otherwise error code.
+ */
+TEESTATUS TEEAPI TeeGetKind(IN PTEEHANDLE handle, IN OUT char *kind, IN OUT size_t *kindSize);
 
 #ifdef __cplusplus
 }
