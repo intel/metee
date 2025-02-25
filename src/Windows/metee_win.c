@@ -8,6 +8,8 @@
 #include <winioctl.h>
 #include <malloc.h>
 #include <limits.h>
+#include <setupapi.h>
+#include <devpkey.h>
 
 #include "public.h"
 #include "helpers.h"
@@ -695,4 +697,28 @@ uint8_t TEEAPI TeeGetProtocolVer(IN const PTEEHANDLE handle)
 		return 0;
 	}
 	return handle->protcolVer;
+}
+
+TEESTATUS TEEAPI TeeGetKind(IN PTEEHANDLE handle, IN OUT char *kind, IN OUT size_t *kindSize)
+{
+	TEESTATUS status = TEE_INTERNAL_ERROR;
+
+	if (NULL == handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	struct METEE_WIN_IMPL* impl_handle = to_int(handle);
+
+	FUNC_ENTRY(handle);
+
+	if (NULL == impl_handle || NULL == kindSize) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT(handle, "One of the parameters was illegal");
+		goto Cleanup;
+	}
+	status = GetDeviceKind(handle, kind, kindSize);
+	
+Cleanup:
+	FUNC_EXIT(handle, status);
+	return status;
 }
