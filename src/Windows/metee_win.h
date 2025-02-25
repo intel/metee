@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2024 Intel Corporation
+ * Copyright (C) 2014-2025 Intel Corporation
  */
 #ifndef __TEELIBWIN_H
 #define __TEELIBWIN_H
@@ -54,6 +54,7 @@ TEESTATUS EndOverlapped(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD milli
 			OUT OPTIONAL LPDWORD pNumberOfBytesTransferred);
 TEESTATUS GetDevicePath(IN PTEEHANDLE handle, IN LPCGUID InterfaceGuid,
 			OUT char *path, IN SIZE_T pathSize);
+TEESTATUS GetDeviceKind(IN PTEEHANDLE handle, IN OUT OPTIONAL char *kind, IN OUT size_t *kindSize);
 TEESTATUS SendIOCTL(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD ioControlCode, IN LPVOID pInBuffer,
 		    IN DWORD inBufferSize, IN LPVOID pOutBuffer, IN DWORD outBufferSize,
 		    OUT LPDWORD pBytesRetuned);

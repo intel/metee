@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2024 Intel Corporation
+ * Copyright (C) 2014-2025 Intel Corporation
  */
 #include <assert.h>
 #include <windows.h>
@@ -229,6 +229,131 @@ Cleanup:
 
 	FUNC_EXIT(handle, status);
 
+	return status;
+}
+
+DEFINE_DEVPROPKEY(DEVPKEY_TeedriverKindString,
+	0x3279649a, 0x75b8, 0x4663, 0xab, 0x4f, 0x9d, 0xec, 0x58, 0xc5, 0x58, 0xf5,
+	DEVPROP_TYPE_STRING);
+/*
+**	Get device kind implementation
+**
+**	Parameters:
+**     handle - metee handle
+**     kind - pointer to hold device kind, null terminated C string
+**     kindSize - size in bytes allocated to kind including null terminator
+**
+**	Return:
+**		TEE_SUCCESS
+**		TEE_INVALID_PARAMETER
+**		TEE_INTERNAL_ERROR
+*/
+TEESTATUS GetDeviceKind(IN PTEEHANDLE handle, IN OUT OPTIONAL char *kind, IN OUT size_t *kindSize)
+{
+	CONFIGRET cr;
+	DEVPROPTYPE prop_type = 0;
+	ULONG prop_size = 0;
+	DEVINST devInstHandle;
+	WCHAR instance_id[MAX_PATH] = { 0 };
+	WCHAR* device_path_w = NULL;
+	WCHAR* kind_w = NULL;
+	size_t converted_chars;
+	errno_t err;
+
+	TEESTATUS status = TEE_INTERNAL_ERROR;
+
+	if (NULL == handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	struct METEE_WIN_IMPL* impl_handle = to_int(handle);
+
+	FUNC_ENTRY(handle);
+
+	size_t device_path_len = strlen(impl_handle->device_path) + 1;
+	size_t device_path_size = device_path_len * sizeof(WCHAR);
+	device_path_w = (WCHAR*)malloc(device_path_size);
+	if (NULL == device_path_w) {
+		status = TEE_INTERNAL_ERROR;
+		ERRPRINT(handle, "Error allocating memory for device path.\n");
+		goto Cleanup;
+	}
+	converted_chars = 0;
+	mbstowcs_s(&converted_chars, device_path_w, device_path_len, impl_handle->device_path, _TRUNCATE);
+	if (converted_chars != device_path_len) {
+		status = TEE_INTERNAL_ERROR;
+		ERRPRINT(handle, "Error converting device path to wide.\n");
+		goto Cleanup;
+	}
+
+	prop_size = MAX_PATH;
+	cr = CM_Get_Device_Interface_PropertyW(device_path_w, &DEVPKEY_Device_InstanceId, &prop_type, (PBYTE)instance_id, &prop_size, 0);
+	if (cr != CR_SUCCESS) {
+		ERRPRINT(handle, "CM_Get_Device_Interface_Property: %d\n", cr);
+		status = TEE_INTERNAL_ERROR;
+		goto Cleanup;
+	}
+	if (DEVPROP_TYPE_STRING != prop_type)
+	{
+		ERRPRINT(handle, "Invalid property type %d\n", prop_type);
+		status = TEE_INTERNAL_ERROR;
+		goto Cleanup;
+	}
+
+	cr = CM_Locate_DevNodeW(&devInstHandle, &instance_id[0], CM_LOCATE_DEVNODE_NORMAL);
+	if (cr != CR_SUCCESS) {
+		ERRPRINT(handle, "CM_Locate_DevNode: %d\n", cr);
+		status = TEE_INTERNAL_ERROR;
+		goto Cleanup;
+	}
+
+	prop_size = 0;
+	cr = CM_Get_DevNode_PropertyW(devInstHandle, &DEVPKEY_TeedriverKindString, &prop_type, NULL, &prop_size, 0);
+	if (cr != CR_BUFFER_SMALL) {
+		ERRPRINT(handle, "CM_Get_DevNode_Property: %d %d\n", cr, prop_size);
+		status = TEE_INTERNAL_ERROR;
+		goto Cleanup;
+	}
+	kind_w = (WCHAR*)malloc(prop_size);
+	if (NULL == kind_w) {
+		status = TEE_INTERNAL_ERROR;
+		ERRPRINT(handle, "Error allocating memory for driver kind wide.\n");
+		goto Cleanup;
+	}
+	cr = CM_Get_DevNode_PropertyW(devInstHandle, &DEVPKEY_TeedriverKindString, &prop_type, (PBYTE)kind_w, &prop_size, 0);
+	if (cr != CR_SUCCESS) {
+		ERRPRINT(handle, "CM_Get_DevNode_Property: %d %d\n", cr, prop_size);
+		status = TEE_INTERNAL_ERROR;
+		goto Cleanup;
+	}
+	if (*kindSize < prop_size) {
+		ERRPRINT(handle, "Insufficient buffer %d %d\n", *kindSize, prop_size);
+		*kindSize = prop_size;
+		status = TEE_INSUFFICIENT_BUFFER;
+		goto Cleanup;
+	}
+	/* 
+	safe implementation of the conversion function
+	handles NULL input/output buffer values and output buffer overrun 
+	 */
+	err = wcstombs_s(&converted_chars, kind, *kindSize, kind_w, _TRUNCATE);
+	if (err != 0) {
+		ERRPRINT(handle, "convert to multi-byte error %d\n", err);
+		if (err == STRUNCATE || err == EINVAL) {
+			*kindSize = prop_size;
+			status = TEE_INSUFFICIENT_BUFFER;
+		} else {
+			status = TEE_INTERNAL_ERROR;
+		}
+		goto Cleanup;
+	}
+	*kindSize = converted_chars;
+	status = TEE_SUCCESS;
+
+Cleanup:
+	free(kind_w);
+	free(device_path_w);
+	FUNC_EXIT(handle, status);
 	return status;
 }
 
