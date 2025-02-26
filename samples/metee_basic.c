@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2024 Intel Corporation
+ * Copyright (C) 2024-2025 Intel Corporation
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,6 +66,8 @@ int main(int argc, char* argv[])
 	struct mkhi_fwver_req req;
 	uint8_t *read_buf = NULL;
 	struct mkhi_fwver_rsp* rsp;
+	char kind[32];
+	size_t kind_size = sizeof(kind);
 
 	status = TeeInitFull(&handle, &MEI_MKHIF, addr, TEE_LOG_LEVEL_VERBOSE, NULL);
 	if (!TEE_IS_SUCCESS(status)) {
@@ -73,6 +75,13 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+	status = TeeGetKind(&handle, kind, &kind_size);
+	if (!TEE_IS_SUCCESS(status)) {
+		fprintf(stderr, "TeeGetKind failed with status = %u\n", status);
+	} else {
+		printf("Tee device kind is %s\n", kind);
+	}
+	
 	while (retry--) {
 		status = TeeConnect(&handle);
 		if (status != TEE_BUSY &&
