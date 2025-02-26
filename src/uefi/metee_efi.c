@@ -712,3 +712,8 @@ uint8_t TEEAPI TeeGetProtocolVer(IN const PTEEHANDLE handle)
 	}
 	return handle->protcolVer;
 }
+
+TEESTATUS TEEAPI TeeGetKind(IN PTEEHANDLE handle, IN OUT char *kind, IN OUT size_t *kindSize)
+{
+	return TEE_NOTSUPPORTED;
+}
