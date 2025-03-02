@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2024 Intel Corporation
+ * Copyright (C) 2014-2025 Intel Corporation
  */
 #include <vector>
 #include <chrono>
@@ -465,6 +465,26 @@ TEST_P(MeTeeTEST, PROD_N_TestLongClientPath)
 	ASSERT_EQ(TEE_SUCCESS, status);
 
 	ASSERT_EQ(TEE_CLIENT_NOT_FOUND, ConnectRetry(&handle));
+}
+
+TEST_P(MeTeeTEST, PROD_N_TestGetMeiKind)
+{
+	TEEHANDLE handle = TEEHANDLE_ZERO;
+	struct MeTeeTESTParams intf = GetParam();
+	char kind[64];
+	size_t kind_size = sizeof(kind);
+	TEESTATUS status;
+
+	status = TestTeeInitGUID(&handle, &GUID_NON_EXISTS_CLIENT, intf.device);
+	ASSERT_EQ(TEE_SUCCESS, status);
+#ifdef WIN32
+	ASSERT_EQ(TEE_SUCCESS, TeeGetKind(&handle, kind, &kind_size));
+#else
+	ASSERT_EQ(TEE_NOTSUPPORTED, TeeGetKind(&handle, kind, &kind_size));
+#endif
+
+	TeeDisconnect(&handle);
+	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&handle));
 }
 
 TEST_P(MeTeeOpenTEST, PROD_N_TestGetDriverVersion)
