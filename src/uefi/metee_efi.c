@@ -714,7 +714,71 @@ uint8_t TEEAPI TeeGetProtocolVer(IN const PTEEHANDLE handle)
 	return handle->protcolVer;
 }
 
+typedef enum TEEDRIVER_PLATFORM_KIND_
+{
+	TEEDRIVER_PLATFORM_KIND_MEI = 0,
+	TEEDRIVER_PLATFORM_KIND_IOE = 1,
+	TEEDRIVER_PLATFORM_KIND_GSC = 2,
+	TEEDRIVER_PLATFORM_KIND_MAX = 3,
+} TEEDRIVER_PLATFORM_KIND;
+
+#define HECI1_IOE_SKU_BIT_START 0
+#define HECI1_IOE_SKU_BIT_NUMS 4
+#define HECI1_IOE_SKU_BIT_MASK (((1 << HECI1_IOE_SKU_BIT_NUMS) - 1) << HECI1_IOE_SKU_BIT_START)
+#define HECI1_IOE_SKU 0x1
+#define HECI1_FW_STS3 2
+
 TEESTATUS TEEAPI TeeGetKind(IN PTEEHANDLE handle, IN OUT char *kind, IN OUT size_t *kindSize)
 {
-	return TEE_NOTSUPPORTED;
+	UINT8* propertyMap[TEEDRIVER_PLATFORM_KIND_MAX] = {
+		"mei",
+		"ioe",
+		"gscfi",
+	};
+
+	TEESTATUS status;
+	EFI_STATUS efi_status;
+	UINT32 fw_sts3;
+	UINT32 kind_ind = 0;
+	UINTN kind_len;
+	if (NULL == handle)
+	{
+		return TEE_INVALID_PARAMETER;
+	}
+	FUNC_ENTRY(handle);
+	struct METEE_EFI_IMPL *impl_handle = to_int(handle);
+	
+	if (NULL == impl_handle || NULL == kindSize) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT(handle, "One of the parameters was illegal");
+		goto End;
+	}
+
+	if (impl_handle->HwType == HECI_HW_TYPE_PCH) {
+		efi_status = HeciFwStatus(impl_handle, HECI1_FW_STS3, &fw_sts3);
+		if (EFI_ERROR(efi_status))
+		{
+			ERRPRINT(handle, "Failed to retrieve FW Status %d\n", efi_status);
+			status = TEE_INTERNAL_ERROR;
+			goto End;
+		}
+		kind_ind = ((fw_sts3 & HECI1_IOE_SKU_BIT_MASK) == HECI1_IOE_SKU) ? TEEDRIVER_PLATFORM_KIND_IOE : TEEDRIVER_PLATFORM_KIND_MEI;
+	} else {
+		kind_ind = TEEDRIVER_PLATFORM_KIND_GSC;
+	}
+	
+	kind_len = AsciiStrLen(propertyMap[kind_ind]) + 1;
+	if (kind_len > *kindSize || NULL == kind) {
+		DBGPRINT(handle, "Insufficient buffer %d %d\n", *kindSize, kind_len);
+		*kindSize = kind_len;
+		status = TEE_INSUFFICIENT_BUFFER;
+		goto End;
+	}
+	CopyMem(kind, propertyMap[kind_ind], kind_len);
+	*kindSize = kind_len;
+	status = TEE_SUCCESS;
+
+End:
+	FUNC_EXIT(handle, status);
+	return status;
 }
