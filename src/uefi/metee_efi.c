@@ -99,20 +99,20 @@ SetHwInfo(
 {
 	TEESTATUS status = TEE_INVALID_PARAMETER;
 	FUNC_ENTRY(Handle->TeeHandle);
-	switch (device->data.bdf.kind)
+	switch (device->data.bdf.hw_type)
 	{
-	case HECI_DEVICE_KIND_PCH:
+	case HECI_HW_TYPE_PCH:
 		Handle->Hw = HwInfoPch(device->data.bdf.value.segment, device->data.bdf.value.bus,
 							   device->data.bdf.value.device, device->data.bdf.value.function);
-		DBGPRINT(Handle->TeeHandle, "******** HECI_DEVICE_KIND_PCH\n");
+		DBGPRINT(Handle->TeeHandle, "******** HECI_HW_TYPE_PCH\n");
 		break;
-	case HECI_DEVICE_KIND_GFX_GSC:
+	case HECI_HW_TYPE_GFX_GSC:
 		Handle->Hw = HwInfoGfxGsc(device->data.bdf.value.segment, device->data.bdf.value.bus,
 								  device->data.bdf.value.device, device->data.bdf.value.function);
-		DBGPRINT(Handle->TeeHandle, "******** HECI_DEVICE_KIND_GFX_GSC\n");
+		DBGPRINT(Handle->TeeHandle, "******** HECI_HW_TYPE_GFX_GSC\n");
 		break;
 	default:
-		DBGPRINT(Handle->TeeHandle, "******** Unsupported device kind %d\n", device->data.bdf.kind);
+		DBGPRINT(Handle->TeeHandle, "******** Unsupported device kind %d\n", device->data.bdf.hw_type);
 		status = TEE_INVALID_PARAMETER;
 		goto End;
 	}
@@ -152,6 +152,7 @@ TeeInitFullTypeEfiDevice(
 	efi_impl->TeeHandle = handle;
 	efi_impl->ClientGuid = *guid;
 	efi_impl->State = METEE_CLIENT_STATE_NONE;
+	efi_impl->HwType = device->data.bdf.hw_type;
 	SetHwInfo(device, efi_impl);
 
 	*impl_handle = efi_impl;
@@ -222,7 +223,7 @@ TeeInitFull(
 		struct tee_device_address default_device = device;
 		// CSME HECI by default
 #define PCI_DEVICE_NUMBER_PCH_HECI1 22
-		default_device.data.bdf.kind = HECI_DEVICE_KIND_PCH;
+		default_device.data.bdf.hw_type = HECI_HW_TYPE_PCH;
 		default_device.data.bdf.value.segment = 0;
 		default_device.data.bdf.value.bus = 0;
 		default_device.data.bdf.value.device = PCI_DEVICE_NUMBER_PCH_HECI1;
