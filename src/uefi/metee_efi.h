@@ -188,6 +188,7 @@ struct METEE_EFI_IMPL
     enum METEE_CLIENT_STATE State;               /** The client state */
     HECI_CLIENT_CONNECTION HeciClientConnection; /** HECI EFI Connection information */
     struct HECI_HW Hw;                           /** HECI HW information */ 
+    enum HECI_HW_TYPE HwType;                    /** HECI HW type */
 };
 
 #define HECI_EFI_PRINT_BDF_STR "[HECI %d:%d:%d:%d] "

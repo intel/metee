@@ -138,12 +138,12 @@ struct tee_device_address {
 				uint32_t device;                      /** HECI device Device */
 				uint32_t function;                    /** HECI device Function */
 			} value;
-			/*! Specify HW layout: HECI, FWSTS registers locations  */			
-			enum  { 
-				HECI_DEVICE_KIND_PCH, 
-				HECI_DEVICE_KIND_GFX_GSC, 
-				HECI_DEVICE_KIND_GFX_CSC, 
-			} kind;									/** HECI device kind */
+			/*! Specifies HW layout: HECI, FWSTS registers locations  */
+			enum HECI_HW_TYPE {
+				HECI_HW_TYPE_PCH,
+				HECI_HW_TYPE_GFX_GSC,
+				HECI_HW_TYPE_GFX_CSC,
+			} hw_type;				   /** HECI device HW type */
 		} bdf;
 	} data;
 };
