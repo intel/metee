@@ -33,7 +33,7 @@
     },
     {
       "name": "Debug32AllStatic",
-      "displayName": "Windows x86 Debug All",
+      "displayName": "Windows x86 Debug Static All",
       "description": "Build x86 Debug, VS2019, including test and samples",
       "inherits": "base32",
       "binaryDir": "${sourceDir}/Debug",
@@ -46,7 +46,7 @@
     },
     {
       "name": "Release32AllStatic",
-      "displayName": "Windows x86 Release All",
+      "displayName": "Windows x86 Release Static All",
       "description": "Build x86 Release, VS2019, including test and samples",
       "inherits": "base32",
       "binaryDir": "${sourceDir}/Release",
@@ -59,7 +59,7 @@
     },
     {
       "name": "Release32Static",
-      "displayName": "Windows x86 Release",
+      "displayName": "Windows x86 Release Static",
       "description": "Build x86 Release, VS2019",
       "inherits": "base32",
       "binaryDir": "${sourceDir}/Release",
@@ -86,6 +86,17 @@
       "binaryDir": "${sourceDir}/Release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "Release64Static",
+      "displayName": "Windows x86-64 Release Static",
+      "description": "Build x86-64 Release, VS2019",
+      "inherits": "base64",
+      "binaryDir": "${sourceDir}/Release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_SHARED_LIBS": "NO"
       }
     },
     {
@@ -125,6 +136,11 @@
     {
       "name": "Release64",
       "configurePreset": "Release64",
+      "configuration": "Release"
+    },
+    {
+      "name": "Release64Static",
+      "configurePreset": "Release64Static",
       "configuration": "Release"
     },
     {
