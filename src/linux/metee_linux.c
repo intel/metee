@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2024 Intel Corporation
+ * Copyright (C) 2014-2025 Intel Corporation
  */
 #include <errno.h>
 #include <fcntl.h>
@@ -73,6 +73,7 @@ static inline TEESTATUS errno2status(ssize_t err)
 		case -EACCES: return TEE_PERMISSION_DENIED;
 		case -EOPNOTSUPP: return TEE_NOTSUPPORTED;
 		case -ECANCELED: return TEE_UNABLE_TO_COMPLETE_OPERATION;
+		case -ENOSPC: return TEE_INSUFFICIENT_BUFFER;
 		default     : return TEE_INTERNAL_ERROR;
 	}
 }
@@ -598,5 +599,36 @@ uint8_t TEEAPI TeeGetProtocolVer(IN const PTEEHANDLE handle)
 
 TEESTATUS TEEAPI TeeGetKind(IN PTEEHANDLE handle, IN OUT char *kind, IN OUT size_t *kindSize)
 {
-	return TEE_NOTSUPPORTED;
+	struct mei* me = to_mei(handle);
+	TEESTATUS status;
+	int rc;
+
+	if (!handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	FUNC_ENTRY(handle);
+	
+	if (!me || !kindSize) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT(handle, "One of the parameters was illegal\n");
+		goto End;
+	}
+
+	rc = mei_getkind(me, kind, kindSize);
+	if (rc < 0) {
+		status = errno2status(rc);
+		if (status == TEE_INSUFFICIENT_BUFFER) {
+			DBGPRINT(handle, "Insufficient buffer %zu\n", *kindSize);
+		} else {
+			ERRPRINT(handle, "kind get failed with status %d %s\n", rc, strerror(-rc));
+		}
+		goto End;
+	}
+
+	status = TEE_SUCCESS;
+
+End:
+	FUNC_EXIT(handle, status);
+	return status;
 }
