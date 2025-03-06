@@ -477,11 +477,8 @@ TEST_P(MeTeeTEST, PROD_N_TestGetMeiKind)
 
 	status = TestTeeInitGUID(&handle, &GUID_NON_EXISTS_CLIENT, intf.device);
 	ASSERT_EQ(TEE_SUCCESS, status);
-#ifdef WIN32
+
 	ASSERT_EQ(TEE_SUCCESS, TeeGetKind(&handle, kind, &kind_size));
-#else
-	ASSERT_EQ(TEE_NOTSUPPORTED, TeeGetKind(&handle, kind, &kind_size));
-#endif
 
 	TeeDisconnect(&handle);
 	EXPECT_EQ(TEE_INVALID_DEVICE_HANDLE, TeeGetDeviceHandle(&handle));
