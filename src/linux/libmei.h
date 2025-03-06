@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright(c) 2013 - 2024 Intel Corporation. All rights reserved.
+ * Copyright(c) 2013 - 2025 Intel Corporation. All rights reserved.
  *
  * Intel Management Engine Interface (Intel MEI) Library
  */
@@ -255,6 +255,16 @@ int mei_fwstatus(struct mei *me, uint32_t fwsts_num, uint32_t *fwsts);
  *  \return 0 if successful, otherwise error code
  */
 int mei_gettrc(struct mei *me, uint32_t *trc_val);
+
+/*! Obtains device kind
+ *
+ *  \param me The mei handle
+ *  \param kind buffer to fill with device kind null terminated string, may be NULL.
+ *  \param kind_size Pointer to kind buffer size in bytes, updated to number of bytes filled in buffer, including null character, on out.
+ *          If buffer is NULL, required size is returned anyway.
+ *  \return 0 if successful, otherwise error code
+ */
+int mei_getkind(struct mei *me, char *kind, size_t *kind_size);
 
 /*! Set log level
  *
