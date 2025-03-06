@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright(c) 2013 - 2024 Intel Corporation. All rights reserved.
+ * Copyright(c) 2013 - 2025 Intel Corporation. All rights reserved.
  *
  * Intel Management Engine Interface (Intel MEI) Library
  */
@@ -335,6 +335,50 @@ static inline int __mei_gettrc(struct mei *me, const char *device, uint32_t *trc
 #undef TRC_FILENAME_LEN
 #undef TRC_LEN
 #undef CONV_BASE
+}
+
+static inline int __mei_getkind(struct mei *me, const char *device, char *kind, size_t *kind_size)
+{
+#define KIND_FILENAME_LEN 34
+#define KIND_LEN 16
+	char path[KIND_FILENAME_LEN];
+	char buf[KIND_LEN] = { 0 };
+	int fd;
+	ssize_t len;
+
+	if (snprintf(path, KIND_FILENAME_LEN,
+		     "/sys/class/mei/%s/kind", device) < 0)
+		return -EINVAL;
+	path[KIND_FILENAME_LEN - 1] = '\0';
+
+	errno = 0;
+	fd = open(path, O_CLOEXEC, O_RDONLY);
+	if (fd == -1) {
+		me->last_err = errno;
+		return -me->last_err;
+	}
+
+	errno = 0;
+	len = pread(fd, buf, KIND_LEN, 0);
+	if (len == -1) {
+		me->last_err = errno;
+		close(fd);
+		return -me->last_err;
+	}
+
+	close(fd);
+	if ((size_t)len > *kind_size || !kind) {
+		me->last_err = ENOSPC;
+		mei_err(me, "Insufficient buffer %zu %zd\n", *kind_size, len);
+		*kind_size = (size_t)len;
+		return -me->last_err;
+	}
+	*kind_size = (size_t)len;
+	memcpy(kind, buf, (size_t)len);
+
+	return 0;
+#undef KIND_FILENAME_LEN
+#undef KIND_LEN
 }
 
 int mei_init_with_log(struct mei *me, const char *device, const uuid_le *guid,
@@ -729,6 +773,35 @@ int mei_gettrc(struct mei *me, uint32_t *trc_val)
 	rc = __mei_gettrc(me, device, trc_val);
 	if (rc < 0) {
 		mei_err(me, "Cannot get TRC value [%d]:%s\n",
+			rc, strerror(-rc));
+		return rc;
+	}
+
+	return 0;
+}
+
+int mei_getkind(struct mei *me, char *kind, size_t *kind_size)
+{
+	char *device;
+	int rc;
+
+	if (!me || !kind_size)
+		return -EINVAL;
+
+	if (me->device) {
+		device = strstr(me->device, MEI_DEFAULT_DEVICE_PREFIX);
+		if (!device) {
+			mei_err(me, "Device does not start with '%s'\n",
+				MEI_DEFAULT_DEVICE_PREFIX);
+			return -EINVAL;
+		}
+		device += strlen(MEI_DEFAULT_DEVICE_PREFIX);
+	} else {
+		device = MEI_DEFAULT_DEVICE_NAME;
+	}
+	rc = __mei_getkind(me, device, kind, kind_size);
+	if (rc < 0) {
+		mei_err(me, "Cannot get kind value [%d]:%s\n",
 			rc, strerror(-rc));
 		return rc;
 	}
