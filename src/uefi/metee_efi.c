@@ -182,6 +182,7 @@ TeeInitFull(
 	IN OPTIONAL TeeLogCallback log_callback)
 {
 	TEESTATUS status = TEE_INTERNAL_ERROR;
+	struct tee_device_address default_device = device;
 
 	if (NULL == guid)
 	{
@@ -220,7 +221,7 @@ TeeInitFull(
 			status = TEE_INVALID_PARAMETER;
 			goto Cleanup;
 		}
-		struct tee_device_address default_device = device;
+
 		// CSME HECI by default
 #define PCI_DEVICE_NUMBER_PCH_HECI1 22
 		default_device.data.bdf.hw_type = HECI_HW_TYPE_PCH;
