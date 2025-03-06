@@ -194,6 +194,6 @@ struct METEE_EFI_IMPL
 #define HECI_EFI_PRINT_BDF_STR "[HECI %d:%d:%d:%d] "
 #define HECI_EFI_PRINT_BDF_VAL Handle->Hw.Bdf.Segment, Handle->Hw.Bdf.Bus, Handle->Hw.Bdf.Device, Handle->Hw.Bdf.Function
 
-#define EFIPRINT(Handle, fmt, ...) DBGPRINT(Handle, HECI_EFI_PRINT_BDF_STR fmt, HECI_EFI_PRINT_BDF_VAL, __VA_ARGS__); 
+#define EFIPRINT(Handle, fmt, ...) DBGPRINT(Handle, HECI_EFI_PRINT_BDF_STR fmt, HECI_EFI_PRINT_BDF_VAL, ##__VA_ARGS__);
 
 #endif // METEE_EFI_H_
