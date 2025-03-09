@@ -309,6 +309,11 @@ TEESTATUS GetDeviceKind(IN PTEEHANDLE handle, IN OUT OPTIONAL char *kind, IN OUT
 
 	prop_size = 0;
 	cr = CM_Get_DevNode_PropertyW(devInstHandle, &DEVPKEY_TeedriverKindString, &prop_type, NULL, &prop_size, 0);
+	if (cr == CR_NO_SUCH_VALUE) {
+		DBGPRINT(handle, "CM_Get_DevNode_Property: kind not found\n");
+		status = TEE_NOTSUPPORTED;
+		goto Cleanup;
+	}
 	if (cr != CR_BUFFER_SMALL) {
 		ERRPRINT(handle, "CM_Get_DevNode_Property: %d %d\n", cr, prop_size);
 		status = TEE_INTERNAL_ERROR;
