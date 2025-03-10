@@ -99,7 +99,7 @@ GetFilledSlots(
 
 #define DelayExecutionFlow gBS->Stall
 
-#define TIMER_STEP 20000
+#define TIMER_STEP 1000
 
 /**
   Checks if FW is ready for communication over the HECI interface.
