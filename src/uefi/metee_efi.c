@@ -731,7 +731,7 @@ typedef enum TEEDRIVER_PLATFORM_KIND_
 
 TEESTATUS TEEAPI TeeGetKind(IN PTEEHANDLE handle, IN OUT char *kind, IN OUT size_t *kindSize)
 {
-	UINT8* propertyMap[TEEDRIVER_PLATFORM_KIND_MAX] = {
+	CHAR8* propertyMap[TEEDRIVER_PLATFORM_KIND_MAX] = {
 		"mei",
 		"ioe",
 		"gscfi",
