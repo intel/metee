@@ -1,3 +1,25 @@
+## [5.0.0]
+
+**Note:** Backward incompatible API change:
+ The HECI_DEVICE_KIND_* enums and kind field in struct tee_device_address 
+ are renamed to HECI_HW_TYPE_* and hw_type field to avoid clash with
+ device kind  value provided by OS drivers.
+
+### Changed
+ - EFI: Decrease HW register polling timeout
+ - EFI: Refactor HECI_DEVICE_KIND
+ - Linux: pull libmei 1.6.4
+
+### Fixed
+ - EFI: Change propertyMap array type to CHAR8*
+ - EFI: Fixing compilation errors with GCC
+ - account for old Windows driver
+
+### Added
+ - CMake: Windows: add release 64 static preset
+ - Add cpp wrapper
+ - TeeGetKind API
+
 ## [4.3.1]
 
 ### Fixed
