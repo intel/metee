@@ -29,3 +29,7 @@ install(TARGETS metee-trc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 add_executable(metee-basic metee_basic.c)
 target_link_libraries(metee-basic metee)
 install(TARGETS metee-basic RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+if(BUILD_SHARED_LIBS AND WIN32)
+  add_subdirectory(csharp)
+endif(BUILD_SHARED_LIBS AND WIN32)
