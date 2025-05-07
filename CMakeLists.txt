@@ -116,6 +116,7 @@ endif(UNIX)
 
 include(CPack)
 
+add_subdirectory(bindings)
 if(BUILD_TEST)
   add_subdirectory(tests)
 endif(BUILD_TEST)
