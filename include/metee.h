@@ -94,6 +94,8 @@ enum tee_log_level {
  */
 typedef void(*TeeLogCallback)(bool is_error, const char* fmt, ...);
 
+#pragma pack(1)
+
 /*!
  * Structure to store connection data
  */
@@ -147,6 +149,8 @@ struct tee_device_address {
 		} bdf;
 	} data;
 };
+
+#pragma pack()
 
 /** ZERO/NULL device handle */
 #define TEEHANDLE_ZERO {0}
