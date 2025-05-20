@@ -65,6 +65,13 @@ namespace Intel.Security
 
         private LocalAllocHandle _safeHandle = LocalAllocHandle.Allocate(Marshal.SizeOf<TeeHandle>());
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void LogCallback(
+            [MarshalAs(UnmanagedType.I1)]
+            bool isError,
+            [In][MarshalAs(UnmanagedType.LPStr)] string msg
+            );
+
         #region DllImport
 
         private enum TeeDeviceType
@@ -113,13 +120,14 @@ namespace Intel.Security
             private readonly IntPtr Field3;
             private readonly IntPtr Field4;
             private readonly IntPtr Field5;
+            private readonly IntPtr Field6;
         }
 
         [DllImport("metee.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern int TeeInit(IntPtr handle, ref Guid guid, IntPtr device);
 
         [DllImport("metee.dll", CallingConvention = CallingConvention.Cdecl)]
-        private static extern int TeeInitFull(IntPtr handle, ref Guid guid, TeeDeviceAddress deviceAddress, [MarshalAs(UnmanagedType.U4)] TeeLogLevel logLevel, IntPtr logCallback);
+        private static extern int TeeInitFull2(IntPtr handle, ref Guid guid, TeeDeviceAddress deviceAddress, [MarshalAs(UnmanagedType.U4)] TeeLogLevel logLevel, LogCallback logCallback);
 
         [DllImport("metee.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern int TeeConnect(IntPtr handle);
@@ -197,11 +205,11 @@ namespace Intel.Security
          * @param logLevel - log level to set
          * @param logCallback - callback to be called on each log message
          */
-        public Metee(Guid clientGuid, TeeLogLevel logLevel = TeeLogLevel.Quiet, IntPtr logCallback = default)
+        public Metee(Guid clientGuid, TeeLogLevel logLevel = TeeLogLevel.Quiet, LogCallback logCallback = default)
         {
             var device = new TeeDeviceAddress { DeviceType = TeeDeviceType.None, DataPtr = IntPtr.Zero };
 
-            int status = TeeInitFull(_safeHandle.DangerousGetHandle(), ref clientGuid, device, logLevel, logCallback);
+            int status = TeeInitFull2(_safeHandle.DangerousGetHandle(), ref clientGuid, device, logLevel, logCallback);
             if (status != 0)
             {
                 throw new MeteeException("Init failed", status);
@@ -219,12 +227,12 @@ namespace Intel.Security
          * @param logLevel - log level to set
          * @param logCallback - callback to be called on each log message
          */
-        public Metee(Guid clientGuid, string devicePath, TeeLogLevel logLevel = TeeLogLevel.Quiet, IntPtr logCallback = default)
+        public Metee(Guid clientGuid, string devicePath, TeeLogLevel logLevel = TeeLogLevel.Quiet, LogCallback logCallback = default)
         {
             int status = 1;
             using (var device = new TeeDeviceAddress(devicePath))
             {
-                status = TeeInitFull(_safeHandle.DangerousGetHandle(), ref clientGuid, device, logLevel, logCallback);
+                status = TeeInitFull2(_safeHandle.DangerousGetHandle(), ref clientGuid, device, logLevel, logCallback);
             }
             if (status != 0)
             {
@@ -243,12 +251,12 @@ namespace Intel.Security
          * @param logLevel - log level to set
          * @param logCallback - callback to be called on each log message
          */
-        public Metee(Guid clientGuid, Guid interfaceGuid, TeeLogLevel logLevel = TeeLogLevel.Quiet, IntPtr logCallback = default)
+        public Metee(Guid clientGuid, Guid interfaceGuid, TeeLogLevel logLevel = TeeLogLevel.Quiet, LogCallback logCallback = default)
         {
             int status = 1;
             using (var device = new TeeDeviceAddress(interfaceGuid))
             {
-                status = TeeInitFull(_safeHandle.DangerousGetHandle(), ref clientGuid, device, logLevel,
+                status = TeeInitFull2(_safeHandle.DangerousGetHandle(), ref clientGuid, device, logLevel,
                     logCallback);
             }
             if (status != 0)

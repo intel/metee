@@ -95,7 +95,8 @@ namespace metee_csharp_sample
             {
                 var teeDriverInterface = new Guid(0xE2D1FF34, 0x3458, 0x49A9,
                     0x88, 0xDA, 0x8E, 0x69, 0x15, 0xCE, 0x9B, 0xE5);
-                using (var metee = new Metee(mkhiClient, teeDriverInterface))
+                using (var metee = new Metee(mkhiClient, teeDriverInterface, Metee.TeeLogLevel.Verbose, 
+                           delegate(bool error, string msg) { Console.Write($"{error} ==> [{msg}]"); }))
                 {
                     var res = BasicMeTeeFlow(metee);
                     PrintFwVersion(res);
