@@ -32,6 +32,16 @@ void DebugPrintMe(const char* args, ...)
 #endif /* SYSLOG */
 }
 
+void CallbackPrintHelper(IN PTEEHANDLE handle, bool is_error, const char* args, ...)
+{
+	char msg[DEBUG_MSG_LEN + 1];
+	va_list varl;
+	va_start(varl, args);
+	vsprintf_s(msg, DEBUG_MSG_LEN, args, varl);
+	va_end(varl);
+	handle->log_callback2(is_error, msg); 
+}
+
 /*
 **	Start Overlapped Operation
 **
