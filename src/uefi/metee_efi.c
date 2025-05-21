@@ -92,6 +92,16 @@ HwInfoGfxGsc(
 	return hw_info;
 }
 
+void CallbackPrintHelper(IN PTEEHANDLE handle, bool is_error, const char* args, ...)
+{
+	char msg[DEBUG_MSG_LEN + 1];
+	VA_LIST varl;
+	VA_START(varl, args);
+	AsciiVSPrint(msg, DEBUG_MSG_LEN, args, varl);
+	VA_END(varl);
+	handle->log_callback2(is_error, msg);
+}
+
 static TEESTATUS
 SetHwInfo(
 	IN const struct tee_device_address *device,
@@ -169,17 +179,18 @@ Cleanup:
  *  \param guid GUID of the FW client that want to start a session
  *  \param device device address structure
  *  \param log_level log level to set (from enum tee_log_level)
- *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
+ *  \param log_callback pointer to function to run for log write, set NULL to use built-in function (deprecated)
+ *  \param log_callback2 pointer to function to run for log write, set NULL to use built-in function
  *  \return 0 if successful, otherwise error code
  */
-TEESTATUS
-TEEAPI
-TeeInitFull(
+static TEESTATUS TeeInitFullInt(
 	IN OUT PTEEHANDLE handle,
 	IN const GUID *guid,
 	IN const struct tee_device_address device,
 	IN uint32_t log_level,
-	IN OPTIONAL TeeLogCallback log_callback)
+	IN TeeLogCallback log_callback,
+	IN TeeLogCallback2 log_callback2
+	)
 {
 	TEESTATUS status = TEE_INTERNAL_ERROR;
 	struct tee_device_address default_device = device;
@@ -197,6 +208,7 @@ TeeInitFull(
 	__tee_init_handle(handle);
 	handle->log_level = (log_level >= TEE_LOG_LEVEL_MAX) ? TEE_LOG_LEVEL_VERBOSE : log_level;
 	handle->log_callback = log_callback;
+	handle->log_callback2 = log_callback2;
 
 	FUNC_ENTRY(handle);
 
@@ -261,6 +273,20 @@ Cleanup:
 
 	FUNC_EXIT(handle, status);
 	return status;
+}
+
+TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+	IN const struct tee_device_address device,
+	IN uint32_t log_level, IN OPTIONAL TeeLogCallback log_callback)
+{
+	return TeeInitFullInt(handle, guid, device, log_level, log_callback, NULL);
+}
+
+TEESTATUS TEEAPI TeeInitFull2(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+	IN const struct tee_device_address device,
+	IN uint32_t log_level, IN OPTIONAL TeeLogCallback2 log_callback)
+{
+	return TeeInitFullInt(handle, guid, device, log_level, NULL, log_callback);
 }
 
 /*! Initializes a TEE connection
@@ -665,7 +691,7 @@ uint32_t TEEAPI TeeGetLogLevel(IN const PTEEHANDLE handle)
 }
 
 /*! Set log callback
- *
+ * @deprecated Since version 6.0
  *  \param handle The handle of the session.
  *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
  *  \return 0 if successful, otherwise error code.
@@ -688,8 +714,51 @@ TEESTATUS TEEAPI TeeSetLogCallback(IN const PTEEHANDLE handle, TeeLogCallback lo
 		ERRPRINT(handle, "One of the parameters was illegal");
 		goto Cleanup;
 	}
+	if (handle->log_callback2) {
+		ERRPRINT(handle, "Standard callback already in use\n");
+		status = TEE_INVALID_PARAMETER;
+		goto Cleanup;
+	}
 
 	handle->log_callback = log_callback;
+	status = TEE_SUCCESS;
+
+Cleanup:
+	FUNC_EXIT(handle, status);
+	return status;
+}
+
+/*! Set log callback
+ *
+ *  \param handle The handle of the session.
+ *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
+ *  \return 0 if successful, otherwise error code.
+ */
+TEESTATUS TEEAPI TeeSetLogCallback2(IN const PTEEHANDLE handle, TeeLogCallback2 log_callback)
+{
+	struct METEE_EFI_IMPL *impl_handle = to_int(handle);
+	TEESTATUS status;
+
+	if (NULL == handle)
+	{
+		return TEE_INVALID_PARAMETER;
+	}
+
+	FUNC_ENTRY(handle);
+
+	if (NULL == impl_handle)
+	{
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT(handle, "One of the parameters was illegal");
+		goto Cleanup;
+	}
+	if (handle->log_callback) {
+		ERRPRINT(handle, "Legacy callback already in use\n");
+		status = TEE_INVALID_PARAMETER;
+		goto Cleanup;
+	}
+	
+	handle->log_callback2 = log_callback;
 	status = TEE_SUCCESS;
 
 Cleanup:
