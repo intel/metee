@@ -57,8 +57,13 @@ enum mei_log_level {
 };
 
 /*! log callback function format
+ *  @deprecated Since version 1.7.0
  */
 typedef void(*mei_log_callback)(bool is_error, const char* fmt, ...);
+
+/*! log callback function format
+ */
+typedef void(*mei_log_callback2)(bool is_error, const char* msg);
 
 /*! Structure to store connection data
  */
@@ -74,7 +79,8 @@ struct mei {
 	bool close_on_exit;     /**< close handle on deinit */
 	char *device;           /**< device name */
 	uint8_t vtag;           /**< vtag used in communication */
-	mei_log_callback log_callback; /**< Log callback */
+	mei_log_callback log_callback; /**< Deprecated Log callback */
+	mei_log_callback2 log_callback2; /**< Log callback */
 };
 
 /*! Default name of mei device
@@ -131,6 +137,7 @@ int mei_init(struct mei *me, const char *device, const uuid_le *guid,
 
 /*! Initializes a mei connection with log callback
  *
+ *  @deprecated Since version 1.7.0
  *  \param me A handle to the mei device. All subsequent calls to the lib's functions
  *         must be with this handle
  *  \param device device path, set MEI_DEFAULT_DEVICE to use default
@@ -143,6 +150,21 @@ int mei_init(struct mei *me, const char *device, const uuid_le *guid,
 int mei_init_with_log(struct mei *me, const char *device, const uuid_le *guid,
 		unsigned char req_protocol_version, bool verbose,
 		mei_log_callback log_callback);
+
+/*! Initializes a mei connection with log callback
+ *
+ *  \param me A handle to the mei device. All subsequent calls to the lib's functions
+ *         must be with this handle
+ *  \param device device path, set MEI_DEFAULT_DEVICE to use default
+ *  \param guid GUID of associated mei client
+ *  \param req_protocol_version minimal required protocol version, 0 for any
+ *  \param verbose print verbose output to a console
+ *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
+ *  \return 0 if successful, otherwise error code
+ */
+int mei_init_with_log2(struct mei *me, const char *device, const uuid_le *guid,
+		unsigned char req_protocol_version, bool verbose,
+		mei_log_callback2 log_callback);
 
 /*! Initializes a mei connection
  *
@@ -283,11 +305,20 @@ uint32_t mei_get_log_level(const struct mei *me);
 
 /*! Set log callback
  *
+ *  @deprecated Since version 1.7.0
  *  \param me The mei handle
  *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
  *  \return 0 if successful, otherwise error code.
  */
 int mei_set_log_callback(struct mei *me, mei_log_callback log_callback);
+
+/*! Set log callback
+ *
+ *  \param me The mei handle
+ *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
+ *  \return 0 if successful, otherwise error code.
+ */
+int mei_set_log_callback2(struct mei *me, mei_log_callback2 log_callback);
 
 #ifdef __cplusplus
 }
