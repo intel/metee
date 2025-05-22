@@ -15,6 +15,7 @@
 #include <sys/ioctl.h>
 #include <poll.h>
 #include <unistd.h>
+#include <stdarg.h>
 
 #include "metee.h"
 #include "helpers.h"
@@ -92,9 +93,20 @@ static inline TEESTATUS errno2status_init(ssize_t err)
 	}
 }
 
-TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+void CallbackPrintHelper(IN PTEEHANDLE handle, bool is_error, const char* args, ...)
+{
+	char msg[DEBUG_MSG_LEN + 1];
+	va_list varl;
+	va_start(varl, args);
+	vsnprintf(msg, DEBUG_MSG_LEN, args, varl);
+	va_end(varl);
+	handle->log_callback2(is_error, msg);
+}
+
+static TEESTATUS TeeInitFullInt(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 			     IN const struct tee_device_address device,
-			     IN uint32_t log_level, IN OPTIONAL TeeLogCallback log_callback)
+			     IN uint32_t log_level, IN TeeLogCallback log_callback,
+				 IN TeeLogCallback2 log_callback2)
 {
 	struct metee_linux_intl *intl;
 	TEESTATUS  status;
@@ -108,6 +120,7 @@ TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 	__tee_init_handle(handle);
 	handle->log_level = (log_level >= TEE_LOG_LEVEL_MAX) ? TEE_LOG_LEVEL_VERBOSE : log_level;
 	handle->log_callback = log_callback;
+	handle->log_callback2 = log_callback2;
 
 	FUNC_ENTRY(handle);
 
@@ -154,17 +167,29 @@ TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 
 	switch (device.type) {
 	case TEE_DEVICE_TYPE_NONE:
-		rc = mei_init_with_log(&intl->me, MEI_DEFAULT_DEVICE,
-			(uuid_le*)guid, 0, verbose, log_callback);
+		if (log_callback)
+			rc = mei_init_with_log(&intl->me, MEI_DEFAULT_DEVICE,
+				(uuid_le*)guid, 0, verbose, log_callback);
+		else
+			rc = mei_init_with_log2(&intl->me, MEI_DEFAULT_DEVICE,
+				(uuid_le*)guid, 0, verbose, log_callback2);
 		break;
 	case TEE_DEVICE_TYPE_PATH:
-		rc = mei_init_with_log(&intl->me, device.data.path,
-			(uuid_le*)guid, 0, verbose, log_callback);
+		if (log_callback)
+			rc = mei_init_with_log(&intl->me, device.data.path,
+				(uuid_le*)guid, 0, verbose, log_callback);
+		else
+			rc = mei_init_with_log2(&intl->me, device.data.path,
+				(uuid_le*)guid, 0, verbose, log_callback2);
+
 		break;
 	case TEE_DEVICE_TYPE_HANDLE:
 		rc = mei_init_fd(&intl->me, device.data.handle, (uuid_le*)guid, 0, verbose);
 		if (!rc) {
-			mei_set_log_callback(&intl->me, log_callback);
+			if (log_callback)
+				mei_set_log_callback(&intl->me, log_callback);
+			else
+				mei_set_log_callback2(&intl->me, log_callback2);
 			mei_set_log_level(&intl->me, verbose);
 		}
 		break;
@@ -192,6 +217,20 @@ TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 
 End:
 	return status;
+}
+
+TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+	IN const struct tee_device_address device,
+	IN uint32_t log_level, IN OPTIONAL TeeLogCallback log_callback)
+{
+	return TeeInitFullInt(handle, guid, device, log_level, log_callback, NULL);
+}
+
+TEESTATUS TEEAPI TeeInitFull2(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+	IN const struct tee_device_address device,
+	IN uint32_t log_level, IN OPTIONAL TeeLogCallback2 log_callback)
+{
+	return TeeInitFullInt(handle, guid, device, log_level, NULL, log_callback);
 }
 
 TEESTATUS TEEAPI TeeInit(IN OUT PTEEHANDLE handle, IN const GUID* guid,
@@ -571,9 +610,45 @@ TEESTATUS TEEAPI TeeSetLogCallback(IN const PTEEHANDLE handle, TeeLogCallback lo
 		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto Cleanup;
 	}
+	if (handle->log_callback2) {
+		ERRPRINT(handle, "Standard callback already in use\n");
+		status = TEE_INVALID_PARAMETER;
+		goto Cleanup;
+	}
 
 	handle->log_callback = log_callback;
 	mei_set_log_callback(me, log_callback);
+	status = TEE_SUCCESS;
+
+Cleanup:
+	FUNC_EXIT(handle, status);
+	return status;
+}
+
+TEESTATUS TEEAPI TeeSetLogCallback2(IN const PTEEHANDLE handle, TeeLogCallback2 log_callback)
+{
+	struct mei *me = to_mei(handle);
+	TEESTATUS status;
+
+	if (!handle) {
+		return TEE_INVALID_PARAMETER;
+	}
+
+	FUNC_ENTRY(handle);
+
+	if (!me) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT(handle, "One of the parameters was illegal\n");
+		goto Cleanup;
+	}
+	if (handle->log_callback) {
+		ERRPRINT(handle, "Legacy callback already in use\n");
+		status = TEE_INVALID_PARAMETER;
+		goto Cleanup;
+	}
+	
+	handle->log_callback2 = log_callback;
+	mei_set_log_callback2(me, log_callback);
 	status = TEE_SUCCESS;
 
 Cleanup:
