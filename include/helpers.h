@@ -8,6 +8,8 @@
 extern "C" {
 #endif
 
+#define DEBUG_MSG_LEN 1024
+
 #ifdef _WIN32
 #include <windows.h>
 #include <stdio.h>
@@ -24,8 +26,6 @@ extern "C" {
 
 	#define MALLOC(X)   HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, X)
 	#define FREE(X)     {if(X) { HeapFree(GetProcessHeap(), 0, X); X = NULL ; } }
-
-	#define DEBUG_MSG_LEN 1024
 
 	void DebugPrintMe(const char* args, ...);
 
@@ -79,18 +79,27 @@ extern "C" {
 	#define INIT_STATUS -EPERM
 #endif /* _WIN32 */
 
+#define LEGACY_CALLBACK_SET(h) ((h)->log_callback ? 1 : 0)
+#define STANDARD_CALLBACK_SET(h) ((h)->log_callback2 ? 1 : 0)
+
+void CallbackPrintHelper(IN PTEEHANDLE handle, bool is_error, const char* args, ...);
+
 #define DBGPRINT(h, _x_, ...) \
 	if ((h) && (h)->log_level >= TEE_LOG_LEVEL_VERBOSE) { \
-		if ((h)->log_callback) \
-			(h)->log_callback(false, DEBUG_PRINT_ME_PREFIX_EXTERNAL _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
+		if (LEGACY_CALLBACK_SET(h)) \
+		    (h)->log_callback(false, DEBUG_PRINT_ME_PREFIX_EXTERNAL _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
+		else if (STANDARD_CALLBACK_SET(h)) \
+				CallbackPrintHelper((h), false, DEBUG_PRINT_ME_PREFIX_EXTERNAL _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
 		else \
 			DebugPrintMe(DEBUG_PRINT_ME_PREFIX_INTERNAL _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
 	}
 
 #define ERRPRINT(h, _x_, ...) \
 	if ((h) && (h)->log_level >= TEE_LOG_LEVEL_ERROR) { \
-		if ((h)->log_callback) \
-			(h)->log_callback(true, DEBUG_PRINT_ME_PREFIX_EXTERNAL _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
+		if (LEGACY_CALLBACK_SET(h)) \
+		    (h)->log_callback(true, DEBUG_PRINT_ME_PREFIX_EXTERNAL _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
+		else if (STANDARD_CALLBACK_SET(h)) \
+				CallbackPrintHelper((h), true, DEBUG_PRINT_ME_PREFIX_EXTERNAL _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
 		else \
 			ErrorPrintMe(DEBUG_PRINT_ME_PREFIX_INTERNAL _x_,__FILE__,__FUNCTION__,__LINE__, ##__VA_ARGS__); \
 	}

@@ -91,8 +91,13 @@ enum tee_log_level {
 };
 
 /*! log callback function format
+ * @deprecated Since version 6.0
  */
 typedef void(*TeeLogCallback)(bool is_error, const char* fmt, ...);
+
+/*! log callback function format
+ */
+typedef void(*TeeLogCallback2)(bool is_error, const char* msg);
 
 #pragma pack(1)
 
@@ -105,7 +110,8 @@ typedef struct _TEEHANDLE {
 	size_t  maxMsgLen;        /**< FW Client Max Message Length */
 	uint8_t protcolVer;       /**< FW Client Protocol FW */
 	enum tee_log_level log_level; /**< Log level */
-	TeeLogCallback log_callback; /**< Log callback */
+	TeeLogCallback log_callback; /**< Deprecated Log callback */
+	TeeLogCallback2 log_callback2; /**< Log callback */
 } TEEHANDLE;
 
 /*!
@@ -190,6 +196,7 @@ typedef uint16_t TEESTATUS; /**< return status for API functions */
 #define TEE_IS_SUCCESS(Status) (((TEESTATUS)(Status)) == TEE_SUCCESS)
 
  /*! Initializes a TEE connection
+  *  @deprecated Since version 6.0
   *  \param handle A handle to the TEE device. All subsequent calls to the lib's functions
   *         must be with this handle
   *  \param guid GUID of the FW client that want to start a session
@@ -201,6 +208,19 @@ typedef uint16_t TEESTATUS; /**< return status for API functions */
 TEESTATUS TEEAPI TeeInitFull(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 	IN const struct tee_device_address device,
 	IN uint32_t log_level, IN OPTIONAL TeeLogCallback log_callback);
+
+ /*! Initializes a TEE connection
+  *  \param handle A handle to the TEE device. All subsequent calls to the lib's functions
+  *         must be with this handle
+  *  \param guid GUID of the FW client that want to start a session
+  *  \param device device address structure
+  *  \param log_level log level to set (from enum tee_log_level)
+  *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
+  *  \return 0 if successful, otherwise error code
+  */
+TEESTATUS TEEAPI TeeInitFull2(IN OUT PTEEHANDLE handle, IN const GUID* guid,
+	IN const struct tee_device_address device,
+	IN uint32_t log_level, IN OPTIONAL TeeLogCallback2 log_callback);
 
 /*! Initializes a TEE connection
  *  \param handle A handle to the TEE device. All subsequent calls to the lib's functions
@@ -328,12 +348,20 @@ uint32_t TEEAPI TeeSetLogLevel(IN PTEEHANDLE handle, IN uint32_t log_level);
 uint32_t TEEAPI TeeGetLogLevel(IN const PTEEHANDLE handle);
 
 /*! Set log callback
- *
+ * @deprecated Since version 6.0
  *  \param handle The handle of the session.
  *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
  *  \return 0 if successful, otherwise error code.
  */
 TEESTATUS TEEAPI TeeSetLogCallback(IN const PTEEHANDLE handle, TeeLogCallback log_callback);
+
+/*! Set log callback
+ *
+ *  \param handle The handle of the session.
+ *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
+ *  \return 0 if successful, otherwise error code.
+ */
+TEESTATUS TEEAPI TeeSetLogCallback2(IN const PTEEHANDLE handle, TeeLogCallback2 log_callback);
 
 /*! Retrieve client maximum message length (MTU)
  *
