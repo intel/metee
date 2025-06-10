@@ -1,3 +1,18 @@
+## [6.0.0]
+
+**Note:** Backward incompatible ABI change:
+ The struct TEEHANDLE struct is packed(1) now
+ Added field to store V2 logger callback.
+
+### Changed
+ - Linux: pull libmei 1.7.0
+ - CMake: consume four-part version
+ - Windows: fix copyright format
+
+### Added
+ - Windows: C# OOP wrapper
+ - TeeInitFull2 API
+
 ## [5.0.0]
 
 **Note:** Backward incompatible API change:

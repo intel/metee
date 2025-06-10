@@ -62,3 +62,7 @@ or a locking mechanism should be implemented by the caller to ensure
 that only one thread uses the handle at any time.
 The only exception is ability to call Disconnect to exit from read
 blocked on another thread.
+
+## Artificial Intelligence
+
+These contents may have been developed with support from one or more Intel-operated generative artificial intelligence solutions.
