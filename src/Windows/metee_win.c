@@ -141,7 +141,7 @@ static TEESTATUS TeeInitFullInt(IN OUT PTEEHANDLE handle, IN const GUID* guid,
 	impl_handle = (struct METEE_WIN_IMPL*)malloc(sizeof(*impl_handle));
 	if (impl_handle == NULL) {
 		status = TEE_INTERNAL_ERROR;
-		ERRPRINT(handle, "Can't allocate memory for internal struct");
+		ERRPRINT(handle, "Can't allocate memory for internal struct\n");
 		goto Cleanup;
 	}
 	memset(impl_handle, 0, sizeof(*impl_handle));
@@ -407,7 +407,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 
 	if (NULL == impl_handle || NULL == buffer || 0 == bufferSize) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto Cleanup;
 	}
 
@@ -419,7 +419,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 
 	if (impl_handle->state != METEE_CLIENT_STATE_CONNECTED) {
 		status = TEE_DISCONNECTED;
-		ERRPRINT(handle, "The client is not connected");
+		ERRPRINT(handle, "The client is not connected\n");
 		goto Cleanup;
 	}
 
@@ -468,12 +468,12 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 
 	if (NULL == impl_handle || NULL == fwStatus) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto Cleanup;
 	}
 	if (fwStatusNum > 5) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT(handle, "fwStatusNum should be 0..5");
+		ERRPRINT(handle, "fwStatusNum should be 0..5\n");
 		goto Cleanup;
 	}
 
@@ -510,7 +510,7 @@ TEESTATUS TEEAPI TeeGetTRC(IN PTEEHANDLE handle, OUT uint32_t* trc_val)
 
 	if (!impl_handle || !trc_val) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto Cleanup;
 	}
 
@@ -617,7 +617,7 @@ TEESTATUS TEEAPI GetDriverVersion(IN PTEEHANDLE handle, IN OUT teeDriverVersion_
 
 	if (NULL == impl_handle || NULL == driverVersion) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto Cleanup;
 	}
 
@@ -687,7 +687,7 @@ TEESTATUS TEEAPI TeeSetLogCallback(IN const PTEEHANDLE handle, TeeLogCallback lo
 
 	if (NULL == impl_handle) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto Cleanup;
 	}
 	if (handle->log_callback2) {
@@ -717,7 +717,7 @@ TEESTATUS TEEAPI TeeSetLogCallback2(IN const PTEEHANDLE handle, TeeLogCallback2 
 
 	if (NULL == impl_handle) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto Cleanup;
 	}
 	if (handle->log_callback) {
@@ -764,7 +764,7 @@ TEESTATUS TEEAPI TeeGetKind(IN PTEEHANDLE handle, IN OUT char *kind, IN OUT size
 
 	if (NULL == impl_handle || NULL == kindSize) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto Cleanup;
 	}
 	status = GetDeviceKind(handle, kind, kindSize);

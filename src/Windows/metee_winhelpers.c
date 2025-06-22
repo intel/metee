@@ -63,7 +63,7 @@ TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation, IN PTEEHANDLE hand
 
 	if (INVALID_HANDLE_VALUE == impl_handle->handle || NULL == buffer || 0 == bufferSize || NULL == evt) {
 		status = TEE_INVALID_PARAMETER;
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto Cleanup;
 	}
 
@@ -180,7 +180,7 @@ TEESTATUS GetDevicePath(IN PTEEHANDLE handle, IN LPCGUID InterfaceGuid,
 
 	if (InterfaceGuid == NULL || path == NULL || pathSize < 1) {
 		status = TEE_INTERNAL_ERROR;
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto Cleanup;
 	}
 
@@ -199,7 +199,7 @@ TEESTATUS GetDevicePath(IN PTEEHANDLE handle, IN LPCGUID InterfaceGuid,
 
 	if (deviceInterfaceListLength <= 1) {
 		status = TEE_DEVICE_NOT_FOUND;
-		ERRPRINT(handle, "SetupDiGetClassDevs returned status %d", GetLastError());
+		ERRPRINT(handle, "SetupDiGetClassDevs returned status %d\n", GetLastError());
 		goto Cleanup;
 	}
 
@@ -226,7 +226,7 @@ TEESTATUS GetDevicePath(IN PTEEHANDLE handle, IN LPCGUID InterfaceGuid,
 	hr = StringCchCopyA(path, pathSize, deviceInterfaceList);
 	if (FAILED(hr)) {
 		status = TEE_INTERNAL_ERROR;
-		ERRPRINT(handle, "Error: StringCchCopy failed with HRESULT 0x%x", hr);
+		ERRPRINT(handle, "Error: StringCchCopy failed with HRESULT 0x%x\n", hr);
 		goto Cleanup;
 	}
 
@@ -384,7 +384,7 @@ TEESTATUS SendIOCTL(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD ioControl
 
 	if (INVALID_HANDLE_VALUE == impl_handle->handle || NULL == pBytesRetuned) {
 		status = ERROR_INVALID_PARAMETER;
-		ERRPRINT(handle, "One of the parameters was illegal");
+		ERRPRINT(handle, "One of the parameters was illegal\n");
 		goto Cleanup;
 	}
 
