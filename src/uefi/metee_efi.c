@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2024 Intel Corporation
+ * Copyright (C) 2024-2025 Intel Corporation
  */
 #include <Uefi.h>
 #include <Library/UefiLib.h>
@@ -346,7 +346,7 @@ TEESTATUS TEEAPI TeeConnect(OUT PTEEHANDLE handle)
 		goto Cleanup;
 	}
 
-	efi_status = HeciConnectClient(impl_handle);
+	efi_status = EfiTeeHeciConnectClient(impl_handle);
 	if (EFI_ERROR(efi_status))
 	{
 		switch (efi_status)
@@ -407,7 +407,7 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 
 	FUNC_ENTRY(handle);
 
-	// HeciReceiveMessage works only with uint32_t
+	// EfiTeeHeciReceiveMessage works only with uint32_t
 	if (NULL == impl_handle || NULL == buffer || 0 == bufferSize || bufferSize > 0xFFFFFFFF)
 	{
 		status = TEE_INVALID_PARAMETER;
@@ -421,7 +421,7 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 		ERRPRINT(handle, "The client is not connected\n");
 		goto End;
 	}
-	efi_status = HeciReceiveMessage(impl_handle, buffer, (UINT32)bufferSize, &bytesRead, timeout);
+	efi_status = EfiTeeHeciReceiveMessage(impl_handle, buffer, (UINT32)bufferSize, &bytesRead, timeout);
 
 	if (EFI_ERROR(efi_status))
 	{
@@ -471,7 +471,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 
 	FUNC_ENTRY(handle);
 
-	// HeciSendMessage works only with uint32_t
+	// EfiTeeHeciSendMessage works only with uint32_t
 	if (NULL == impl_handle || NULL == buffer || 0 == bufferSize || bufferSize > 0xFFFFFFFF)
 	{
 		status = TEE_INVALID_PARAMETER;
@@ -486,7 +486,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 		goto End;
 	}
 
-	efi_status = HeciSendMessage(impl_handle, buffer, (UINT32)bufferSize, &bytesWritten, timeout);
+	efi_status = EfiTeeHeciSendMessage(impl_handle, buffer, (UINT32)bufferSize, &bytesWritten, timeout);
 
 	if (EFI_ERROR(efi_status))
 	{
@@ -538,7 +538,7 @@ TEESTATUS TEEAPI TeeFWStatus(IN PTEEHANDLE handle,
 		status = TEE_INVALID_PARAMETER;
 		goto End;
 	}
-	efi_status = HeciFwStatus(impl_handle, fwStatusNum, fwStatus);
+	efi_status = EfiTeeHeciFwStatus(impl_handle, fwStatusNum, fwStatus);
 
 	if (EFI_ERROR(efi_status))
 	{
@@ -581,7 +581,7 @@ TEESTATUS TEEAPI TeeGetTRC(IN PTEEHANDLE handle, OUT uint32_t *trc_val)
 		goto End;
 	}
 
-	efi_status = HeciGetTrc(impl_handle, trc_val);
+	efi_status = EfiTeeHeciGetTrc(impl_handle, trc_val);
 
 	if (EFI_ERROR(efi_status))
 	{
@@ -615,7 +615,7 @@ void TEEAPI TeeDisconnect(IN PTEEHANDLE handle)
 		goto Cleanup;
 	}
 
-	HeciUninitialize(impl_handle);
+	EfiTeeHeciUninitialize(impl_handle);
 
 	FreePool(impl_handle);
 	impl_handle = NULL;
@@ -825,7 +825,7 @@ TEESTATUS TEEAPI TeeGetKind(IN PTEEHANDLE handle, IN OUT char *kind, IN OUT size
 	}
 
 	if (impl_handle->HwType == HECI_HW_TYPE_PCH) {
-		efi_status = HeciFwStatus(impl_handle, HECI1_FW_STS3, &fw_sts3);
+		efi_status = EfiTeeHeciFwStatus(impl_handle, HECI1_FW_STS3, &fw_sts3);
 		if (EFI_ERROR(efi_status))
 		{
 			ERRPRINT(handle, "Failed to retrieve FW Status %d\n", efi_status);
