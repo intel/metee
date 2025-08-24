@@ -1,3 +1,7 @@
+## [6.0.1]
+- EFI: prefix internal function
+- Windows: add newlines to error messages
+
 ## [6.0.0]
 
 **Note:** Backward incompatible ABI change:
