@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2024 Intel Corporation
+ * Copyright (C) 2024-2025 Intel Corporation
  */
 
 #include <Uefi.h>
@@ -207,7 +207,7 @@ heciReset(
 }
 
 EFI_STATUS
-HeciFwStatus(
+EfiTeeHeciFwStatus(
 	IN struct METEE_EFI_IMPL *Handle,
 	IN UINT32 fwStatusNum,
 	OUT UINT32 *fwStatus)
@@ -245,7 +245,7 @@ End:
 }
 
 EFI_STATUS
-HeciGetTrc(
+EfiTeeHeciGetTrc(
 	IN struct METEE_EFI_IMPL *Handle,
 	OUT UINT32 *trcVal)
 {
@@ -271,7 +271,7 @@ End:
 }
 
 EFI_STATUS
-HeciUninitialize(
+EfiTeeHeciUninitialize(
 	IN struct METEE_EFI_IMPL *Handle)
 {
 	EFI_STATUS status = EFI_UNSUPPORTED;
@@ -317,7 +317,7 @@ HeciUninitialize(
 	status = heciReadMsg(Handle, BLOCKING, (UINT32 *)&disconnectMsgReply, sizeof(disconnectMsgReply), &msgReplyLen);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "####HeciUninitialize failed with ReadMsg, Status: %d.\n", status);
+		DBGPRINT(Handle->TeeHandle, "####Failed with ReadMsg, Status: %d.\n", status);
 		goto End;
 	}
 	DBGPRINT(Handle->TeeHandle, "#### disconnectMsgReply Command %02X , Status: %02X.\n", disconnectMsgReply.Command, disconnectMsgReply.Status);
@@ -580,7 +580,7 @@ End:
 
 
 EFI_STATUS
-HeciConnectClient(
+EfiTeeHeciConnectClient(
 	IN struct METEE_EFI_IMPL *Handle)
 {
 	EFI_STATUS status = EFI_UNSUPPORTED;
@@ -734,7 +734,7 @@ End:
 }
 
 EFI_STATUS
-HeciSendMessage(
+EfiTeeHeciSendMessage(
 	IN struct METEE_EFI_IMPL *Handle,
 	IN const UINT8 *buffer,
 	IN UINT32 bufferLength,
@@ -815,7 +815,7 @@ End:
 }
 
 EFI_STATUS
-HeciReceiveMessage(
+EfiTeeHeciReceiveMessage(
 	IN struct METEE_EFI_IMPL *Handle,
 	OUT UINT8 *Buffer,
 	IN UINT32 BufferSize,
