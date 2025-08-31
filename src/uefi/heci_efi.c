@@ -299,6 +299,13 @@ EfiTeeHeciUninitialize(
 		goto End;
 	}
 
+	if (client->connected == FALSE)
+	{
+		DBGPRINT(Handle->TeeHandle, "Handle is not connected\n");
+		status = EFI_SUCCESS;
+		goto End;
+	}
+
 	SetMem(&disconnectMsg, sizeof(disconnectMsg), 0x0);
 	SetMem(&disconnectMsgReply, sizeof(disconnectMsgReply), 0x0);
 
