@@ -2,7 +2,6 @@
 /*
  * Copyright (C) 2014-2025 Intel Corporation
  */
-#include <assert.h>
 #include <windows.h>
 #include <initguid.h>
 #include <winioctl.h>
