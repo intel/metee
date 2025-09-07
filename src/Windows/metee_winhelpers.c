@@ -2,7 +2,6 @@
 /*
  * Copyright (C) 2014-2025 Intel Corporation
  */
-#include <assert.h>
 #include <windows.h>
 #include <initguid.h>
 #include "helpers.h"
@@ -12,7 +11,6 @@
 #include <Objbase.h>
 #include <Devpkey.h>
 #include <Strsafe.h>
-
 
 /*********************************************************************
 **                       Windows Helper Functions                   **
@@ -129,7 +127,6 @@ TEESTATUS EndOverlapped(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD milli
 	}
 
 	if (err != WAIT_OBJECT_0) {
-		assert(WAIT_FAILED == err);
 		err = GetLastError();
 		status = Win32ErrorToTee(err);
 
