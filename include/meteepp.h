@@ -84,24 +84,63 @@ namespace intel {
 		class metee
 		{
 		public:
-			/*! Default constructor */
-			metee()
+			/*! Default constructor, when connection to specific client is not required */
+			metee() : metee(METEE_GUID_ZERO) {}
+
+			/*! Constructor without client GUID, when connection to specific client is not required
+			 *  \param log_level log level to set (from enum tee_log_level)
+			 *  \param log_callback pointer to function to run for log write (type 2)
+			 */
+			metee(uint32_t log_level, TeeLogCallback2 log_callback) : metee(METEE_GUID_ZERO, log_level, log_callback) {}
+
+			/*! Constructor
+			 *  \param guid GUID of the FW client that want to start a session
+			 */
+			metee(const GUID& guid)
 			{
-				TEESTATUS status = TeeInit(&_handle, &METEE_GUID_ZERO, NULL);
+				TEESTATUS status = TeeInit(&_handle, &guid, nullptr);
 				if (!TEE_IS_SUCCESS(status)) {
 					throw metee_exception("Init failed", status);
 				}
 			}
+			/*! Constructor
+			 *  \param guid GUID of the FW client that want to start a session
+			 *  \param log_level log level to set (from enum tee_log_level)
+			 */
+			metee(const GUID& guid, uint32_t log_level) : metee(guid, log_level, static_cast<TeeLogCallback2>(nullptr)) {}
 
 			/*! Constructor
 			 *  \param guid GUID of the FW client that want to start a session
 			 *  \param log_level log level to set (from enum tee_log_level)
-			 *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
+			 *  \param log_callback pointer to function to run for log write
 			 */
-			metee(const GUID &guid,
-				  uint32_t log_level = TEE_LOG_LEVEL_VERBOSE, TeeLogCallback log_callback = nullptr)
+			metee(const GUID& guid, uint32_t log_level, TeeLogCallback log_callback) :
+				metee(guid, { tee_device_address::TEE_DEVICE_TYPE_NONE , nullptr }, log_level, log_callback) {}
+
+			/*! Constructor
+			 *  \param guid GUID of the FW client that want to start a session
+			 *  \param log_level log level to set (from enum tee_log_level)
+			 *  \param log_callback pointer to function to run for log write (type 2)
+			 */
+			metee(const GUID& guid, uint32_t log_level, TeeLogCallback2 log_callback) :
+				metee(guid, { tee_device_address::TEE_DEVICE_TYPE_NONE , nullptr }, log_level, log_callback) {}
+
+			/*! Constructor
+			 *  \param guid GUID of the FW client that want to start a session
+			 *  \param device device address structure
+			 *  \param log_level log level to set (from enum tee_log_level)
+			 */
+			metee(const GUID& guid, const struct tee_device_address& device, uint32_t log_level) :
+				metee(guid, device, log_level, static_cast<TeeLogCallback2>(nullptr)) {}
+
+			/*! Constructor
+			 *  \param guid GUID of the FW client that want to start a session
+			 *  \param device device address structure
+			 *  \param log_level log level to set (from enum tee_log_level)
+			 *  \param log_callback pointer to function to run for log write
+			 */
+			metee(const GUID &guid, const struct tee_device_address &device, uint32_t log_level, TeeLogCallback log_callback)
 			{
-				struct tee_device_address device = { tee_device_address::TEE_DEVICE_TYPE_NONE , nullptr };
 				TEESTATUS status = TeeInitFull(&_handle, &guid, device, log_level, log_callback);
 				if (!TEE_IS_SUCCESS(status)) {
 					throw metee_exception("Init failed", status);
@@ -112,12 +151,11 @@ namespace intel {
 			 *  \param guid GUID of the FW client that want to start a session
 			 *  \param device device address structure
 			 *  \param log_level log level to set (from enum tee_log_level)
-			 *  \param log_callback pointer to function to run for log write, set NULL to use built-in function
+			 *  \param log_callback pointer to function to run for log write (type 2)
 			 */
-			metee(const GUID &guid, const struct tee_device_address &device,
-				  uint32_t log_level = TEE_LOG_LEVEL_VERBOSE, TeeLogCallback log_callback = nullptr)
+			metee(const GUID& guid, const struct tee_device_address& device, uint32_t log_level, TeeLogCallback2 log_callback)
 			{
-				TEESTATUS status = TeeInitFull(&_handle, &guid, device, log_level, log_callback);
+				TEESTATUS status = TeeInitFull2(&_handle, &guid, device, log_level, log_callback);
 				if (!TEE_IS_SUCCESS(status)) {
 					throw metee_exception("Init failed", status);
 				}
