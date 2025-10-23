@@ -66,7 +66,7 @@ TEST_P(MeTeePPTEST, PROD_MKHI_InitFull)
 	try {
 		struct tee_device_address device = {tee_device_address::TEE_DEVICE_TYPE_NONE, { NULL }};
 
-		intel::security::metee metee(*intf.client, device, TEE_LOG_LEVEL_VERBOSE, NULL);
+		intel::security::metee metee(*intf.client, device, TEE_LOG_LEVEL_VERBOSE);
 
 		ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, metee.device_handle());
 		metee.connect();
