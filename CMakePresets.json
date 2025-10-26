@@ -32,32 +32,6 @@
       }
     },
     {
-      "name": "Debug32AllStatic",
-      "displayName": "Windows x86 Debug Static All",
-      "description": "Build x86 Debug, VS2019, including test and samples",
-      "inherits": "base32",
-      "binaryDir": "${sourceDir}/Debug",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "BUILD_TEST": "YES",
-        "BUILD_SAMPLES": "YES",
-        "BUILD_SHARED_LIBS": "NO"
-      }
-    },
-    {
-      "name": "Release32AllStatic",
-      "displayName": "Windows x86 Release Static All",
-      "description": "Build x86 Release, VS2019, including test and samples",
-      "inherits": "base32",
-      "binaryDir": "${sourceDir}/Release",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "BUILD_TEST": "YES",
-        "BUILD_SAMPLES": "YES",
-        "BUILD_SHARED_LIBS": "NO"
-      }
-    },
-    {
       "name": "Release32Static",
       "displayName": "Windows x86 Release Static",
       "description": "Build x86 Release, VS2019",
@@ -100,6 +74,19 @@
       }
     },
     {
+      "name": "Release64AllStatic",
+      "displayName": "Windows x86-64 Release Static",
+      "description": "Build x86-64 Release, VS2019",
+      "inherits": "base64",
+      "binaryDir": "${sourceDir}/Release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TEST": "YES",
+        "BUILD_SAMPLES": "YES",
+        "BUILD_SHARED_LIBS": "NO"
+      }
+    },
+    {
       "name": "Debug64All",
       "displayName": "Windows x86-64 Debug All",
       "description": "Build x86-64 Debug, VS2019, including test and samples",
@@ -110,19 +97,22 @@
         "BUILD_TEST": "YES",
         "BUILD_SAMPLES": "YES"
       }
+    },
+    {
+      "name": "Debug64AllStatic",
+      "displayName": "Windows x86-64 Debug Static All",
+      "description": "Build x86-64 Debug, VS2019, including test and samples",
+      "inherits": "base64",
+      "binaryDir": "${sourceDir}/Debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_TEST": "YES",
+        "BUILD_SAMPLES": "YES",
+        "BUILD_SHARED_LIBS": "NO"
+      }
     }
   ],
   "buildPresets": [
-    {
-      "name": "Debug32AllStatic",
-      "configurePreset": "Debug32AllStatic",
-      "configuration": "Debug"
-    },
-    {
-      "name": "Release32AllStatic",
-      "configurePreset": "Release32AllStatic",
-      "configuration": "Release"
-    },
     {
       "name": "Release32Static",
       "configurePreset": "Release32Static",
@@ -144,8 +134,18 @@
       "configuration": "Release"
     },
     {
+      "name": "Release64AllStatic",
+      "configurePreset": "Release64AllStatic",
+      "configuration": "Release"
+    },
+    {
       "name": "Debug64All",
       "configurePreset": "Debug64All",
+      "configuration": "Debug"
+    },
+    {
+      "name": "Debug64AllStatic",
+      "configurePreset": "Debug64AllStatic",
       "configuration": "Debug"
     }
   ]
