@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2024 Intel Corporation
+ * Copyright (C) 2014-2025 Intel Corporation
  */
 #ifndef __HELPERS_H
 #define __HELPERS_H
@@ -34,7 +34,7 @@ extern "C" {
 	#define INIT_STATUS TEE_INTERNAL_ERROR
 #elif defined(EFI)	
 	#define DEBUG_PRINT_ME_PREFIX_INTERNAL "TEELIB: (%a:%a():%d) "
-	#define DEBUG_PRINT_ME_PREFIX_EXTERNAL "TEELIB: (%a:%a():%d) "
+	#define DEBUG_PRINT_ME_PREFIX_EXTERNAL "TEELIB: (%s:%s():%d) "
 	#define DebugPrintMe(fmt, ...)	AsciiPrint(fmt, ##__VA_ARGS__)
 	#define ErrorPrintMe(fmt, ...)	AsciiPrint(fmt, ##__VA_ARGS__)
 #else
