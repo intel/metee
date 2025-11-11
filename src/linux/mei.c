@@ -394,13 +394,14 @@ static inline int __mei_getkind(struct mei *me, const char *device, char *kind, 
 	}
 	*kind_size = (size_t)len;
 	memcpy(kind, buf, (size_t)len);
+	kind[len - 1] = '\0';
 
 	return 0;
 #undef KIND_FILENAME_LEN
 #undef KIND_LEN
 }
 
-static int mei_init_with_log_int(struct mei *me, const char *device, const uuid_le *guid,
+static int __mei_init_with_log_int(struct mei *me, const char *device, const uuid_le *guid,
 		      unsigned char req_protocol_version, bool verbose,
 		      mei_log_callback log_callback, mei_log_callback2 log_callback2)
 {
@@ -425,13 +426,18 @@ static int mei_init_with_log_int(struct mei *me, const char *device, const uuid_
 
 	rc = __mei_open(me, device);
 	if (rc < 0) {
-		mei_err(me, "Cannot establish a handle to the Intel MEI driver %.20s [%d]:%s\n",
+		if (rc != -ENODEV) {
+			mei_err(me, "Cannot establish a handle to the Intel MEI driver %.20s [%d]:%s\n",
+				device, rc, strerror(-rc));
+			return rc;
+		}
+		mei_msg(me, "Intel MEI driver %.20s returned [%d]:%s\n",
 			device, rc, strerror(-rc));
-		return rc;
+		me->state = MEI_CL_STATE_DISABLED;
+	} else {
+		mei_msg(me, "Opened %.20s: fd = %d\n", device, me->fd);
+		me->state = MEI_CL_STATE_INITIALIZED;
 	}
-
-	mei_msg(me, "Opened %.20s: fd = %d\n", device, me->fd);
-
 	memcpy(&me->guid, guid, sizeof(*guid));
 	me->prot_ver = req_protocol_version;
 	me->device = strdup(device);
@@ -440,8 +446,6 @@ static int mei_init_with_log_int(struct mei *me, const char *device, const uuid_
 		return -ENOMEM;
 	}
 
-	me->state = MEI_CL_STATE_INITIALIZED;
-
 	return 0;
 }
 
@@ -449,7 +453,7 @@ int mei_init_with_log(struct mei *me, const char *device, const uuid_le *guid,
 		      unsigned char req_protocol_version, bool verbose,
 		      mei_log_callback log_callback) 
 {
-	return mei_init_with_log_int(me, device, guid,
+	return __mei_init_with_log_int(me, device, guid,
 		req_protocol_version, verbose, log_callback, NULL);
 }
 
@@ -457,7 +461,7 @@ int mei_init_with_log2(struct mei *me, const char *device, const uuid_le *guid,
 		      unsigned char req_protocol_version, bool verbose,
 		      mei_log_callback2 log_callback) 
 {
-	return mei_init_with_log_int(me, device, guid,
+	return __mei_init_with_log_int(me, device, guid,
 		req_protocol_version, verbose, NULL, log_callback);
 }			  
 
@@ -610,6 +614,11 @@ static int __int_mei_connect(struct mei *me, uint8_t vtag)
 		return -EINVAL;
 	}
 
+	if (me->state == MEI_CL_STATE_DISABLED) {
+		mei_err(me, "client is disabled\n");
+		return -EINVAL;
+	}
+
 	me->vtag = vtag;
 	if (me->vtag) {
 		memset(&data_v, 0, sizeof(data_v));
@@ -665,6 +674,11 @@ ssize_t mei_recv_msg(struct mei *me, unsigned char *buffer, size_t len)
 	if (!me || !buffer)
 		return -EINVAL;
 
+	if (me->state != MEI_CL_STATE_CONNECTED) {
+		mei_err(me, "client is not connected [%d]\n", me->state);
+		return -EINVAL;
+	}
+
 	mei_msg(me, "call read length = %zu\n", len);
 
 	rc = __mei_read(me, buffer, len);
@@ -685,6 +699,11 @@ ssize_t mei_send_msg(struct mei *me, const unsigned char *buffer, size_t len)
 
 	if (!me || !buffer)
 		return -EINVAL;
+
+	if (me->state != MEI_CL_STATE_CONNECTED) {
+		mei_err(me, "client is not connected [%d]\n", me->state);
+		return -EINVAL;
+	}
 
 	mei_msg(me, "call write length = %zu\n", len);
 	mei_dump_hex_buffer(me, buffer, len);
