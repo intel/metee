@@ -115,24 +115,73 @@ static void mk_host_if_fw_status(struct mk_host_if *acmd)
 		       printf("FW Status[%u] = 0x%08X\n", i, fwStatus);
 }
 
+static bool mk_host_if_is_gscfi(struct mk_host_if *acmd)
+{
+	char kind[32];
+	size_t kind_size = sizeof(kind);
+
+	if (TeeGetKind(&acmd->mei_cl, kind, &kind_size) != TEE_SUCCESS)
+		return false;
+
+	return !strcmp(kind, "gscfi");
+}
+
 static bool mk_host_if_connect(struct mk_host_if *acmd)
 {
 	acmd->initialized = (TeeConnect(&acmd->mei_cl) == 0);
 	return acmd->initialized;
 }
 
+static void mk_host_if_log(bool is_error, const char* data)
+{
+	fprintf((is_error) ? stderr : stdout, "LIB: %s", data);
+}
+
 static bool mk_host_if_init(struct mk_host_if *acmd, const GUID *guid,
                             bool reconnect, bool verbose)
 {
+#ifdef WIN32
+#define ADDR_NUM 1
+	struct tee_device_address addr[ADDR_NUM] = {
+		{
+		.type = TEE_DEVICE_TYPE_GUID,
+		.data.guid = &GUID_DEVINTERFACE_HECI_GSC_CHILD
+		}
+	};
+#else
+#define ADDR_NUM 3
+	struct tee_device_address addr[ADDR_NUM] = {
+		{
+		.type = TEE_DEVICE_TYPE_PATH,
+		.data.path = "/dev/mei0"
+		},
+		{
+		.type = TEE_DEVICE_TYPE_PATH,
+		.data.path = "/dev/mei1"
+		},
+		{
+		.type = TEE_DEVICE_TYPE_PATH,
+		.data.path = "/dev/mei2"
+		},
+	};
+#endif /* WIN32 */
+
 	acmd->reconnect = reconnect;
 	acmd->verbose = verbose;
-#ifdef WIN32
-	TeeInitGUID(&acmd->mei_cl, guid, &GUID_DEVINTERFACE_HECI_GSC_CHILD);
-#else
-	TeeInit(&acmd->mei_cl, guid, NULL);
-#endif /* WIN32 */
-	mk_host_if_fw_status(acmd);
-	return mk_host_if_connect(acmd);
+	for (size_t i = 0; i < ADDR_NUM; i++) {
+		if (TeeInitFull2(&acmd->mei_cl, guid, addr[i],
+				(verbose) ? TEE_LOG_LEVEL_VERBOSE : TEE_LOG_LEVEL_ERROR,
+				mk_host_if_log) != TEE_SUCCESS)
+			return false;
+
+		if (!mk_host_if_is_gscfi(acmd)) {
+			TeeDisconnect(&acmd->mei_cl);
+			continue;
+		}
+		mk_host_if_fw_status(acmd);
+		return mk_host_if_connect(acmd);
+	}
+	return false;
 }
 
 static void mk_host_if_deinit(struct mk_host_if *acmd)
