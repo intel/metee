@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2020-2024 Intel Corporation
+ * Copyright (C) 2020-2025 Intel Corporation
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -106,6 +106,15 @@ struct mk_host_if {
 	bool verbose;
 };
 
+static void mk_host_if_fw_status(struct mk_host_if *acmd)
+{
+	uint32_t fwStatus = 0;
+
+	for (uint32_t i = 0; i < 6; i++)
+		if (TeeFWStatus(&acmd->mei_cl, i, &fwStatus) == TEE_SUCCESS)
+		       printf("FW Status[%u] = 0x%08X\n", i, fwStatus);
+}
+
 static bool mk_host_if_connect(struct mk_host_if *acmd)
 {
 	acmd->initialized = (TeeConnect(&acmd->mei_cl) == 0);
@@ -122,6 +131,7 @@ static bool mk_host_if_init(struct mk_host_if *acmd, const GUID *guid,
 #else
 	TeeInit(&acmd->mei_cl, guid, NULL);
 #endif /* WIN32 */
+	mk_host_if_fw_status(acmd);
 	return mk_host_if_connect(acmd);
 }
 
