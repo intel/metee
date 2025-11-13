@@ -1,3 +1,17 @@
+## [6.1.0]
+
+### Fixed
+ - fix cpp wrapper and add sample
+ - efi: use %s in external debug prefix
+
+### Changed
+ - Linux: import libmei 1.8.0
+
+### Added
+ - samples: gsc: search for gscfi device
+ - samples: print FW status in GSC
+ - CMake: Windows: add release and debug 64 all preset
+
 ## [6.0.2]
  - Windows: drop un-needed assert
  - EFI: do not send disconnect when not connected
