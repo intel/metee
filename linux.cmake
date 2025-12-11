@@ -69,3 +69,6 @@ if(NOT CONSOLE_OUTPUT)
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE -D_GNU_SOURCE)
+if(ANDROID)
+  target_link_libraries(${PROJECT_NAME} PRIVATE log)
+endif()
