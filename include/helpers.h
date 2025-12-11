@@ -44,10 +44,9 @@ extern "C" {
 		// For debugging
 		//#define LOG_NDEBUG 0
 		#define LOG_TAG "metee"
-		#include <cutils/log.h>
-		#define DebugPrintMe(fmt, ...) ALOGV_IF(true, fmt, ##__VA_ARGS__)
-		#define ErrorPrintMe(fmt, ...) ALOGE_IF(true, fmt, ##__VA_ARGS__)
-
+		#include <android/log_macros.h>
+		#define DebugPrintMe(fmt, ...) ALOGV(fmt, ##__VA_ARGS__)
+		#define ErrorPrintMe(fmt, ...) ALOGE(fmt, ##__VA_ARGS__)
 		#ifdef LOG_NDEBUG
 			#define TEE_DEFAULT_LOG_LEVEL TEE_LOG_LEVEL_VERBOSE
 		#else
