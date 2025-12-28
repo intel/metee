@@ -308,6 +308,11 @@ TEESTATUS TEEAPI TeeGetTRC(IN PTEEHANDLE handle, OUT uint32_t* trc_val);
  */
 void TEEAPI TeeDisconnect(IN PTEEHANDLE handle);
 
+/*! Try to stop all in-process reads and writes
+ *  \param handle The handle of the session
+ */
+void TEEAPI TeeCancelIO(IN PTEEHANDLE handle);
+
 /*! Returns handle of TEE device
  *  Obtains HECI device handle on Windows and mei device file descriptor on Linux
  *  \param handle The handle of the session.

@@ -488,10 +488,30 @@ End:
 	return status;
 }
 
+static void __TeeCancelIO(PTEEHANDLE handle)
+{
+	struct metee_linux_intl* intl = to_intl(handle);
+	const char buf[] = "X";
+
+	if (write(intl->cancel_pipe[1], buf, sizeof(buf)) < 0) {
+		ERRPRINT(handle, "Pipe write failed\n");
+	}
+}
+
+void TEEAPI TeeCancelIO(IN PTEEHANDLE handle)
+{
+	struct metee_linux_intl* intl = to_intl(handle);
+
+	FUNC_ENTRY(handle);
+	if (intl) {
+		__TeeCancelIO(handle);
+	}
+	FUNC_EXIT(handle, TEE_SUCCESS);
+}
+
 void TEEAPI TeeDisconnect(PTEEHANDLE handle)
 {
 	struct metee_linux_intl *intl = to_intl(handle);
-	const char buf[] = "X";
 
 	if (!handle) {
 		return;
@@ -499,9 +519,7 @@ void TEEAPI TeeDisconnect(PTEEHANDLE handle)
 
 	FUNC_ENTRY(handle);
 	if (intl) {
-		if (write(intl->cancel_pipe[1], buf, sizeof(buf)) < 0) {
-			ERRPRINT(handle, "Pipe write failed\n");
-		}
+		__TeeCancelIO(handle);
 		mei_deinit(&intl->me);
 		close(intl->cancel_pipe[0]);
 		close(intl->cancel_pipe[1]);

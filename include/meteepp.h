@@ -192,6 +192,12 @@ namespace intel {
 				TeeDisconnect(&_handle);
 			}
 
+			/*! Try to stop all in-process reads and writes */
+			void cancel_io()
+			{
+				TeeCancelIO(&_handle);
+			}
+
 			/*! Connects to the TEE driver and starts a session */
 			void connect()
 			{
