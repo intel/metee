@@ -852,3 +852,7 @@ End:
 	FUNC_EXIT(handle, status);
 	return status;
 }
+
+void TEEAPI TeeCancelIO(IN PTEEHANDLE handle)
+{
+}

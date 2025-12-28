@@ -531,19 +531,10 @@ Cleanup:
 	return status;
 }
 
-VOID TEEAPI TeeDisconnect(IN PTEEHANDLE handle)
+static void __TeeCancelIO(PTEEHANDLE handle)
 {
 	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
 	DWORD ret;
-
-	if (NULL == handle) {
-		return;
-	}
-
-	FUNC_ENTRY(handle);
-	if (NULL == impl_handle) {
-		goto Cleanup;
-	}
 
 	if (CancelIoEx(impl_handle->handle, NULL)) {
 		HANDLE handles[MAX_EVT];
@@ -556,6 +547,33 @@ VOID TEEAPI TeeDisconnect(IN PTEEHANDLE handle)
 				ret, GetLastError());
 		}
 	}
+}
+
+void TEEAPI TeeCancelIO(IN PTEEHANDLE handle)
+{
+	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
+
+	FUNC_ENTRY(handle);
+	if (NULL != impl_handle) {
+		__TeeCancelIO(handle);
+	}
+	FUNC_EXIT(handle, TEE_SUCCESS);
+}
+
+VOID TEEAPI TeeDisconnect(IN PTEEHANDLE handle)
+{
+	struct METEE_WIN_IMPL *impl_handle = to_int(handle);
+
+	if (NULL == handle) {
+		return;
+	}
+
+	FUNC_ENTRY(handle);
+	if (NULL == impl_handle) {
+		goto Cleanup;
+	}
+
+	__TeeCancelIO(handle);
 	for (size_t i = 0; i < MAX_EVT; i++) {
 		if (impl_handle->evt[i]) {
 			if (impl_handle->evt[i]->hEvent)
@@ -570,7 +588,7 @@ VOID TEEAPI TeeDisconnect(IN PTEEHANDLE handle)
 	handle->handle = NULL;
 
 Cleanup:
-	FUNC_EXIT(handle, 0);
+	FUNC_EXIT(handle, TEE_SUCCESS);
 }
 
 TEE_DEVICE_HANDLE TEEAPI TeeGetDeviceHandle(IN PTEEHANDLE handle)
