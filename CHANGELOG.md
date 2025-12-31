@@ -1,3 +1,12 @@
+## [6.2.0]
+
+### Changed
+ - Linux: build for Android using Android NDK
+ - Linux: import libmei 1.8.1
+
+### Added
+ - add TeeCancelIO API
+
 ## [6.1.0]
 
 ### Fixed
