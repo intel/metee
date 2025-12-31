@@ -25,8 +25,12 @@
  *****************************************************************************/
 #ifdef ANDROID
 #define LOG_TAG "libmei"
-#include <cutils/log.h>
-#define mei_msg(_me, fmt, ARGS...) ALOGV_IF((_me->log_level >= MEI_LOG_LEVEL_VERBOSE), fmt, ##ARGS)
+#include <android/log_macros.h>
+#define mei_msg(_me, fmt, ARGS...) \
+((_me->log_level >= MEI_LOG_LEVEL_VERBOSE) \
+? (void)ALOGV(fmt, ##ARGS) \
+: (void)0)
+
 #define mei_err(_me, fmt, ARGS...) ALOGE(fmt, ##ARGS)
 #ifdef DEBUG
 static inline void __dump_buffer(const char *buf)
