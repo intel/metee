@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2014-2024 Intel Corporation
+# Copyright (C) 2014-2026 Intel Corporation
 set(TEE_SOURCES src/linux/metee_linux.c src/linux/mei.c)
 
 add_library(${PROJECT_NAME} ${TEE_SOURCES})
@@ -55,7 +55,7 @@ target_compile_options(
 # Security options
 target_compile_options(
   ${PROJECT_NAME}
-  PRIVATE -fstack-protector-strong -D_FORTIFY_SOURCE=2 -O2 -Wformat
+  PRIVATE -fstack-protector-strong -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -O2 -Wformat
           -Wformat-security
   PRIVATE $<$<C_COMPILER_ID:GNU>:-fno-strict-overflow>
   PRIVATE $<$<C_COMPILER_ID:GNU>:-fno-delete-null-pointer-checks>
