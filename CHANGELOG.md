@@ -1,3 +1,8 @@
+## [6.2.1]
+
+### Fixed
+ - CMake: Linux: overwrite FORTIFY_SOURCE from distribution
+
 ## [6.2.0]
 
 ### Changed
