@@ -197,7 +197,7 @@ static inline int __mei_connect(struct mei *me, struct mei_connect_client_data *
 	int rc;
 
 	errno = 0;
-	rc = ioctl(me->fd, IOCTL_MEI_CONNECT_CLIENT, d);
+	rc = ioctl(me->fd, (int)IOCTL_MEI_CONNECT_CLIENT, d);
 	me->last_err = errno;
 	return rc == -1 ? -me->last_err : 0;
 }
@@ -208,7 +208,7 @@ static inline int __mei_connect_vtag(struct mei *me,
 	int rc;
 
 	errno = 0;
-	rc = ioctl(me->fd, IOCTL_MEI_CONNECT_CLIENT_VTAG, d);
+	rc = ioctl(me->fd, (int)IOCTL_MEI_CONNECT_CLIENT_VTAG, d);
 	me->last_err = errno;
 	return rc == -1 ? -me->last_err : 0;
 }
@@ -229,7 +229,7 @@ static inline int __mei_notify_get(struct mei *me)
 	int rc;
 
 	errno = 0;
-	rc = ioctl(me->fd, IOCTL_MEI_NOTIFY_GET, &notification);
+	rc = ioctl(me->fd, (int)IOCTL_MEI_NOTIFY_GET, &notification);
 	me->last_err = errno;
 	return rc == -1 ? -me->last_err : 0;
 }
