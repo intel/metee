@@ -51,7 +51,6 @@ Details for each point and good commit message examples can be found on https://
   - CMake: changes in the cmake build configuration.
   - tests: changes in tests.
   - samples: changes in samples.
-  - conan: changes in conan configuration.
   - doc: changes in documentation.
 
 ### Sign your work
