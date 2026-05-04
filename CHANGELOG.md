@@ -1,3 +1,16 @@
+## [6.2.3]
+
+### Fixed
+ - Linux: pick libmei 1.8.3 - empty kind fix
+ - Linux: return NOT_SUPPORTED on ENODATA
+ - Linux: use the right side of cancel pipe
+ - EFI: error out on wrong type
+ - EFI: add missed status to prints
+ - Windows: limit buffer size
+
+### Removed
+ - drop conan support
+
 ## [6.2.2]
 
 ### Changed
