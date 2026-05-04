@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2025 Intel Corporation
+ * Copyright (C) 2014-2026 Intel Corporation
  */
 #include <errno.h>
 #include <fcntl.h>
@@ -327,7 +327,7 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void *buffer, IN size_t bu
 
 	ltimeout = (timeout) ? (int)timeout : -1;
 
-	rc = __mei_select(me, intl->cancel_pipe[1], true, ltimeout);
+	rc = __mei_select(me, intl->cancel_pipe[0], true, ltimeout);
 	if (rc) {
 		status = errno2status(rc);
 		ERRPRINT(handle, "select failed with status %zd %s\n",
@@ -390,7 +390,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void *buffer, IN size_t
 
 	ltimeout = (timeout) ? (int)timeout : -1;
 
-	rc = __mei_select(me, intl->cancel_pipe[1], false, ltimeout);
+	rc = __mei_select(me, intl->cancel_pipe[0], false, ltimeout);
 	if (rc) {
 		status = errno2status(rc);
 		ERRPRINT(handle, "select failed with status %zd %s\n",
