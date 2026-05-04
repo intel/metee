@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2024-2025 Intel Corporation
+ * Copyright (C) 2024-2026 Intel Corporation
  */
 
 #ifdef METEE_EFI_STDLIB_SUPPORT
@@ -137,7 +137,7 @@ SetHwInfo(
 	status = TEE_SUCCESS;
 End:
 	FUNC_EXIT(Handle->TeeHandle, status);
-	return 0;
+	return status;
 }
 
 /*! Initializes TEE_DEVICE_TYPE_BDF connection specific properties
@@ -171,7 +171,12 @@ TeeInitFullTypeEfiDevice(
 	efi_impl->ClientGuid = *guid;
 	efi_impl->State = METEE_CLIENT_STATE_NONE;
 	efi_impl->HwType = device->data.bdf.hw_type;
-	SetHwInfo(device, efi_impl);
+	status = SetHwInfo(device, efi_impl);
+	if (status != TEE_SUCCESS)
+	{
+		FreePool(efi_impl);
+		goto Cleanup;
+	}
 
 	*impl_handle = efi_impl;
 	status = TEE_SUCCESS;
