@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2024-2025 Intel Corporation
+ * Copyright (C) 2024-2026 Intel Corporation
  */
 
 #include <Uefi.h>
@@ -318,13 +318,13 @@ EfiTeeHeciUninitialize(
 	status = heciSendMsg(Handle, (UINT32 *)&disconnectMsg, (UINT32)sizeof(disconnectMsg), (UINT8)BIOS_FIXED_HOST_ADDR, (UINT8)HECI_HBM_MSG_ADDR);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "####Failed to send HBM_CLIENT_DISCONNECT_REQUEST. Status: %d\n", status);
+		DBGPRINT(Handle->TeeHandle, "####Failed to send HBM_CLIENT_DISCONNECT_REQUEST. Status: %llu\n", (unsigned long long)status);
 		goto End;
 	}
 	status = heciReadMsg(Handle, BLOCKING, (UINT32 *)&disconnectMsgReply, sizeof(disconnectMsgReply), &msgReplyLen);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "####Failed with ReadMsg, Status: %d.\n", status);
+		DBGPRINT(Handle->TeeHandle, "####Failed with ReadMsg, Status: %llu.\n", (unsigned long long)status);
 		goto End;
 	}
 	DBGPRINT(Handle->TeeHandle, "#### disconnectMsgReply Command %02X , Status: %02X.\n", disconnectMsgReply.Command, disconnectMsgReply.Status);
@@ -382,7 +382,7 @@ heciFwToHostFlowControl(
 	status = heciReadMsg(Handle, BLOCKING, (UINT32 *)&flowCtrlMsg, sizeof(HBM_FLOW_CONTROL), &msgLen);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "#####Flow control: wait for FW failed with status: %d.\n", status);
+		DBGPRINT(Handle->TeeHandle, "#####Flow control: wait for FW failed with status: %llu.\n", (unsigned long long)status);
 		goto End;
 	}
 
@@ -427,7 +427,7 @@ heciHostToSecFlowControl(
 	status = heciSendMsg(Handle, (UINT32 *)&flowCtrlMsg, sizeof(flowCtrlMsg), BIOS_FIXED_HOST_ADDR, HECI_HBM_MSG_ADDR);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "#####Flow control: send to FW failed with status: %d.\n", status);
+		DBGPRINT(Handle->TeeHandle, "#####Flow control: send to FW failed with status: %llu.\n", (unsigned long long)status);
 		goto End;
 	}
 
@@ -464,7 +464,7 @@ HeciDeviceEnumerateClients(
 	status = heciReset(Handle);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "Failed to send HECI reset. Status: %d\n", status);
+		DBGPRINT(Handle->TeeHandle, "Failed to send HECI reset. Status: %llu\n", (unsigned long long)status);
 		status = EFI_DEVICE_ERROR;
 		goto End;
 	}
@@ -488,7 +488,7 @@ HeciDeviceEnumerateClients(
 		status = heciReadMsg(Handle, BLOCKING, (UINT32 *)&enumMsgReply, sizeof(HBM_HOST_ENUMERATION_RESPONSE), &msgReplyLen);
 		if (EFI_ERROR(status))
 		{
-			DBGPRINT(Handle->TeeHandle, "Failed to read HBM_HOST_ENUMERATION_REQUEST. Status: %d\n", status);
+			DBGPRINT(Handle->TeeHandle, "Failed to read HBM_HOST_ENUMERATION_REQUEST. Status: %llu\n", (unsigned long long)status);
 			if (EFI_TIMEOUT == status)
 			{
 				continue;
@@ -501,7 +501,7 @@ HeciDeviceEnumerateClients(
 
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "Failed to read HBM_HOST_ENUMERATION_REQUEST. Status: %d.\n", status);
+		DBGPRINT(Handle->TeeHandle, "Failed to read HBM_HOST_ENUMERATION_REQUEST. Status: %llu.\n", (unsigned long long)status);
 		goto End;
 	}
 	DBGPRINT(Handle->TeeHandle, "HBM_HOST_ENUMERATION_RESPONSE: [Command: %d]\n", enumMsgReply.Command);
@@ -530,7 +530,7 @@ HeciDeviceEnumerateClients(
 		status = heciSendMsg(Handle, (UINT32 *)&propMsg, sizeof(propMsg), BIOS_FIXED_HOST_ADDR, HECI_HBM_MSG_ADDR);
 		if (EFI_ERROR(status))
 		{
-			DBGPRINT(Handle->TeeHandle, "Failed to send HBM_CLIENT_PROP_MSG. Status: %d\n", status);
+			DBGPRINT(Handle->TeeHandle, "Failed to send HBM_CLIENT_PROP_MSG. Status: %llu\n", (unsigned long long)status);
 			goto End;
 		}
 
@@ -538,7 +538,7 @@ HeciDeviceEnumerateClients(
 		status = heciReadMsg(Handle, BLOCKING, (UINT32 *)&propMsgReply, sizeof(HBM_CLIENT_PROP_MSG_REPLY), &msgReplyLen);
 		if (EFI_ERROR(status))
 		{
-			DBGPRINT(Handle->TeeHandle, "heciReadMsg failed to read HBM_CLIENT_PROP_MSG response. Status: %d\n", status);
+			DBGPRINT(Handle->TeeHandle, "heciReadMsg failed to read HBM_CLIENT_PROP_MSG response. Status: %llu\n", (unsigned long long)status);
 			goto End;
 		}
 
@@ -620,7 +620,7 @@ EfiTeeHeciConnectClient(
 	status = HeciDeviceEnumerateClients(Handle, lib);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "Could not HeciDeviceEnumerateClients, Status: %d\n", status);
+		DBGPRINT(Handle->TeeHandle, "Could not HeciDeviceEnumerateClients, Status: %llu\n", (unsigned long long)status);
 		status = EFI_DEVICE_ERROR;
 		goto End;
 	}
@@ -664,7 +664,7 @@ EfiTeeHeciConnectClient(
 	}
 	if (host_client_id == TEE_MAX_FW_CLIENTS) 
 	{
-		DBGPRINT(Handle->TeeHandle, "Max client count reached\n", status);
+		DBGPRINT(Handle->TeeHandle, "Max client count reached\n");
 		status = EFI_DEVICE_ERROR;
 		goto End;
 	}
@@ -690,14 +690,14 @@ EfiTeeHeciConnectClient(
 	status = heciSendMsg(Handle, (UINT32 *)&connectMsg, sizeof(connectMsg), BIOS_FIXED_HOST_ADDR, HECI_HBM_MSG_ADDR);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "Connect Send failed with status: %d.\n", status);
+		DBGPRINT(Handle->TeeHandle, "Connect Send failed with status: %llu.\n", (unsigned long long)status);
 		goto End;
 	}
 
 	status = heciReadMsg(Handle, BLOCKING, (UINT32 *)&connectMsgReply, sizeof(HBM_CLIENT_CONNECT_RESPONSE), &msgReplyLen);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "Connect Recv failed with status: %d.\n", status);
+		DBGPRINT(Handle->TeeHandle, "Connect Recv failed with status: %llu.\n", (unsigned long long)status);
 		goto End;
 	}
 
@@ -799,7 +799,7 @@ EfiTeeHeciSendMessage(
 	status = heciHostToSecFlowControl(Handle, client, fwAddress);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "heciHostToSecFlowControl Failed. Status: %d", status);
+		DBGPRINT(Handle->TeeHandle, "heciHostToSecFlowControl Failed. Status: %llu", (unsigned long long)status);
 		goto End;
 	}
 
@@ -811,7 +811,7 @@ EfiTeeHeciSendMessage(
 	status = heciSendMsg(Handle, (UINT32 *)buffer, bufferLength, hostAddress, fwAddress);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "SendMessage: failed to send message. Status: %d.", status);
+		DBGPRINT(Handle->TeeHandle, "SendMessage: failed to send message. Status: %llu.", (unsigned long long)status);
 		goto End;
 	}
 	*BytesWritten = bufferLength;
@@ -882,7 +882,8 @@ EfiTeeHeciReceiveMessage(
 	status = heciReadMsg(Handle, BLOCKING, (UINT32 *)Buffer, BufferSize, &bytes_read);
 	if (EFI_ERROR(status))
 	{
-		DBGPRINT(Handle->TeeHandle, "\nReadMsg: first reply read failed. bytesRead: %d. Status: %d\n", bytes_read, status);
+		DBGPRINT(Handle->TeeHandle, "\nReadMsg: first reply read failed. bytesRead: %d. Status: %llu\n",
+			 bytes_read, (unsigned long long)status);
 		goto End;
 	}
 
@@ -899,7 +900,7 @@ EfiTeeHeciReceiveMessage(
 		status = heciReadMsg(Handle, BLOCKING, (UINT32 *)Buffer, BufferSize, &bytes_read);
 		if (EFI_ERROR(status))
 		{
-			DBGPRINT(Handle->TeeHandle, "heciReadMsg. Status: %d\n");
+			DBGPRINT(Handle->TeeHandle, "heciReadMsg. Status: %llu\n", (unsigned long long)status);
 			if (EFI_TIMEOUT == status)
 			{
 				DBGPRINT(Handle->TeeHandle, "Detected EFI_TIMEOUT.\n");
@@ -911,7 +912,7 @@ EfiTeeHeciReceiveMessage(
 
 			if (EFI_ERROR(status))
 			{
-				DBGPRINT(Handle->TeeHandle, "Retry failed. Status: %d\n", status);
+				DBGPRINT(Handle->TeeHandle, "Retry failed. Status: %llu\n", (unsigned long long)status);
 				goto End;
 			}
 		}
@@ -930,7 +931,7 @@ EfiTeeHeciReceiveMessage(
 	{
 		EFIPRINT(Handle->TeeHandle, "FixedAddress: %d\n", client->properties.FixedAddress);
 		status = heciFwToHostFlowControl(Handle, client);
-		DBGPRINT(Handle->TeeHandle, "heciFwToHostFlowControl. Status: %d\n");
+		DBGPRINT(Handle->TeeHandle, "heciFwToHostFlowControl. Status: %llu\n", (unsigned long long)status);
 		goto End;
 	}
 
