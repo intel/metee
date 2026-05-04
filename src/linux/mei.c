@@ -376,6 +376,12 @@ static inline int __mei_getkind(struct mei *me, const char *device, char *kind, 
 		return -me->last_err;
 	}
 
+	if (len == 0) {
+		me->last_err = ENODATA;
+		close(fd);
+		return -me->last_err;
+	}
+
 	close(fd);
 	if ((size_t)len > *kind_size || !kind) {
 		me->last_err = ENOSPC;
