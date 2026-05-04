@@ -46,7 +46,7 @@ void CallbackPrintHelper(IN PTEEHANDLE handle, bool is_error, const char* args, 
 **		TEE_INTERNAL_ERROR
 */
 TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation, IN PTEEHANDLE handle,
-		                  IN PVOID buffer, IN ULONG bufferSize, OUT EVENTHANDLE evt)
+		                  IN PVOID buffer, IN size_t bufferSize, OUT EVENTHANDLE evt)
 {
 	TEESTATUS       status;
 	DWORD           bytesTransferred= 0;
@@ -61,13 +61,19 @@ TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation, IN PTEEHANDLE hand
 		goto Cleanup;
 	}
 
+	if (bufferSize > MAXDWORD) {
+		status = TEE_INVALID_PARAMETER;
+		ERRPRINT(handle, "Buffer size is too big: %zu\n", bufferSize);
+		goto Cleanup;
+	}
+
 	if (operation == ReadOperation) {
-		if (ReadFile(impl_handle->handle, buffer, bufferSize, &bytesTransferred, evt)) {
+		if (ReadFile(impl_handle->handle, buffer, (DWORD)bufferSize, &bytesTransferred, evt)) {
 			optSuccesed = TRUE;
 		}
 	}
 	else if (operation == WriteOperation) {
-		if (WriteFile(impl_handle->handle, buffer, bufferSize, &bytesTransferred, evt)) {
+		if (WriteFile(impl_handle->handle, buffer, (DWORD)bufferSize, &bytesTransferred, evt)) {
 			optSuccesed = TRUE;
 		}
 	}

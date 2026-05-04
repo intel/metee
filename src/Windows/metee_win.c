@@ -362,7 +362,7 @@ TEESTATUS TEEAPI TeeRead(IN PTEEHANDLE handle, IN OUT void* buffer, IN size_t bu
 		goto Cleanup;
 	}
 
-	status = BeginOverlappedInternal(ReadOperation, handle, buffer, (ULONG)bufferSize, impl_handle->evt[METEE_WIN_EVT_READ]);
+	status = BeginOverlappedInternal(ReadOperation, handle, buffer, bufferSize, impl_handle->evt[METEE_WIN_EVT_READ]);
 	if (status) {
 		ERRPRINT(handle, "Error in BeginOverlappedInternal, error: %d\n", status);
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;
@@ -422,7 +422,7 @@ TEESTATUS TEEAPI TeeWrite(IN PTEEHANDLE handle, IN const void* buffer, IN size_t
 		goto Cleanup;
 	}
 
-	status = BeginOverlappedInternal(WriteOperation, handle, (PVOID)buffer, (ULONG)bufferSize, impl_handle->evt[METEE_WIN_EVT_WRITE]);
+	status = BeginOverlappedInternal(WriteOperation, handle, (PVOID)buffer, bufferSize, impl_handle->evt[METEE_WIN_EVT_WRITE]);
 	if (status) {
 		ERRPRINT(handle, "Error in BeginOverlappedInternal, error: %d\n", status);
 		impl_handle->state = METEE_CLIENT_STATE_FAILED;

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2025 Intel Corporation
+ * Copyright (C) 2014-2026 Intel Corporation
  */
 #ifndef __TEELIBWIN_H
 #define __TEELIBWIN_H
@@ -49,7 +49,7 @@ typedef enum _TEE_OPERATION
 **********************************************************************/
 TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation,
 				 IN PTEEHANDLE handle, IN PVOID buffer,
-				 IN ULONG bufferSize, OUT EVENTHANDLE evt);
+				 IN size_t bufferSize, OUT EVENTHANDLE evt);
 TEESTATUS EndOverlapped(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD milliseconds,
 			OUT OPTIONAL LPDWORD pNumberOfBytesTransferred);
 TEESTATUS GetDevicePath(IN PTEEHANDLE handle, IN LPCGUID InterfaceGuid,
