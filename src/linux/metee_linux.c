@@ -73,6 +73,7 @@ static inline TEESTATUS errno2status(ssize_t err)
 		case -ETIME : return TEE_TIMEOUT;
 		case -EACCES: return TEE_PERMISSION_DENIED;
 		case -EOPNOTSUPP: return TEE_NOTSUPPORTED;
+		case -ENODATA: return TEE_NOTSUPPORTED;
 		case -ECANCELED: return TEE_UNABLE_TO_COMPLETE_OPERATION;
 		case -ENOSPC: return TEE_INSUFFICIENT_BUFFER;
 		default     : return TEE_INTERNAL_ERROR;
