@@ -41,6 +41,8 @@ static inline struct METEE_EFI_IMPL *to_int(PTEEHANDLE _h)
 
 #define GSC_FSTS_OFF 0xC00
 
+#define PCI_CTL_OFF 0x84
+
 static struct HECI_HW
 HwInfoPch(
 	IN UINT32 segment,
@@ -64,6 +66,7 @@ HwInfoPch(
 			 {FW_STS1, FW_STS2, FW_STS3, FW_STS4, FW_STS5, FW_STS6},
 			 TRUE},
 			ME_TRC,
+			0x0
 		};
 	return hw_info;
 }
@@ -92,7 +95,37 @@ HwInfoGfxGsc(
 			  GSC_FSTS_OFF | FW_STS4, GSC_FSTS_OFF | FW_STS5, GSC_FSTS_OFF | FW_STS6},
 			 FALSE},
 			0x0,
+			0x0
 		};
+	return hw_info;
+}
+
+static struct HECI_HW
+HwInfoGfxCsc(
+	IN UINT32 segment,
+	IN UINT32 bus,
+	IN UINT32 device,
+	IN UINT32 function)
+{
+#define GFX_CSC_BASE_ADDRESS_OFFSET_HECI2 0x1000
+	struct HECI_HW hw_info =
+	{
+		{/* Bdf */
+		 segment,
+		 bus,
+		 device,
+		 function},
+		{/* RegisterOffset */
+		 DEFAULT_OFFSET_H_CB_WW, DEFAULT_OFFSET_H_CSR,
+		 DEFAULT_OFFSET_ME_CB_RW, DEFAULT_OFFSET_ME_CSR_HA,
+		 GFX_CSC_BASE_ADDRESS_OFFSET_HECI2},
+		{/* FwStatus */
+		 {GSC_FSTS_OFF | FW_STS1, GSC_FSTS_OFF | FW_STS2, GSC_FSTS_OFF | FW_STS3,
+		  GSC_FSTS_OFF | FW_STS4, GSC_FSTS_OFF | FW_STS5, GSC_FSTS_OFF | FW_STS6},
+		 FALSE},
+		0x0,
+		PCI_CTL_OFF
+	};
 	return hw_info;
 }
 
@@ -128,6 +161,11 @@ SetHwInfo(
 		Handle->Hw = HwInfoGfxGsc(device->data.bdf.value.segment, device->data.bdf.value.bus,
 								  device->data.bdf.value.device, device->data.bdf.value.function);
 		DBGPRINT(Handle->TeeHandle, "******** HECI_HW_TYPE_GFX_GSC\n");
+		break;
+	case HECI_HW_TYPE_GFX_CSC:
+		Handle->Hw = HwInfoGfxCsc(device->data.bdf.value.segment, device->data.bdf.value.bus,
+			device->data.bdf.value.device, device->data.bdf.value.function);
+		DBGPRINT(Handle->TeeHandle, "******** HECI_HW_TYPE_GFX_CSC\n");
 		break;
 	default:
 		DBGPRINT(Handle->TeeHandle, "******** Unsupported device kind %d\n", device->data.bdf.hw_type);

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2024 Intel Corporation
+ * Copyright (C) 2024-2026 Intel Corporation
  */
 #ifndef METEE_EFI_H_
 #define METEE_EFI_H_
@@ -178,6 +178,7 @@ struct HECI_HW {
         BOOLEAN ResidesInConfigSpace;       /** FW status resides in config space or MMIO */
     } FwStatus;
     UINT32 TrcOffset;                       /** TRC register offset */
+    UINT32 D3WakeOffset;                    /** D3Wake register offset, if 0 - D3Wake is not supported */
 };
 
 struct _TEEHANDLE;

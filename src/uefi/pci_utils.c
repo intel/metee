@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2024 Intel Corporation
+ * Copyright (C) 2024-2026 Intel Corporation
  */
 
 #include <Uefi.h>
@@ -52,6 +52,7 @@ CheckAndFixHeciForAccess(
 	UINT64 MemBar;
 	UINT32 LowPart;
 	UINT64 HiPart;
+	UINT32 reg;
 
 #define B_PCI_BAR_MEMORY_TYPE_64 0x4
 
@@ -89,5 +90,12 @@ CheckAndFixHeciForAccess(
 	///
 	PciSegmentOr8(HeciBaseAddress + PCI_COMMAND_OFFSET, EFI_PCI_COMMAND_MEMORY_SPACE);
 	
+	if (Handle->Hw.D3WakeOffset != 0)
+	{ /* Wake from D3 */
+		reg = PciSegmentRead32(HeciBaseAddress + Handle->Hw.D3WakeOffset);
+		reg &= ~0x3u;
+		PciSegmentWrite32(HeciBaseAddress + Handle->Hw.D3WakeOffset, reg);
+	}
+
 	return MemBar + Handle->Hw.RegisterOffset.BaseAddressOffset;
 }
