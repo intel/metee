@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2025 Intel Corporation
+ * Copyright (C) 2014-2026 Intel Corporation
  */
 /*! \file metee.h
  *  \brief metee library API
@@ -39,9 +39,13 @@ extern "C" {
 	#define TEE_DEVICE_HANDLE void *
 	#define TEE_INVALID_DEVICE_HANDLE ((void*)-1)	
 
+	#define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
+				const GUID name \
+					= { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
+
 	// when calling TeeInitFull
 	// TEE_DEVICE_TYPE_BDF - HECI device Bus Device Function
-	
+
 #else /* _WIN32 */
 	#ifndef METEE_DLL
 		#define METEE_DLL_API
