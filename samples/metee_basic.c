@@ -1,12 +1,35 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2024-2025 Intel Corporation
+ * Copyright (C) 2024-2026 Intel Corporation
  */
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef __linux__
+#ifdef WIN32
+#define metee_basic_print(...) printf(__VA_ARGS__)
+#define metee_basic_err(...) fprintf(stderr, __VA_ARGS__)
+#define metee_basic_malloc(size) malloc(size)
+#define metee_basic_free(ptr) free(ptr)
+#define metee_basic_sleep(ms) Sleep(ms)
+#elif __linux__
 #include <unistd.h>
-#endif /* __linux__ */
+#define metee_basic_print(...) printf(__VA_ARGS__)
+#define metee_basic_err(...) fprintf(stderr, __VA_ARGS__)
+#define metee_basic_malloc(size) malloc(size)
+#define metee_basic_free(ptr) free(ptr)
+#define metee_basic_sleep(ms) usleep((ms)*1000)
+#elif defined(EFI)
+#include <Uefi.h>
+#include <Library/MemoryAllocationLib.h>
+#include <Library/PrintLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiLib.h>
+
+#define metee_basic_print(...) AsciiPrint(__VA_ARGS__)
+#define metee_basic_err(...) AsciiPrint(__VA_ARGS__)
+#define metee_basic_malloc(size) AllocatePool(size)
+#define metee_basic_free(ptr) FreePool(ptr)
+#define metee_basic_sleep(ms) gBS->Stall((ms)*1000)
+#endif
 
 #include <metee.h>
 
@@ -61,6 +84,7 @@ int main(int argc, char* argv[])
 		.type = TEE_DEVICE_TYPE_NONE,
 		.data.path = NULL
 	};
+
 	int retry = CONNECT_RETRIES;
 	size_t written = 0;
 	struct mkhi_fwver_req req;
@@ -71,15 +95,15 @@ int main(int argc, char* argv[])
 
 	status = TeeInitFull(&handle, &MEI_MKHIF, addr, TEE_LOG_LEVEL_VERBOSE, NULL);
 	if (!TEE_IS_SUCCESS(status)) {
-		fprintf(stderr, "TeeInitFull failed with status = %u\n", status);
+		metee_basic_err("TeeInitFull failed with status = %u\n", status);
 		return 1;
 	}
 
 	status = TeeGetKind(&handle, kind, &kind_size);
 	if (!TEE_IS_SUCCESS(status)) {
-		fprintf(stderr, "TeeGetKind failed with status = %u\n", status);
+		metee_basic_err("TeeGetKind failed with status = %u\n", status);
 	} else {
-		printf("Tee device kind is %s\n", kind);
+		metee_basic_print("Tee device kind is %s\n", kind);
 	}
 	
 	while (retry--) {
@@ -87,27 +111,23 @@ int main(int argc, char* argv[])
 		if (status != TEE_BUSY &&
 			status != TEE_UNABLE_TO_COMPLETE_OPERATION) /* windows return this error on busy */
 			break;
-		fprintf(stderr, "Client is busy, retrying\n");
-#ifdef WIN32
-		Sleep(2000);
-#else
-		sleep(2);
-#endif /* WIN32 */
+		metee_basic_err("Client is busy, retrying\n");
+		metee_basic_sleep(2000);
 	}
 	switch (status) {
 	case TEE_SUCCESS:
 		break;
 	case TEE_CLIENT_NOT_FOUND:
-		fprintf(stderr, "TeeConnect failed with status = %u (Client not found)\n", status);
+		metee_basic_err("TeeConnect failed with status = %u (Client not found)\n", status);
 		goto out;
 	default:
-		fprintf(stderr, "TeeConnect failed with status = %u\n", status);
+		metee_basic_err("TeeConnect failed with status = %u\n", status);
 		goto out;
 	}
 
 	if (TeeGetMaxMsgLen(&handle) == 0)
 	{
-		fprintf(stderr, "Client reported zero MTU. Aborting.\n");
+		metee_basic_err("Client reported zero MTU. Aborting.\n");
 		goto out;
 	}
 
@@ -120,55 +140,55 @@ int main(int argc, char* argv[])
 
 	status = TeeWrite(&handle, &req, sizeof(req), &written, MKHI_TIMEOUT);
 	if (!TEE_IS_SUCCESS(status)) {
-		fprintf(stderr, "TeeWrite failed with status = %u\n", status);
+		metee_basic_err("TeeWrite failed with status = %u\n", status);
 		goto out;
 	}
 	if (written != sizeof(req)) {
-		fprintf(stderr, "TeeWrite failed written = %zu\n", written);
+		metee_basic_err("TeeWrite failed written = %zu\n", written);
 		status = TEE_INTERNAL_ERROR;
 		goto out;
 	}
 
 	/* Read */
-	read_buf = (uint8_t*)malloc(TeeGetMaxMsgLen(&handle));
+	read_buf = (uint8_t*)metee_basic_malloc(TeeGetMaxMsgLen(&handle));
 	if (!read_buf) {
-		fprintf(stderr, "malloc failed\n");
+		metee_basic_err("malloc failed\n");
 		status = TEE_INTERNAL_ERROR;
 		goto out;
 	}
 
 	status = TeeRead(&handle, read_buf, TeeGetMaxMsgLen(&handle), &written, MKHI_TIMEOUT);
 	if (!TEE_IS_SUCCESS(status)) {
-		fprintf(stderr, "TeeWrite failed with status = %u\n", status);
+		metee_basic_err("TeeRead failed with status = %u\n", status);
 		goto out;
 	}
 
 	rsp = (struct mkhi_fwver_rsp*)read_buf;
 
 	if (written < sizeof(struct mkhi_msg_hdr)) {
-		fprintf(stderr, "Returned less then header = %zu\n", written);
+		metee_basic_err("Returned less than header = %zu\n", written);
 		status = TEE_INTERNAL_ERROR;
 		goto out;
 	}
 
 	if (written < sizeof(struct mkhi_fwver_rsp)) {
-		fprintf(stderr, "Returned less then response = %zu\n", written);
+		metee_basic_err("Returned less than response = %zu\n", written);
 		status = TEE_INTERNAL_ERROR;
 		goto out;
 	}
 
 	if (rsp->header.Result) {
-		fprintf(stderr, "Result = %u\n", rsp->header.Result);
+		metee_basic_err("Result = %u\n", rsp->header.Result);
 		status = TEE_INTERNAL_ERROR;
 		goto out;
 	}
 
-	printf("Version: %u.%u.%u.%u\n",
+	metee_basic_print("Version: %u.%u.%u.%u\n",
 		rsp->version.code.major, rsp->version.code.minor, rsp->version.code.hotFix, rsp->version.code.buildNo);
 
 out:
 	TeeDisconnect(&handle);
 	if (read_buf)
-		free(read_buf);
+		metee_basic_free(read_buf);
 	return TEE_IS_SUCCESS(status) ? 0 : 1;
 }

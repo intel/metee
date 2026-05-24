@@ -41,5 +41,7 @@ MeTeeLib|MeTeePkg/MeTeeLibrary/MeTeeLibrary.inf
 [Components]
 MeTeePkg/MeTeeLibrary/MeTeeLibrary.inf
 
+@METEE_SAMPLES@
+
 [PcdsFixedAtBuild]
 gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000043

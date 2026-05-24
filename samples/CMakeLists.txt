@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2014-2024 Intel Corporation
+# Copyright (C) 2014-2026 Intel Corporation
 cmake_minimum_required(VERSION 3.15)
 project(metee_sample)
 
@@ -29,6 +29,13 @@ install(TARGETS metee-trc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 add_executable(metee-basic metee_basic.c)
 target_link_libraries(metee-basic metee)
 install(TARGETS metee-basic RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+if(EFI)
+  configure_file (
+    "${PROJECT_SOURCE_DIR}/MeTeeBasic.inf.in"
+    "${CMAKE_BINARY_DIR}/MeTeePkg/Samples/MeTeeBasic/MeTeeBasic.inf"
+  )
+endif(EFI)
 
 add_executable(meteepp-basic meteepp_basic.cpp)
 target_link_libraries(meteepp-basic metee)

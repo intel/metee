@@ -22,6 +22,14 @@ add_library(${PROJECT_NAME} ${TEE_SOURCES})
 string(REPLACE ";" "\n" TEE_SOURCES_MULTILINE "${TEE_SOURCES}")
 string(REPLACE ";" "\n" TEE_HEADERS_MULTILINE "${TEE_HEADERS}")
 
+if(BUILD_SAMPLES)
+  set(METEE_SAMPLES_LIST
+    MeTeePkg/Samples/MeTeeBasic/MeTeeBasic.inf
+  )
+
+  string(REPLACE ";" "\n" METEE_SAMPLES "${METEE_SAMPLES_LIST}")
+endif(BUILD_SAMPLES)
+
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/uefi/MeTeeLibrary.inf.in"
   "${PROJECT_BINARY_DIR}/MeTeePkg/MeTeeLibrary/MeTeeLibrary.inf"

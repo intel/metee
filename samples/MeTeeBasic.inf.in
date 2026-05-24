@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2026 Intel Corporation
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = MeTeeBasic
+  FILE_GUID                      = 1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = @TEE_VERSION_STRING@
+  ENTRY_POINT                    = UefiMain
+
+[Sources]
+  ../samples/metee_basic.c
+  ../samples/MeTeeBasicMain.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MeTeePkg/MeTeePkg.dec
+
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  MeTeeLib
+
+[BuildOptions]
+  MSFT:*_*_*_CC_FLAGS = /GS- /D EFI /U _WIN32 /W4 /WX /wd4201
+  GCC:*_*_*_CC_FLAGS = -D EFI
