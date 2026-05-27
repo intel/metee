@@ -17,10 +17,15 @@ extern "C" {
 
 #ifdef EFI
 	#define DEBUG_PRINT_ME_PREFIX_INTERNAL "TEELIB: (%a:%a():%d) "
+	#ifdef METEE_EFI_STDLIB_SUPPORT
+		#define DEBUG_PRINT_ME_PREFIX_EXTERNAL "TEELIB: (%s:%s():%d) "
+	#else
+		#define DEBUG_PRINT_ME_PREFIX_EXTERNAL "TEELIB: (%a:%a():%d) "
+	#endif /* METEE_EFI_STDLIB_SUPPORT */
 #else /* EFI */
 	#define DEBUG_PRINT_ME_PREFIX_INTERNAL "TEELIB: (%s:%s():%d) "
+	#define DEBUG_PRINT_ME_PREFIX_EXTERNAL "TEELIB: (%s:%s():%d) "
 #endif /* EFI */
-#define DEBUG_PRINT_ME_PREFIX_EXTERNAL "TEELIB: (%s:%s():%d) "
 
 #ifdef _WIN32
 #include <windows.h>
