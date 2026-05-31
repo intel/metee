@@ -279,6 +279,12 @@ TEESTATUS GetDeviceKind(IN PTEEHANDLE handle, IN OUT OPTIONAL char *kind, IN OUT
 
 	FUNC_ENTRY(handle);
 
+	if (NULL == impl_handle->device_path) {
+		status = TEE_NOTSUPPORTED;
+		ERRPRINT(handle, "Device path is empty.\n");
+		goto Cleanup;
+	}
+
 	size_t device_path_len = strlen(impl_handle->device_path) + 1;
 	size_t device_path_size = device_path_len * sizeof(WCHAR);
 	device_path_w = (WCHAR*)malloc(device_path_size);
