@@ -25,6 +25,7 @@ string(REPLACE ";" "\n" TEE_HEADERS_MULTILINE "${TEE_HEADERS}")
 if(BUILD_SAMPLES)
   set(METEE_SAMPLES_LIST
     MeTeePkg/Samples/MeTeeBasic/MeTeeBasic.inf
+    MeTeePkg/Samples/MeTeeGsc/MeTeeGsc.inf
   )
 
   string(REPLACE ";" "\n" METEE_SAMPLES "${METEE_SAMPLES_LIST}")

@@ -14,6 +14,13 @@ add_executable(metee-gsc metee_gsc.c)
 target_link_libraries(metee-gsc metee)
 install(TARGETS metee-gsc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+if(EFI)
+  configure_file (
+    "${PROJECT_SOURCE_DIR}/MeTeeGsc.inf.in"
+    "${CMAKE_BINARY_DIR}/MeTeePkg/Samples/MeTeeGsc/MeTeeGsc.inf"
+  )
+endif(EFI)
+
 if(UNIX)
   add_executable(metee-connect metee_connect.c meiuuid.c)
 

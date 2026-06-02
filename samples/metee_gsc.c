@@ -1,25 +1,67 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2020-2025 Intel Corporation
+ * Copyright (C) 2020-2026 Intel Corporation
  */
+#include <errno.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <metee.h>
+
+#ifdef WIN32
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
-#include <errno.h>
-#include <stdint.h>
-#include <metee.h>
 
-#ifndef BIT
-#define BIT(n) 1 << (n)
-#endif /* BIT */
-
-#include <stdbool.h>
-#ifdef _WIN32
 typedef SSIZE_T ssize_t;
-#else
+#define metee_gsc_print(...) printf(__VA_ARGS__)
+#define metee_gsc_err(...) fprintf(stderr, __VA_ARGS__)
+#define metee_gsc_malloc(size) malloc(size)
+#define metee_gsc_free(ptr) free(ptr)
+#define metee_gsc_sleep(ms) Sleep(ms)
+static void mk_host_if_log(bool is_error, const char* data) {
+	fprintf((is_error) ? stderr : stdout, "LIB: %s", data);
+}
+#elif __linux__
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
 #include <unistd.h>
-#endif /* _WIN32 */
+
+#define metee_gsc_print(...) printf(__VA_ARGS__)
+#define metee_gsc_err(...) fprintf(stderr, __VA_ARGS__)
+#define metee_gsc_malloc(size) malloc(size)
+#define metee_gsc_free(ptr) free(ptr)
+#define metee_gsc_sleep(ms) usleep((ms)*1000)
+static void mk_host_if_log(bool is_error, const char* data) {
+	fprintf((is_error) ? stderr : stdout, "LIB: %s", data);
+}
+#elif defined(EFI)
+#include <Uefi.h>
+#include <Library/MemoryAllocationLib.h>
+#include <Library/PrintLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiLib.h>
+#include <Library/BaseLib.h>
+#include <Library/BaseMemoryLib.h>
+
+#define metee_gsc_print(...) AsciiPrint(__VA_ARGS__)
+#define metee_gsc_err(...) AsciiPrint(__VA_ARGS__)
+#define metee_gsc_malloc(size) AllocatePool(size)
+#define metee_gsc_free(ptr) FreePool(ptr)
+#define metee_gsc_sleep(ms) gBS->Stall((ms)*1000)
+#define strlen AsciiStrLen
+#define memcpy CopyMem
+#define strcmp AsciiStrCmp
+static inline void* memset(void *s, int c, size_t n) {
+	return SetMem(s, n, (UINT8)c);
+}
+static void mk_host_if_log(bool is_error, const char* data) {
+	AsciiPrint("LIB: %a\n", data);
+}
+#endif
 
 #pragma pack(1)
 struct gsc_fwu_heci_header {
@@ -86,7 +128,7 @@ const char *mkhi_status(uint32_t status)
 		MKH_STATUS(GSC_FWU_STATUS_INVALID_PARAMS);
 		MKH_STATUS(GSC_FWU_STATUS_FAILURE);
 	default:
-		fprintf(stderr, "unknown 0x%08X\n", status);
+		metee_gsc_err("unknown 0x%08X\n", status);
 		return "unknown";
 	}
 #undef MKH_STATUS
@@ -112,7 +154,7 @@ static void mk_host_if_fw_status(struct mk_host_if *acmd)
 
 	for (uint32_t i = 0; i < 6; i++)
 		if (TeeFWStatus(&acmd->mei_cl, i, &fwStatus) == TEE_SUCCESS)
-		       printf("FW Status[%u] = 0x%08X\n", i, fwStatus);
+		       metee_gsc_print("FW Status[%u] = 0x%08X\n", i, fwStatus);
 }
 
 static bool mk_host_if_is_gscfi(struct mk_host_if *acmd)
@@ -132,11 +174,6 @@ static bool mk_host_if_connect(struct mk_host_if *acmd)
 	return acmd->initialized;
 }
 
-static void mk_host_if_log(bool is_error, const char* data)
-{
-	fprintf((is_error) ? stderr : stdout, "LIB: %s", data);
-}
-
 static bool mk_host_if_init(struct mk_host_if *acmd, const GUID *guid,
                             bool reconnect, bool verbose)
 {
@@ -146,6 +183,17 @@ static bool mk_host_if_init(struct mk_host_if *acmd, const GUID *guid,
 		{
 		.type = TEE_DEVICE_TYPE_GUID,
 		.data.guid = &GUID_DEVINTERFACE_HECI_GSC_CHILD
+		}
+	};
+#elif defined(EFI)
+#define ADDR_NUM 1
+	struct tee_device_address addr[ADDR_NUM] = {
+		{
+		.type = TEE_DEVICE_TYPE_BDF,
+		.data.bdf = {
+			.value = { 0x0, 0x15, 0x0, 0x0},
+			.hw_type = HECI_HW_TYPE_GFX_CSC
+			}
 		}
 	};
 #else
@@ -193,12 +241,12 @@ static uint32_t mkhi_verify_response_header(struct gsc_fwu_heci_header *msg, str
 {
 	bool match = true;
 	if (msg->command_id != resp->command_id) {
-		printf("Mismatch Command; Req-Command = %d , Resp-Command = %d\n",
+		metee_gsc_print("Mismatch Command; Req-Command = %d , Resp-Command = %d\n",
 		       msg->command_id, resp->command_id);
 		match = false;
 	}
 	if (resp->is_response != 1) {
-		printf("Wrong IsResponse; Resp-IsResponse = %d\n", resp->is_response);
+		metee_gsc_print("Wrong IsResponse; Resp-IsResponse = %d\n", resp->is_response);
 		match = false;
 	}
 
@@ -206,7 +254,7 @@ static uint32_t mkhi_verify_response_header(struct gsc_fwu_heci_header *msg, str
 }
 
 static uint32_t mk_host_if_call(struct mk_host_if *acmd,
-                                const unsigned char *command, ssize_t command_sz,
+                                const unsigned char *command, size_t command_sz,
                                 uint8_t **read_buf, uint32_t rcmd,
                                 unsigned int expected_sz)
 {
@@ -214,6 +262,7 @@ static uint32_t mk_host_if_call(struct mk_host_if *acmd,
 	size_t out_buf_sz;
 	size_t written;
 	TEESTATUS status;
+	uint32_t ret;
 	struct gsc_fwu_heci_response *msg_hdr;
 	int count = 0;
 
@@ -221,13 +270,13 @@ static uint32_t mk_host_if_call(struct mk_host_if *acmd,
 	if (in_buf_sz == 0)
 	{
 		if (acmd->verbose)
-			fprintf(stderr, "mkhif: client reproted zero MTU.\n");
+			metee_gsc_err("mkhif: client reproted zero MTU.\n");
 		return GSC_FWU_STATUS_FAILURE;
 	}
-	*read_buf = (uint8_t *)malloc(in_buf_sz);
+	*read_buf = (uint8_t *)metee_gsc_malloc(in_buf_sz);
 	if (*read_buf == NULL)
 		return GSC_FWU_STATUS_FAILURE;
-	memset(*read_buf, 0, in_buf_sz);
+	memset((void*)*read_buf, 0, in_buf_sz);
 	msg_hdr = (struct gsc_fwu_heci_response *)*read_buf;
 
 	while (count++ < 2) {
@@ -244,13 +293,12 @@ static uint32_t mk_host_if_call(struct mk_host_if *acmd,
 	if (status)
 		return GSC_FWU_STATUS_FAILURE;
 
-	status = msg_hdr->status;
 	if (acmd->verbose)
-		fprintf(stderr, "mkhif: message header read status = %d\n", status);
+		metee_gsc_err("mkhif: message header read status = %u\n", msg_hdr->status);
 
-	status = mkhi_verify_response_header((struct gsc_fwu_heci_header *)command, &msg_hdr->header);
-	if (status != GSC_FWU_STATUS_SUCCESS)
-		return status;
+	ret = mkhi_verify_response_header((struct gsc_fwu_heci_header *)command, &msg_hdr->header);
+	if (ret != GSC_FWU_STATUS_SUCCESS)
+		return ret;
 
 	if (expected_sz && expected_sz != out_buf_sz) {
 		return GSC_FWU_STATUS_FAILURE;
@@ -260,7 +308,7 @@ static uint32_t mk_host_if_call(struct mk_host_if *acmd,
 
 static void printf_if_fw_version(struct gsc_fwu_external_version *version)
 {
-	printf("Firmware Version %c%c%c%c.%d.%d\n",
+	metee_gsc_print("Firmware Version %c%c%c%c.%d.%d\n",
 	       version->project[0], version->project[1],
 	       version->project[2], version->project[3],
 	       version->hotfix, version->build);
@@ -333,12 +381,12 @@ static uint32_t mk_host_if_fw_version_resp(struct mk_host_if *acmd)
 
 static void usage(const char *p)
 {
-	fprintf(stderr, "Usage: %s [-hv] [-e <l> ] [-i <n> ] [-b M.m.f.b] [-r] [-s <seq>] [-k <n>]\n", p);
-	fprintf(stderr, "        -h                help\n");
-	fprintf(stderr, "        -v                verbose\n");
-	fprintf(stderr, "        -i <n>            iterate n times\n");
-	fprintf(stderr, "        -r                reconnect if failed to write\n");
-	fprintf(stderr, "        -k <n>            timeout between iterations in microseconds (default: 0)\n");
+	metee_gsc_err("Usage: %s [-hv] [-e <l> ] [-i <n> ] [-b M.m.f.b] [-r] [-s <seq>] [-k <n>]\n", p);
+	metee_gsc_err("        -h                help\n");
+	metee_gsc_err("        -v                verbose\n");
+	metee_gsc_err("        -i <n>            iterate n times\n");
+	metee_gsc_err("        -r                reconnect if failed to write\n");
+	metee_gsc_err("        -k <n>            timeout between iterations in microseconds (default: 0)\n");
 }
 
 int main(int argc, char *argv[])
@@ -358,11 +406,10 @@ int main(int argc, char *argv[])
 	bool reconnect = false;
 	unsigned long iter_timeout = 0;
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(EFI)
 	verbose = true;
 	reconnect = true;
 #else
-	size_t echo_size;
 	extern char *optarg;
 	int opt;
 
@@ -419,14 +466,10 @@ int main(int argc, char *argv[])
 
 	for (i = 0; i < iterations ; i++) {
 		if (iter_timeout && i > 0) {
-			printf("Sleeping for %lu microseconds ...\n", iter_timeout);
-#ifdef _WIN32
-			Sleep(iter_timeout/1000);
-#else
-			usleep(iter_timeout);
-#endif /* _WIN32_ */
+			metee_gsc_print("Sleeping for %lu microseconds ...\n", iter_timeout);
+			metee_gsc_sleep(iter_timeout / 1000);
 		}
-		printf("Running version test %d...\n", i);
+		metee_gsc_print("Running version test %d...\n", i);
 		memset(&version, 0, sizeof(version));
 		ret = mk_host_if_fw_version(&acmd, &version);
 		if (ret != GSC_FWU_STATUS_SUCCESS)
@@ -440,6 +483,6 @@ int main(int argc, char *argv[])
 
 out:
 	mk_host_if_deinit(&acmd);
-	printf("STATUS %s\n", mkhi_status(ret));
+	metee_gsc_print("STATUS %s\n", mkhi_status(ret));
 	return ret;
 }
