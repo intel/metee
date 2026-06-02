@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright (C) 2024-2026 Intel Corporation
+#
+[Defines]
+  DSC_SPECIFICATION         = 0x0001001A
+  PLATFORM_GUID             = A4E6FE89-05EF-44DC-89F1-4EC07B513B10
+  PLATFORM_VERSION          = 0.01
+  PLATFORM_NAME             = MeTeePkg
+  SKUID_IDENTIFIER          = DEFAULT
+  SUPPORTED_ARCHITECTURES   = X64
+  BUILD_TARGETS             = DEBUG|RELEASE
+  OUTPUT_DIRECTORY          = BINARY_OUTPUT
+
+!include MdePkg/MdeLibs.dsc.inc
+
+[LibraryClasses]
+UefiApplicationEntryPoint|MdePkg/Library/UefiApplicationEntryPoint/UefiApplicationEntryPoint.inf
+UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
+DevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
+PrintLib|MdePkg/Library/BasePrintLib/BasePrintLib.inf
+RegisterFilterLib|MdePkg/Library/RegisterFilterLibNull/RegisterFilterLibNull.inf
+PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
+BaseLib|MdePkg/Library/BaseLib/BaseLib.inf
+DebugLib|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
+BaseMemoryLib|MdePkg/Library/BaseMemoryLib/BaseMemoryLib.inf
+UefiBootServicesTableLib|MdePkg/Library/UefiBootServicesTableLib/UefiBootServicesTableLib.inf
+MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
+UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
+
+DevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
+PciLib|MdePkg/Library/BasePciLibCf8/BasePciLibCf8.inf
+
+IoLib|MdePkg/Library/BaseIoLibIntrinsic/BaseIoLibIntrinsic.inf
+PciCf8Lib|MdePkg/Library/BasePciCf8Lib/BasePciCf8Lib.inf
+HobLib|MdePkg/Library/DxeHobLib/DxeHobLib.inf
+PciSegmentLib|MdePkg/Library/BasePciSegmentLibPci/BasePciSegmentLibPci.inf
+
+MeTeeLib|MeTeePkg/MeTeeLibrary/MeTeeLibrary.inf
+
+[Components]
+MeTeePkg/MeTeeLibrary/MeTeeLibrary.inf
+
+[PcdsFixedAtBuild]
+gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000043

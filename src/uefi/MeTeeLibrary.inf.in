@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright (C) 2024-2026 Intel Corporation
+#
+[Defines]
+  INF_VERSION       = 1.25
+  BASE_NAME         = MeTeeLib
+  FILE_GUID         = 5AC8222F-1511-4642-8484-5B20FF7F60DB
+  MODULE_TYPE       = BASE
+  VERSION_STRING    = @TEE_VERSION_STRING@
+  LIBRARY_CLASS     = MeTeeLib
+
+[Sources]
+@TEE_HEADERS_MULTILINE@
+
+@TEE_SOURCES_MULTILINE@
+
+[BuildOptions]
+  MSFT:*_*_*_CC_FLAGS = /GS- /D EFI /U _WIN32 /W4 /WX
+  GCC:*_*_*_CC_FLAGS = -D EFI
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  StdLib/StdLib.dec
+
+[LibraryClasses]
+  UefiLib
+  MemoryAllocationLib
+  UefiBootServicesTableLib
+  BaseMemoryLib
+  IoLib
+  PciSegmentLib
+
+[Protocols]
+  gEfiPciRootBridgeIoProtocolGuid
