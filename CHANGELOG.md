@@ -1,3 +1,17 @@
+## [6.2.4]
+
+### Fixed
+ - EFI: fix print specifiers for callback2
+
+### Changed
+ - samples: metee_gsc: enable EFI build
+ - samples: metee_basic: enable EFI build
+
+### Added
+ - EFI: add support for CSC target
+ - EFI: add DEFINE_GUID
+ - EFI: add library configure
+
 ## [6.2.3]
 
 ### Fixed
