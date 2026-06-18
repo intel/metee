@@ -26,7 +26,7 @@ else()
   include(linux.cmake)
 endif()
 
-set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER include/metee.h)
+set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "include/metee.h;include/meteepp.h")
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${TEE_VERSION_STRING})
 set_target_properties(
   ${PROJECT_NAME} PROPERTIES SOVERSION ${TEE_VERSION_STRING}
