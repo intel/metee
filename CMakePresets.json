@@ -4,9 +4,9 @@
     {
       "name": "base64",
       "displayName": "Windows x86-64 base",
-      "description": "Build x86-64 Release, VS2019",
+      "description": "Build x86-64 Release, VS2022",
       "hidden": true,
-      "generator": "Visual Studio 16 2019",
+      "generator": "Visual Studio 17 2022",
       "architecture": {
         "value": "x64",
         "strategy": "set"
@@ -19,9 +19,9 @@
     {
       "name": "base32",
       "displayName": "Windows x86 base",
-      "description": "Build x86 Release, VS2019",
+      "description": "Build x86 Release, VS2022",
       "hidden": true,
-      "generator": "Visual Studio 16 2019",
+      "generator": "Visual Studio 17 2022",
       "architecture": {
         "value": "Win32",
         "strategy": "set"
@@ -34,7 +34,7 @@
     {
       "name": "Release32Static",
       "displayName": "Windows x86 Release Static",
-      "description": "Build x86 Release, VS2019",
+      "description": "Build x86 Release, VS2022",
       "inherits": "base32",
       "binaryDir": "${sourceDir}/Release",
       "cacheVariables": {
@@ -45,7 +45,7 @@
     {
       "name": "Release32",
       "displayName": "Windows x86 Release",
-      "description": "Build x86 Release, VS2019",
+      "description": "Build x86 Release, VS2022",
       "inherits": "base32",
       "binaryDir": "${sourceDir}/Release",
       "cacheVariables": {
@@ -55,7 +55,7 @@
     {
       "name": "Release64",
       "displayName": "Windows x86-64 Release",
-      "description": "Build x86-64 Release, VS2019",
+      "description": "Build x86-64 Release, VS2022",
       "inherits": "base64",
       "binaryDir": "${sourceDir}/Release",
       "cacheVariables": {
@@ -65,7 +65,7 @@
     {
       "name": "Release64Static",
       "displayName": "Windows x86-64 Release Static",
-      "description": "Build x86-64 Release, VS2019",
+      "description": "Build x86-64 Release, VS2022",
       "inherits": "base64",
       "binaryDir": "${sourceDir}/Release",
       "cacheVariables": {
@@ -76,7 +76,7 @@
     {
       "name": "Release64AllStatic",
       "displayName": "Windows x86-64 Release Static",
-      "description": "Build x86-64 Release, VS2019",
+      "description": "Build x86-64 Release, VS2022",
       "inherits": "base64",
       "binaryDir": "${sourceDir}/Release",
       "cacheVariables": {
@@ -89,7 +89,7 @@
     {
       "name": "Debug64All",
       "displayName": "Windows x86-64 Debug All",
-      "description": "Build x86-64 Debug, VS2019, including test and samples",
+      "description": "Build x86-64 Debug, VS2022, including test and samples",
       "inherits": "base64",
       "binaryDir": "${sourceDir}/Debug",
       "cacheVariables": {
@@ -101,7 +101,7 @@
     {
       "name": "Debug64AllStatic",
       "displayName": "Windows x86-64 Debug Static All",
-      "description": "Build x86-64 Debug, VS2019, including test and samples",
+      "description": "Build x86-64 Debug, VS2022, including test and samples",
       "inherits": "base64",
       "binaryDir": "${sourceDir}/Debug",
       "cacheVariables": {
