@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2014-2024 Intel Corporation
+ * Copyright (C) 2014-2026 Intel Corporation
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,7 +44,7 @@ static int work(struct params *p)
 	rsz = TeeGetMaxMsgLen(&cl);
 	if (rsz == 0)
 	{
-		fprintf(stderr, "client reproted zero MTU.\n");
+		fprintf(stderr, "client reported zero MTU.\n");
 		goto out;
 	}
 	buf = (unsigned char *)malloc(rsz);

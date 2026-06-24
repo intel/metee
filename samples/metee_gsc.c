@@ -270,7 +270,7 @@ static uint32_t mk_host_if_call(struct mk_host_if *acmd,
 	if (in_buf_sz == 0)
 	{
 		if (acmd->verbose)
-			metee_gsc_err("mkhif: client reproted zero MTU.\n");
+			metee_gsc_err("mkhif: client reported zero MTU.\n");
 		return GSC_FWU_STATUS_FAILURE;
 	}
 	*read_buf = (uint8_t *)metee_gsc_malloc(in_buf_sz);
