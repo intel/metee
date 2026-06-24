@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2012-2024 Intel Corporation
+ * Copyright (C) 2012-2026 Intel Corporation
  */
 #include <stdarg.h>
 #include <stdio.h>
@@ -239,7 +239,7 @@ static uint32_t mk_host_if_call(struct mk_host_if *acmd,
 	if (in_buf_sz == 0)
 	{
 		if (acmd->verbose)
-			fprintf(stderr, "mkhif: client reproted zero MTU.\n");
+			fprintf(stderr, "mkhif: client reported zero MTU.\n");
 		return MKHI_STATUS_INTERNAL_ERROR;
 	}
 	*read_buf = (uint8_t *)malloc(in_buf_sz);
