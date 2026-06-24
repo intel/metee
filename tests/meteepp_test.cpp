@@ -1,11 +1,37 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /*
- * Copyright (C) 2021-2025 Intel Corporation
+ * Copyright (C) 2021-2026 Intel Corporation
  */
+#include <chrono>
+#include <thread>
 #include "metee_test.h"
 
 DEFINE_GUID(GUID_NON_EXISTS_CLIENT,
 	0x85eb8fa6, 0xbdd, 0x4d01, 0xbe, 0xc4, 0xa5, 0x97, 0x43, 0x4e, 0xd7, 0x62);
+
+static constexpr int CONNECT_RETRIES = 3;
+
+namespace {
+	void meteepp_connect_retry(intel::security::metee& metee)
+	{
+		int retry = CONNECT_RETRIES;
+
+		while (true) {
+			try {
+				metee.connect();
+				return;
+			}
+			catch(const intel::security::metee_exception& ex) {
+				const auto code = ex.code().value();
+				if ((--retry <= 0) ||
+				    (code != TEE_BUSY &&
+				     code != TEE_UNABLE_TO_COMPLETE_OPERATION))
+					throw;
+				std::this_thread::sleep_for(std::chrono::seconds(2));
+			}
+		}
+	}
+}
 
 TEST_P(MeTeePPTEST, PROD_MKHI_SimpleGetVersion)
 {
@@ -18,7 +44,7 @@ TEST_P(MeTeePPTEST, PROD_MKHI_SimpleGetVersion)
 			intel::security::metee metee(*intf.client);
 
 			ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, metee.device_handle());
-			metee.connect();
+			meteepp_connect_retry(metee);
 
 			ASSERT_EQ(MkhiRequest.size(), metee.write(MkhiRequest, 0));
 
@@ -69,7 +95,7 @@ TEST_P(MeTeePPTEST, PROD_MKHI_InitFull)
 		intel::security::metee metee(*intf.client, device, TEE_LOG_LEVEL_VERBOSE);
 
 		ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, metee.device_handle());
-		metee.connect();
+		meteepp_connect_retry(metee);
 	}
 	catch (const intel::security::metee_exception& ex) {
 		if (ex.code().value() == TEE_DEVICE_NOT_FOUND)
@@ -85,7 +111,7 @@ TEST_P(MeTeePPTEST, PROD_N_TestConnectToNonExistsUuid)
 	try {
 		intel::security::metee metee(GUID_NON_EXISTS_CLIENT);
 		ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, metee.device_handle());
-		metee.connect();
+		meteepp_connect_retry(metee);
 	}
 	catch (const intel::security::metee_exception& ex) {
 		if (ex.code().value() == TEE_DEVICE_NOT_FOUND)
@@ -108,7 +134,7 @@ TEST_P(MeTeePPTEST, PROD_MKHI_MoveSemantics)
 	try {
 		intel::security::metee metee(*intf.client);
 		ASSERT_NE(TEE_INVALID_DEVICE_HANDLE, metee.device_handle());
-		metee.connect();
+		meteepp_connect_retry(metee);
 
 		metee2 = std::move(metee);
 	}
