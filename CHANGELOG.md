@@ -1,3 +1,14 @@
+## [6.2.5]
+
+### Fixed
+ - Windows: TeeGetKind is not supported with handle
+ - samples: fix spelling
+ - tests: metepp: add connect retry
+ - CMake: install meteepp.h
+
+### Changed
+ - tests: bump CMake requred version to 3.15
+
 ## [6.2.4]
 
 ### Fixed
