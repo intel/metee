@@ -162,7 +162,7 @@ void mk_host_if_log(bool is_error, const char* fmt, ...)
 	char msg[DEBUG_MSG_LEN + 1];
 	va_list varl;
 	va_start(varl, fmt);
-	vsprintf(msg, fmt, varl);
+	vsnprintf(msg, sizeof(msg), fmt, varl);
 	va_end(varl);
 
 	fprintf((is_error) ? stderr : stdout, "LIB: %s", msg);
