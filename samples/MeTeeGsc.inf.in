@@ -10,8 +10,8 @@
   ENTRY_POINT                    = UefiMain
 
 [Sources]
-  ../samples/metee_gsc.c
-  ../samples/MeTeeGscMain.c
+  metee_gsc.c
+  MeTeeGscMain.c
 
 [Packages]
   MdePkg/MdePkg.dec

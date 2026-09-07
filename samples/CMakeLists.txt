@@ -15,9 +15,18 @@ target_link_libraries(metee-gsc metee)
 install(TARGETS metee-gsc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 if(EFI)
-  configure_file (
+  set(_metee_gsc_stage "${CMAKE_BINARY_DIR}/MeTeePkg/Samples/MeTeeGsc")
+  configure_file(
+    "${PROJECT_SOURCE_DIR}/metee_gsc.c"
+    "${_metee_gsc_stage}/metee_gsc.c" COPYONLY
+  )
+  configure_file(
+    "${PROJECT_SOURCE_DIR}/MeTeeGscMain.c"
+    "${_metee_gsc_stage}/MeTeeGscMain.c" COPYONLY
+  )
+  configure_file(
     "${PROJECT_SOURCE_DIR}/MeTeeGsc.inf.in"
-    "${CMAKE_BINARY_DIR}/MeTeePkg/Samples/MeTeeGsc/MeTeeGsc.inf"
+    "${_metee_gsc_stage}/MeTeeGsc.inf"
   )
 endif(EFI)
 
@@ -38,9 +47,18 @@ target_link_libraries(metee-basic metee)
 install(TARGETS metee-basic RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 if(EFI)
-  configure_file (
+  set(_metee_basic_stage "${CMAKE_BINARY_DIR}/MeTeePkg/Samples/MeTeeBasic")
+  configure_file(
+    "${PROJECT_SOURCE_DIR}/metee_basic.c"
+    "${_metee_basic_stage}/metee_basic.c" COPYONLY
+  )
+  configure_file(
+    "${PROJECT_SOURCE_DIR}/MeTeeBasicMain.c"
+    "${_metee_basic_stage}/MeTeeBasicMain.c" COPYONLY
+  )
+  configure_file(
     "${PROJECT_SOURCE_DIR}/MeTeeBasic.inf.in"
-    "${CMAKE_BINARY_DIR}/MeTeePkg/Samples/MeTeeBasic/MeTeeBasic.inf"
+    "${_metee_basic_stage}/MeTeeBasic.inf"
   )
 endif(EFI)
 
