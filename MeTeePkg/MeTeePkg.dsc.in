@@ -36,10 +36,10 @@ PciCf8Lib|MdePkg/Library/BasePciCf8Lib/BasePciCf8Lib.inf
 HobLib|MdePkg/Library/DxeHobLib/DxeHobLib.inf
 PciSegmentLib|MdePkg/Library/BasePciSegmentLibPci/BasePciSegmentLibPci.inf
 
-MeTeeLib|MeTeePkg/MeTeeLibrary/MeTeeLibrary.inf
+MeTeeLib|MeTeePkg/Library/MeTeeLibrary/MeTeeLibrary.inf
 
 [Components]
-MeTeePkg/MeTeeLibrary/MeTeeLibrary.inf
+MeTeePkg/Library/MeTeeLibrary/MeTeeLibrary.inf
 
 @METEE_SAMPLES@
 

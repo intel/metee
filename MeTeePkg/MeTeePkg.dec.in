@@ -8,11 +8,11 @@
   PACKAGE_VERSION                = 0.1
 
 [Includes]
-  @METEE_INCLUDE_RELPATH@
+  Include
 
 [LibraryClasses]
   ##  @libraryclass  Provides MeTee interface functions
-  MeTeeLib|include/metee.h
+  MeTeeLib|Include/metee.h
 
 [Guids]
   gMeTeePkgTokenSpaceGuid = { 0x8e6a6715, 0x9abc, 0x4043, { 0x88, 0xef, 0x9e, 0x39, 0xc6, 0xf6, 0x3e, 0x0f }}
