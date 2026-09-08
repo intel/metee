@@ -83,7 +83,7 @@ TEESTATUS BeginOverlappedInternal(IN TEE_OPERATION operation, IN PTEEHANDLE hand
 
 		if (ERROR_IO_PENDING != err) {
 			status = Win32ErrorToTee(err);
-			ERRPRINT(handle, "Error in ReadFile/Write, error: %d\n", err);
+			ERRPRINT(handle, "Error in ReadFile/Write, error: %lu\n", err);
 		}
 		else {
 			DBGPRINT(handle, "Pending in ReadFile/Write\n");
@@ -132,7 +132,7 @@ TEESTATUS EndOverlapped(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD milli
 		err = GetLastError();
 		status = Win32ErrorToTee(err);
 
-		ERRPRINT(handle, "WaitForSingleObject reported error: %d\n", err);
+		ERRPRINT(handle, "WaitForSingleObject reported error: %lu\n", err);
 		goto Cleanup;
 	}
 
@@ -140,7 +140,7 @@ TEESTATUS EndOverlapped(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD milli
 	if (!GetOverlappedResult(impl_handle->handle, evt, pBytesTransferred, TRUE)) {
 		err = GetLastError();
 		status = Win32ErrorToTee(err);
-		ERRPRINT(handle, "Error in GetOverlappedResult, error: %d\n", err);
+		ERRPRINT(handle, "Error in GetOverlappedResult, error: %lu\n", err);
 		goto Cleanup;
 	}
 
@@ -198,7 +198,7 @@ TEESTATUS GetDevicePath(IN PTEEHANDLE handle, IN LPCGUID InterfaceGuid,
 
 	if (deviceInterfaceListLength <= 1) {
 		status = TEE_DEVICE_NOT_FOUND;
-		ERRPRINT(handle, "SetupDiGetClassDevs returned status %d\n", GetLastError());
+		ERRPRINT(handle, "No device interfaces found (list length: %lu)\n", deviceInterfaceListLength);
 		goto Cleanup;
 	}
 
@@ -304,20 +304,20 @@ TEESTATUS GetDeviceKind(IN PTEEHANDLE handle, IN OUT OPTIONAL char *kind, IN OUT
 	prop_size = MAX_PATH;
 	cr = CM_Get_Device_Interface_PropertyW(device_path_w, &DEVPKEY_Device_InstanceId, &prop_type, (PBYTE)instance_id, &prop_size, 0);
 	if (cr != CR_SUCCESS) {
-		ERRPRINT(handle, "CM_Get_Device_Interface_Property: %d\n", cr);
+		ERRPRINT(handle, "CM_Get_Device_Interface_Property: %lu\n", cr);
 		status = TEE_INTERNAL_ERROR;
 		goto Cleanup;
 	}
 	if (DEVPROP_TYPE_STRING != prop_type)
 	{
-		ERRPRINT(handle, "Invalid property type %d\n", prop_type);
+		ERRPRINT(handle, "Invalid property type %lu\n", prop_type);
 		status = TEE_INTERNAL_ERROR;
 		goto Cleanup;
 	}
 
 	cr = CM_Locate_DevNodeW(&devInstHandle, &instance_id[0], CM_LOCATE_DEVNODE_NORMAL);
 	if (cr != CR_SUCCESS) {
-		ERRPRINT(handle, "CM_Locate_DevNode: %d\n", cr);
+		ERRPRINT(handle, "CM_Locate_DevNode: %lu\n", cr);
 		status = TEE_INTERNAL_ERROR;
 		goto Cleanup;
 	}
@@ -330,7 +330,7 @@ TEESTATUS GetDeviceKind(IN PTEEHANDLE handle, IN OUT OPTIONAL char *kind, IN OUT
 		goto Cleanup;
 	}
 	if (cr != CR_BUFFER_SMALL) {
-		ERRPRINT(handle, "CM_Get_DevNode_Property: %d %d\n", cr, prop_size);
+		ERRPRINT(handle, "CM_Get_DevNode_Property: %lu %lu\n", cr, prop_size);
 		status = TEE_INTERNAL_ERROR;
 		goto Cleanup;
 	}
@@ -342,12 +342,12 @@ TEESTATUS GetDeviceKind(IN PTEEHANDLE handle, IN OUT OPTIONAL char *kind, IN OUT
 	}
 	cr = CM_Get_DevNode_PropertyW(devInstHandle, &DEVPKEY_TeedriverKindString, &prop_type, (PBYTE)kind_w, &prop_size, 0);
 	if (cr != CR_SUCCESS) {
-		ERRPRINT(handle, "CM_Get_DevNode_Property: %d %d\n", cr, prop_size);
+		ERRPRINT(handle, "CM_Get_DevNode_Property: %lu %lu\n", cr, prop_size);
 		status = TEE_INTERNAL_ERROR;
 		goto Cleanup;
 	}
 	if (*kindSize < prop_size) {
-		ERRPRINT(handle, "Insufficient buffer %d %d\n", *kindSize, prop_size);
+		ERRPRINT(handle, "Insufficient buffer %zu %lu\n", *kindSize, prop_size);
 		*kindSize = prop_size;
 		status = TEE_INSUFFICIENT_BUFFER;
 		goto Cleanup;
@@ -401,7 +401,7 @@ TEESTATUS SendIOCTL(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD ioControl
 		err = GetLastError();
 		// it's ok to get an error here, because it's overlapped
 		if (ERROR_IO_PENDING != err) {
-			ERRPRINT(handle, "Error in DeviceIoControl, error: %d\n", err);
+			ERRPRINT(handle, "Error in DeviceIoControl, error: %lu\n", err);
 			status = Win32ErrorToTee(err);
 			goto Cleanup;
 		}
@@ -410,7 +410,7 @@ TEESTATUS SendIOCTL(IN PTEEHANDLE handle, IN EVENTHANDLE evt, IN DWORD ioControl
 
 	if (!GetOverlappedResult(impl_handle->handle, evt, pBytesRetuned, TRUE)) {
 		err = GetLastError();
-		ERRPRINT(handle, "Error in GetOverlappedResult, error: %d\n", err);
+		ERRPRINT(handle, "Error in GetOverlappedResult, error: %lu\n", err);
 		status = Win32ErrorToTee(err);
 		goto Cleanup;
 	}
