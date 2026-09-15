@@ -132,14 +132,18 @@ HwInfoGfxCsc(
 void CallbackPrintHelper(IN PTEEHANDLE handle, bool is_error, const char* args, ...)
 {
 	char msg[DEBUG_MSG_LEN + 1];
+#ifdef METEE_EFI_STDLIB_SUPPORT
+	/* stdio.h vsnprintf requires a native C va_list, not EDK2 VA_LIST */
+	va_list varl;
+	va_start(varl, args);
+	vsnprintf(msg, DEBUG_MSG_LEN, args, varl);
+	va_end(varl);
+#else
 	VA_LIST varl;
 	VA_START(varl, args);
-#ifdef METEE_EFI_STDLIB_SUPPORT
-    vsnprintf(msg, DEBUG_MSG_LEN, args, varl);
-#else
 	AsciiVSPrint(msg, DEBUG_MSG_LEN, args, varl);
-#endif
 	VA_END(varl);
+#endif
 	handle->log_callback2(is_error, msg);
 }
 

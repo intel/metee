@@ -27,6 +27,7 @@ BaseMemoryLib|MdePkg/Library/BaseMemoryLib/BaseMemoryLib.inf
 UefiBootServicesTableLib|MdePkg/Library/UefiBootServicesTableLib/UefiBootServicesTableLib.inf
 MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
 UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
+LibC|StdLib/LibC/LibC.inf
 
 DevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
 PciLib|MdePkg/Library/BasePciLibCf8/BasePciLibCf8.inf

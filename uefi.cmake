@@ -22,6 +22,17 @@ set(TEE_PUBLIC_HEADERS
   ${PROJECT_SOURCE_DIR}/include/metee.h
 )
 
+option(METEE_EFI_STDLIB_SUPPORT "Include <stdio.h> for vsnprintf in EFI build" OFF)
+if(METEE_EFI_STDLIB_SUPPORT)
+  set(METEE_EFI_STDLIB_CC_FLAG " -D METEE_EFI_STDLIB_SUPPORT")
+  set(METEE_EFI_STDLIB_MSFT_CC_FLAG " /D METEE_EFI_STDLIB_SUPPORT")
+  set(METEE_EFI_STDLIB_LIBRARY_CLASS "  LibC")
+else()
+  set(METEE_EFI_STDLIB_CC_FLAG "")
+  set(METEE_EFI_STDLIB_MSFT_CC_FLAG "")
+  set(METEE_EFI_STDLIB_LIBRARY_CLASS "")
+endif()
+
 add_library(${PROJECT_NAME} ${TEE_SOURCES})
 
 # Stage a self-contained EDK2 package under ${PROJECT_BINARY_DIR}/MeTeePkg so
