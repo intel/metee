@@ -16,8 +16,8 @@
 @TEE_SOURCES_MULTILINE@
 
 [BuildOptions]
-  MSFT:*_*_*_CC_FLAGS = /GS- /D EFI /U _WIN32 /W4 /WX
-  GCC:*_*_*_CC_FLAGS = -D EFI
+  MSFT:*_*_*_CC_FLAGS = /GS- /D EFI /U _WIN32 /W4 /WX@METEE_EFI_STDLIB_MSFT_CC_FLAG@
+  GCC:*_*_*_CC_FLAGS = -D EFI@METEE_EFI_STDLIB_CC_FLAG@
 
 [Packages]
   MdePkg/MdePkg.dec
@@ -32,6 +32,7 @@
   BaseMemoryLib
   IoLib
   PciSegmentLib
+@METEE_EFI_STDLIB_LIBRARY_CLASS@
 
 [Protocols]
   gEfiPciRootBridgeIoProtocolGuid
