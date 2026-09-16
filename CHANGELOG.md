@@ -1,3 +1,13 @@
+## [6.2.6]
+
+### Fixed
+ - Windows: fix print specifiers
+ - Support Stdlib logging in UEFI builds
+
+### Changed
+ - Windows: migrate to VS2022
+ - Refactor package structure and file paths for UEFI build consistency
+
 ## [6.2.5]
 
 ### Fixed
